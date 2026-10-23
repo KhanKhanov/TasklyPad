@@ -1,4 +1,4 @@
-# TasklyPad — личный клон Todoist (Windows 10 + Android, без сервера)
+# TasklyPad — личный таск-менеджер (Windows 10 + Android, без сервера)
 
 [![CI](https://github.com/KhanKhanov/TasklyPad/actions/workflows/ci.yml/badge.svg)](https://github.com/KhanKhanov/TasklyPad/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
