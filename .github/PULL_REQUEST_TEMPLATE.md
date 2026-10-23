@@ -2,7 +2,7 @@
 
 <!-- Пункт docs/TODOIST_PARITY.md и краткое описание. Один PR — одна фича. -->
 
-## Чек-лист «Готово» (CLAUDE.md)
+## Чек-лист «Готово» (CONTRIBUTING.md)
 
 - [ ] `flutter analyze` без warnings
 - [ ] `dart format .`

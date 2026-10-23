@@ -1,4 +1,4 @@
-# CI: те же проверки, что в CLAUDE.md «Готово», но на сервере GitHub при каждом push и PR.
+# CI: те же проверки, что в чек-листе «Готово» (CONTRIBUTING.md), но на сервере GitHub при каждом push и PR.
 name: CI
 
 on:

@@ -7,7 +7,7 @@
 приходит через интерфейсы `OpStore` и `SyncFs`, поэтому тысячи сценариев слияния
 гоняются обычным `dart test` за секунды.
 
-Дизайн: `../../docs/SYNC_DESIGN.md`. Инварианты: `../../.claude/rules/sync-crdt.md`.
+Дизайн и инварианты: `../../docs/SYNC_DESIGN.md`.
 
 ```
 lib/src/hlc.dart              Hlc — метка времени: wall ms : counter : node

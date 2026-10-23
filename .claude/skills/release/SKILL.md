@@ -11,11 +11,13 @@ argument-hint: [версия, например 0.3.0]
    `flutter test` — всё зелёное, покажи итог.
 3. Обнови `version:` в pubspec.yaml (semver + build number +1) и раздел в CHANGELOG.md из коммитов
    с прошлого тега (`git log <tag>..HEAD --oneline`).
-4. Windows: `flutter build windows --release`, затем `dart run msix:create` (конфиг msix в pubspec;
-   self-signed сертификат из `windows/cert/` — если нет, объясни, как создать, и остановись).
+4. Windows: `flutter build windows --release`, затем `dart run msix:create` (пакет `msix` в
+   dev_dependencies и секция `msix_config` в pubspec добавляются на этапе M9; если их нет — объясни и
+   остановись; self-signed сертификат из `windows/cert/` — если нет, объясни, как создать, и остановись).
 5. Android: `flutter build apk --release` (подпись из android/key.properties; если нет — debug-подпись
    и предупреждение в отчёте).
 6. Скопируй артефакты в `dist/<версия>/` с именами planner-<версия>-windows.msix и planner-<версия>-android.apk.
-7. Коммит `chore(release): v<версия>`, тег `v<версия>`. Пуш — только если пользователь попросил.
+7. Коммит и тег делает пользователь: покажи одним блоком команды для коммита
+   `chore(release): v<версия>` и тега `v<версия>` (без упоминаний ИИ-инструментов). Пуш — его решение.
 
 Отчёт: версия, пути артефактов, размер файлов, что подписано и чем.

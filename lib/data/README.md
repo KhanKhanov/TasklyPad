@@ -1,3 +1,3 @@
 # data
 
-drift: таблицы, DAO, миграции, репозитории. Таблицы сущностей — проекции op-log; прямые update/delete запрещены (см. .claude/rules/sync-crdt.md).
+drift: таблицы, DAO, миграции, репозитории. Таблицы сущностей — проекции op-log; прямые update/delete запрещены, все записи — через `Mutator` (см. docs/SYNC_DESIGN.md, «Инварианты реализации»).
