@@ -24,6 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # tray_manager → nativeapi → cnativeapi: пакет с build-хуком, который компилирует
+      # C-код при `flutter test` и на Linux требует заголовки GTK 3, X11 и Xi.
+      - name: Системные библиотеки для нативных плагинов (GTK 3, X11, Xi)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libgtk-3-dev libx11-dev libxi-dev
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
