@@ -11,5 +11,24 @@
   "inboxEmpty": "Пока нет задач",
   "@inboxEmpty": {
     "description": "Заглушка пустого списка во Входящих"
+  },
+  "startupErrorTitle": "Не удалось открыть данные",
+  "@startupErrorTitle": {
+    "description": "Заголовок экрана, если база не открылась при запуске"
+  },
+  "startupSchemaTooNew": "Данные сохранены более новой версией приложения (схема {found}, эта версия знает до {supported}). Обновите приложение — данные не тронуты.",
+  "@startupSchemaTooNew": {
+    "description": "База создана более новой версией приложения",
+    "placeholders": {
+      "found": {"type": "int"},
+      "supported": {"type": "int"}
+    }
+  },
+  "startupErrorDetails": "Данные не изменены. Подробности: {error}",
+  "@startupErrorDetails": {
+    "description": "Прочая ошибка открытия базы при запуске",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
   }
 }

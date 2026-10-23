@@ -1,0 +1,129 @@
+import 'package:oplog_sync/oplog_sync.dart';
+
+import '../core/ids.dart';
+import '../data/local_meta_dao.dart';
+import '../data/projection/entity_fields.dart';
+import 'drift_op_store.dart';
+
+/// Единственная точка записи данных пользователя в приложении.
+///
+/// Каждая правка — ops через [MergeEngine] (журнал и проекция) и сохранение
+/// часов движка в `local_meta` одной транзакцией: после перезапуска часы не
+/// окажутся позади уже записанных ops. Прямые `update`/`delete` в таблицах
+/// сущностей запрещены — только через этот класс.
+final class Mutator {
+  Mutator({
+    required this._engine,
+    required this._store,
+    required this._meta,
+    required this._ids,
+    this._objectFields = mergedObjectFields,
+  });
+
+  final MergeEngine _engine;
+  final DriftOpStore _store;
+  final LocalMetaDao _meta;
+  final IdGenerator _ids;
+
+  /// Тип сущности → поле-объект → ключи, которые это приложение знает.
+  final Map<String, Map<String, Set<String>>> _objectFields;
+
+  /// Создать сущность с полями [fields]; возвращает её новый id (UUIDv7).
+  Future<String> create(String entityType, Map<String, Object?> fields) async {
+    _checkWritable(entityType);
+    final id = _ids.next();
+    await _write(() => _engine.mutate(entityType, id, fields));
+    return id;
+  }
+
+  /// Изменить поля [fields] сущности; остальные поля не трогаются.
+  ///
+  /// Поле-объект (`due`) передаётся целиком в том виде, как его понимает это
+  /// приложение: известные ключи, которых нет в новом значении, убираются
+  /// (дата без времени заменяет дату со временем). Незнакомые ключи — от более
+  /// новой версии приложения, например правило повторения, — сохраняются из
+  /// текущего значения. `null` у самого поля убирает объект (срок) целиком.
+  Future<List<Op>> update(
+    String entityType,
+    String entityId,
+    Map<String, Object?> fields,
+  ) {
+    _checkWritable(entityType);
+    return _write(
+      () async => _engine.mutate(
+        entityType,
+        entityId,
+        await _mergeObjects(entityType, entityId, fields),
+      ),
+    );
+  }
+
+  /// Пометить сущность удалённой (tombstone); [restore] отменяет.
+  Future<List<Op>> delete(String entityType, String entityId) {
+    _checkWritable(entityType);
+    return _write(() => _engine.delete(entityType, entityId));
+  }
+
+  /// Отменить удаление («Отменить» в тосте).
+  Future<List<Op>> restore(String entityType, String entityId) =>
+      update(entityType, entityId, {Op.deletedField: false});
+
+  /// Выбор пользователя по конфликту: [fields] — выбранные значения целиком
+  /// (как в одной из спорящих ops), без слияния объектов.
+  Future<List<Op>> resolveConflict(
+    String conflictId,
+    Map<String, Object?> fields,
+  ) => _write(() => _engine.resolveConflict(conflictId, fields));
+
+  /// База оказалась копией и узел получил новый id: переиздать от него
+  /// невыгруженные (HLC после [uploadedUpTo]) ops прежнего узла, которые ещё
+  /// побеждают в своих полях, — иначе их никто не выгрузит. Время исходных
+  /// ops сохраняется (`MergeEngine.adopt`). Возвращает число новых ops.
+  Future<int> adoptUnsyncedOps(String previousNodeId, Hlc? uploadedUpTo) =>
+      _write(
+        () async => (await _engine.adopt(previousNodeId, uploadedUpTo)).length,
+      );
+
+  Future<T> _write<T>(Future<T> Function() action) =>
+      _store.transaction(() async {
+        final result = await action();
+        await _meta.setHlc(_engine.clock);
+        return result;
+      });
+
+  /// Поле-объект: известные приложению ключи берутся из нового значения
+  /// целиком (нет в нём — ключ убран), незнакомые — из текущего значения.
+  /// Объект без ключей — `null` (поля нет).
+  Future<Map<String, Object?>> _mergeObjects(
+    String entityType,
+    String entityId,
+    Map<String, Object?> fields,
+  ) async {
+    final objectFields = _objectFields[entityType];
+    if (objectFields == null) return fields;
+    final result = Map<String, Object?>.of(fields);
+    for (final MapEntry(key: field, value: knownKeys) in objectFields.entries) {
+      final value = fields[field];
+      if (value is! Map<String, Object?>) continue;
+      final current = await _store.fieldValue(entityType, entityId, field);
+      final merged = <String, Object?>{
+        if (current is Map<String, Object?>)
+          for (final entry in current.entries)
+            if (!knownKeys.contains(entry.key)) entry.key: entry.value,
+        ...value,
+      }..removeWhere((_, v) => v == null);
+      result[field] = merged.isEmpty ? null : merged;
+    }
+    return result;
+  }
+
+  static void _checkWritable(String entityType) {
+    if (entityType == conflictEntityType) {
+      throw ArgumentError.value(
+        entityType,
+        'entityType',
+        'конфликт меняется только через resolveConflict',
+      );
+    }
+  }
+}

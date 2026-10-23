@@ -2,5 +2,8 @@
   "@@locale": "en",
   "appTitle": "Planner",
   "inbox": "Inbox",
-  "inboxEmpty": "No tasks yet"
+  "inboxEmpty": "No tasks yet",
+  "startupErrorTitle": "Couldn't open your data",
+  "startupSchemaTooNew": "Your data was saved by a newer version of the app (schema {found}, this version supports up to {supported}). Update the app — your data is untouched.",
+  "startupErrorDetails": "Your data was not changed. Details: {error}"
 }

@@ -16,6 +16,7 @@ final class LocalMetaDao {
   static const String projectorVersionKey = 'projector_version';
   static const String folderIdKey = 'sync.folder_id';
   static const String uploadedUpToKey = 'sync.uploaded_up_to';
+  static const String syncLeaseKey = 'sync.lease';
 
   Future<String?> read(String key) async {
     final row = await (_db.select(
@@ -33,7 +34,7 @@ final class LocalMetaDao {
   Future<void> remove(String key) =>
       (_db.delete(_db.localMeta)..where((t) => t.key.equals(key))).go();
 
-  /// Id этого устройства в журнале (заполняется при первом запуске, M1.4).
+  /// Id этого устройства в журнале (заполняется при первом запуске).
   Future<String?> nodeId() => read(nodeIdKey);
 
   Future<void> setNodeId(String value) => write(nodeIdKey, value);
