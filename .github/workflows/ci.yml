@@ -32,8 +32,14 @@ jobs:
       - name: Версии
         run: flutter --version
 
-      - name: Зависимости
+      - name: Зависимости приложения
         run: flutter pub get
+
+      # Анализ из корня захватывает и packages/oplog_sync, поэтому его зависимости
+      # должны быть разрешены до flutter analyze, а не только перед его тестами.
+      - name: Зависимости пакета oplog_sync
+        working-directory: packages/oplog_sync
+        run: dart pub get
 
       - name: Кодогенерация (drift, freezed, riverpod, json)
         run: dart run build_runner build -d
@@ -49,9 +55,7 @@ jobs:
 
       - name: Тесты ядра синхронизации (packages/oplog_sync)
         working-directory: packages/oplog_sync
-        run: |
-          dart pub get
-          dart test
+        run: dart test
 
   # Сборка Windows: проверяет, что десктопная часть собирается. Долго, поэтому только на push в main.
   build-windows:
