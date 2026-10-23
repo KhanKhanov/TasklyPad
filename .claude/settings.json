@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter *)",
+      "Bash(dart *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git tag *)",
+      "WebFetch(domain:todoist.com)",
+      "WebFetch(domain:www.todoist.com)",
+      "WebFetch(domain:pub.dev)",
+      "WebFetch(domain:docs.flutter.dev)",
+      "WebFetch(domain:api.flutter.dev)",
+      "WebFetch(domain:dart.dev)",
+      "WebFetch(domain:developer.android.com)",
+      "WebFetch(domain:learn.microsoft.com)"
+    ],
+    "deny": [
+      "Read(./android/key.properties)",
+      "Read(./**/*.jks)",
+      "Read(./**/*.keystore)",
+      "Read(./**/*.pfx)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-generated.ps1"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-dart.ps1"],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

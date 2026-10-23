@@ -1,0 +1,19 @@
+# Единые окончания строк: в репозитории всегда LF, в рабочей копии — тоже LF.
+# Убирает предупреждения «LF will be replaced by CRLF» и расхождения между Windows и CI на Linux.
+* text=auto eol=lf
+
+# Windows-специфичные файлы, которым нужен CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.rc  text eol=crlf
+*.sln text eol=crlf
+
+# Бинарные файлы
+*.png binary
+*.jpg binary
+*.ico binary
+*.jar binary
+*.pfx binary
+*.jks binary
+*.keystore binary

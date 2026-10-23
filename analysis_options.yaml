@@ -1,0 +1,32 @@
+# Настройки статического анализа приложения.
+# flutter_lints — рекомендованный набор правил Flutter; strict-* — строгая типизация:
+# запрещают неявные приведения и «угадывание» типов, чтобы ошибки ловились до запуска.
+include: package:flutter_lints/flutter.yaml
+
+# Плагины анализатора (новый механизм Dart 3.10+, верхний уровень файла):
+# riverpod_lint проверяет правильное использование провайдеров. Ставится отсюда, не из pubspec.
+plugins:
+  riverpod_lint: ^3.1.9
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.drift.dart"
+    - "lib/l10n/app_localizations*.dart"
+    - "build/**"
+    - "android/**"
+    - "windows/**"
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    avoid_dynamic_calls: true
+    unawaited_futures: true
+    prefer_final_locals: true
+    require_trailing_commas: true

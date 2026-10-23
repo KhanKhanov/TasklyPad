@@ -1,0 +1,44 @@
+name: Ошибка
+description: Что-то работает не так, как в Todoist, или приложение падает
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло
+      description: Коротко, что сделали и что увидели.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что ожидалось
+      description: Как это ведёт себя в Todoist (ссылка на help, если есть).
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      placeholder: |
+        1. Открыть «Сегодня»
+        2. Нажать q, ввести «купить хлеб завтра»
+        3. ...
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Платформа
+      multiple: true
+      options:
+        - Windows
+        - Android
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Версия приложения
+      placeholder: "0.1.0"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Логи или скриншот
+      render: text

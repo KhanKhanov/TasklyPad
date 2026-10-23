@@ -1,0 +1,14 @@
+name: oplog_sync
+description: Ядро синхронизации без сервера — op-log CRDT с LWW по полям и гибридными часами (HLC). Чистый Dart, без Flutter.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  meta: ^1.19.0
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.33.0

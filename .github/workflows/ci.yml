@@ -1,0 +1,73 @@
+# CI: те же проверки, что в CLAUDE.md «Готово», но на сервере GitHub при каждом push и PR.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Если в ветку пришёл новый push, предыдущий незавершённый прогон отменяется.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Анализ, формат и тесты на Linux: самый быстрый и дешёвый раннер.
+  check:
+    name: analyze + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Версии
+        run: flutter --version
+
+      - name: Зависимости
+        run: flutter pub get
+
+      - name: Кодогенерация (drift, freezed, riverpod, json)
+        run: dart run build_runner build -d
+
+      - name: Формат (dart format --set-exit-if-changed)
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Анализ (0 warnings)
+        run: flutter analyze
+
+      - name: Тесты приложения
+        run: flutter test
+
+      - name: Тесты ядра синхронизации (packages/oplog_sync)
+        working-directory: packages/oplog_sync
+        run: |
+          dart pub get
+          dart test
+
+  # Сборка Windows: проверяет, что десктопная часть собирается. Долго, поэтому только на push в main.
+  build-windows:
+    name: build windows
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart run build_runner build -d
+      - run: flutter build windows --release

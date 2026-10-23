@@ -1,0 +1,15 @@
+{
+  "@@locale": "ru",
+  "appTitle": "Планер",
+  "@appTitle": {
+    "description": "Название приложения в заголовке окна"
+  },
+  "inbox": "Входящие",
+  "@inbox": {
+    "description": "Проект по умолчанию, как в Todoist"
+  },
+  "inboxEmpty": "Пока нет задач",
+  "@inboxEmpty": {
+    "description": "Заглушка пустого списка во Входящих"
+  }
+}

@@ -1,0 +1,48 @@
+# Dependabot: раз в неделю проверяет зависимости и открывает PR с обновлениями.
+# Документация: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+updates:
+  # Зависимости Flutter-приложения (pubspec.yaml в корне)
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Moscow"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Пакеты кодогенерации обновляем одним PR: они зависят друг от друга
+      codegen:
+        patterns:
+          - "build_runner"
+          - "riverpod_generator"
+          - "drift_dev"
+          - "freezed"
+          - "json_serializable"
+      riverpod:
+        patterns:
+          - "flutter_riverpod"
+          - "riverpod_annotation"
+          - "riverpod_lint"
+
+  # Зависимости пакета синхронизации
+  - package-ecosystem: "pub"
+    directory: "/packages/oplog_sync"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Moscow"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Сами GitHub Actions в .github/workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore(ci)"

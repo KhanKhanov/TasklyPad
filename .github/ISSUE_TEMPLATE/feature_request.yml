@@ -1,0 +1,22 @@
+name: Функция Todoist
+description: Функция Todoist, которой не хватает или которая реализована не точно
+labels: ["parity"]
+body:
+  - type: input
+    id: parity
+    attributes:
+      label: Пункт docs/TODOIST_PARITY.md
+      placeholder: "§2 Quick Add — автодополнение при вводе #"
+    validations:
+      required: true
+  - type: textarea
+    id: todoist
+    attributes:
+      label: Как это работает в Todoist
+      description: Ссылка на страницу help todoist.com и описание поведения.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Как сейчас у нас
