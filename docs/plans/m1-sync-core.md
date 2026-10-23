@@ -61,7 +61,7 @@ op из будущего, `rebuild`), `MemoryOpStore`, интерфейс `SyncF
   частично записанный файл; битая строка; чужая версия формата; восстановление из бэкапа не
   затирает чанки.
 
-### M1.3 — схема drift и `DriftOpStore` (приложение)
+### M1.3 — схема drift и `DriftOpStore` (приложение) — детальный план: docs/plans/m1-3-drift-store.md
 - Таблицы: `ops` (журнал, индекс по entity_type+entity_id+field), `field_versions`
   (HLC каждого поля проекции), `conflicts`, `sync_cursors`, `local_meta` (node_id, состояние HLC —
   локальное, не синхронизируется), проекции `projects` и `tasks` с базовыми полями.
