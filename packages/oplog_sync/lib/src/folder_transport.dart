@@ -108,11 +108,13 @@ final class FolderTransport {
     if (!await fs.exists(path)) {
       // Уникальный id папки берём у генератора op_id (в приложении — UUIDv7).
       final folderId = engine.newOpId();
-      await fs.writeString(
+      final created = await fs.writeStringIfAbsent(
         path,
         '${jsonEncode({'v': formatVersion, 'folder_id': folderId})}\n',
       );
-      return folderId;
+      // Не создали — другое устройство успело раньше: берём его id, иначе
+      // каждое считало бы папку своей и сбрасывало курсоры.
+      if (created) return folderId;
     }
     final text = await fs.readString(path);
     final json = _tryDecode(text);
@@ -290,17 +292,20 @@ final class FolderTransport {
         ? 0
         : existing.keys.reduce((a, b) => a > b ? a : b);
     if (ops.isEmpty) {
-      if (!await fs.exists('$dir/info.json')) await _writeInfo(dir, seq);
+      if (!await fs.exists('$dir/info.json')) {
+        await _writeInfo(dir, seq, report);
+      }
       return;
     }
     for (final chunk in _split(ops)) {
+      chunk.text.write('${jsonEncode({'end': chunk.count})}\n');
+      final text = chunk.text.toString();
       seq++;
-      // Защита от перезаписи, если список файлов отстал от диска.
-      while (await fs.exists('$dir/${_chunkFile(seq)}')) {
+      // Список файлов мог отстать от диска (облако докачало чанк после
+      // `list`): занятый номер не перезаписываем, а берём следующий.
+      while (!await fs.writeStringIfAbsent('$dir/${_chunkFile(seq)}', text)) {
         seq++;
       }
-      chunk.text.write('${jsonEncode({'end': chunk.count})}\n');
-      await fs.writeString('$dir/${_chunkFile(seq)}', chunk.text.toString());
       report
         ..uploaded += chunk.count
         ..writtenChunks.add(seq);
@@ -311,7 +316,7 @@ final class FolderTransport {
         await state.setChunkCursor(me, seq);
       }
     }
-    await _writeInfo(dir, seq);
+    await _writeInfo(dir, seq, report);
   }
 
   /// Делит ops (отсортированные по HLC) на чанки по размеру. Ops с одним HLC
@@ -339,10 +344,30 @@ final class FolderTransport {
     return chunks;
   }
 
-  Future<void> _writeInfo(String dir, int lastSeq) => fs.writeString(
-    '$dir/info.json',
-    '${jsonEncode({...deviceInfo, 'node_id': engine.nodeId, 'format': formatVersion, 'last_seq': lastSeq, 'updated_ms': engine.nowMs()})}\n',
-  );
+  /// `info.json` — справка для людей и экрана устройств; читатели чанков на
+  /// неё не опираются. Поэтому сбой записи (облачный клиент держит файл) —
+  /// замечание в отчёте, а не ошибка уже выполненной синхронизации.
+  Future<void> _writeInfo(
+    String dir,
+    int lastSeq,
+    FolderSyncReport report,
+  ) async {
+    try {
+      await fs.writeString(
+        '$dir/info.json',
+        '${jsonEncode({...deviceInfo, 'node_id': engine.nodeId, 'format': formatVersion, 'last_seq': lastSeq, 'updated_ms': engine.nowMs()})}\n',
+      );
+    } on Exception catch (e) {
+      report.issues.add(
+        ChunkIssue(
+          nodeId: engine.nodeId,
+          seq: lastSeq,
+          kind: ChunkIssueKind.io,
+          detail: 'info.json не записан: $e',
+        ),
+      );
+    }
+  }
 }
 
 final class _Chunk {
@@ -364,7 +389,8 @@ final class FolderSyncReport {
   /// Номера записанных своих чанков.
   final List<int> writtenChunks = <int>[];
 
-  /// Чанки, которые не прочитаны в этот раз (курсор узла не сдвинут).
+  /// Чанки, которые не прочитаны в этот раз (курсор узла не сдвинут), и
+  /// несущественные сбои записи своей папки (`info.json`).
   final List<ChunkIssue> issues = <ChunkIssue>[];
 
   @override

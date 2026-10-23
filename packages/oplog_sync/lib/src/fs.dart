@@ -18,6 +18,13 @@ abstract interface class SyncFs {
   /// полузаписанный файл.
   Future<void> writeString(String path, String content);
 
+  /// Записать файл целиком, только если его ещё нет; `false` — файл уже есть
+  /// и не тронут. Запись атомарная, как у [writeString].
+  ///
+  /// Так транспорт не перезапишет чанк, который облачный клиент докачал
+  /// между чтением списка файлов и записью: существующий файл неизменяем.
+  Future<bool> writeStringIfAbsent(String path, String content);
+
   /// Дописать в конец файла (создать, если нет).
   Future<void> appendString(String path, String content);
 
@@ -75,6 +82,17 @@ final class MemorySyncFs implements SyncFs {
     _files[p] = content;
   }
 
+  /// Проверка и запись — без `await` между ними: два одновременных вызова
+  /// не могут оба увидеть «файла нет».
+  @override
+  Future<bool> writeStringIfAbsent(String path, String content) async {
+    final p = _norm(path);
+    if (p.isEmpty || _files.containsKey(p) || _dirs.contains(p)) return false;
+    _mkdirs(_parent(p));
+    _files[p] = content;
+    return true;
+  }
+
   @override
   Future<void> appendString(String path, String content) async {
     final p = _norm(path);
@@ -83,8 +101,10 @@ final class MemorySyncFs implements SyncFs {
   }
 
   @override
-  Future<void> createDir(String path) async {
-    var p = _norm(path);
+  Future<void> createDir(String path) async => _mkdirs(_norm(path));
+
+  void _mkdirs(String normalized) {
+    var p = normalized;
     while (p.isNotEmpty) {
       _dirs.add(p);
       p = _parent(p);

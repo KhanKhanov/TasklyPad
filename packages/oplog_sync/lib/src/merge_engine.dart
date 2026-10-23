@@ -154,10 +154,22 @@ final class MergeEngine {
   ) async {
     if (fields.isEmpty) return const [];
     return store.transaction(() async {
+      final entityOps = await store.opsForEntity(entityType, entityId);
+      // Правка пишется в проекцию без сравнения HLC, поэтому обязана быть
+      // позже всего, что уже известно о сущности. Если часы отстают (их не
+      // восстановили после перезапуска), локально было бы видно новое
+      // значение, а на других узлах победило бы старое — расхождение навсегда.
+      for (final op in entityOps) {
+        if (op.hlc > _clock) {
+          _clock = Hlc(
+            wallMs: op.hlc.wallMs,
+            counter: op.hlc.counter,
+            nodeId: nodeId,
+          );
+        }
+      }
       _clock = _clock.tick(nowMs());
-      final base = _maxForeignHlc(
-        await store.opsForEntity(entityType, entityId),
-      );
+      final base = _maxForeignHlc(entityOps);
       final ops = <Op>[];
       for (final entry in fields.entries) {
         ops.add(
@@ -247,6 +259,67 @@ final class MergeEngine {
         );
       }
       return ops;
+    });
+  }
+
+  /// Переиздать от этого узла ops прежнего id [previousNodeId] с HLC после
+  /// [after] (`null` — все), которые всё ещё побеждают в своих полях.
+  ///
+  /// Нужно, когда копия базы получила новый id: ops прежнего id выгружает
+  /// только прежний узел, а его устройства может уже не быть.
+  ///
+  /// Копия сохраняет время и счётчик исходной op, меняется только узел, —
+  /// порядок LWW остаётся как у оригинала: устаревшая офлайн-правка не
+  /// обгонит более новые чужие. `base` копии — последняя op прежнего узла по
+  /// этой сущности: копия «видела» всё, что писал прежний узел, и с его ops
+  /// конфликтов не даёт. Повтор тех же значений безвреден, если прежний узел
+  /// жив. Редкий пропуск уведомления (чужая op между копией и последней op
+  /// прежнего узла) на сходимость данных не влияет.
+  Future<List<Op>> adopt(String previousNodeId, Hlc? after) {
+    if (previousNodeId == nodeId) {
+      throw ArgumentError.value(previousNodeId, 'previousNodeId', 'свой узел');
+    }
+    return store.transaction(() async {
+      final adopted = <Op>[];
+      for (final op in await store.opsOfNodeAfter(previousNodeId, after)) {
+        final current = await store.fieldHlc(
+          op.entityType,
+          op.entityId,
+          op.field,
+        );
+        if (current != op.hlc) continue; // поле уже переписано позже
+        Hlc? base;
+        for (final other in await store.opsForEntity(
+          op.entityType,
+          op.entityId,
+        )) {
+          if (other.nodeId == previousNodeId &&
+              (base == null || other.hlc > base)) {
+            base = other.hlc;
+          }
+        }
+        final copy = Op(
+          opId: newOpId(),
+          nodeId: nodeId,
+          hlc: Hlc(
+            wallMs: op.hlc.wallMs,
+            counter: op.hlc.counter,
+            nodeId: nodeId,
+          ),
+          entityType: op.entityType,
+          entityId: op.entityId,
+          field: op.field,
+          value: op.value,
+          base: base,
+        );
+        await store.appendOp(copy);
+        // Метки различаются только узлом: победитель — как при rebuild.
+        if (copy.hlc > op.hlc) await store.writeField(copy);
+        await _detectConflicts(copy, null);
+        if (copy.hlc > _clock) _clock = copy.hlc;
+        adopted.add(copy);
+      }
+      return adopted;
     });
   }
 

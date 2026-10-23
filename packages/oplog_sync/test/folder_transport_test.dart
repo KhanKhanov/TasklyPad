@@ -1,12 +1,10 @@
 import 'dart:convert';
 
 import 'package:oplog_sync/oplog_sync.dart';
+import 'package:oplog_sync/testing.dart';
 import 'package:test/test.dart';
 
-import 'support/test_node.dart';
-
-const int startMs = 1761110400000;
-const String root = 'planner-sync';
+const String root = scenarioRoot;
 
 /// Узел с транспортом через папку [fs] (у каждого устройства — свой вид
 /// облачной папки; общий [fs] — облако, которое доставляет мгновенно).
@@ -14,26 +12,34 @@ final class Peer {
   Peer(
     String id,
     this.fs, {
-    int startMs = startMs,
+    int startMs = scenarioStartMs,
     String? opIdPrefix,
-    Set<String>? silentFields,
+    Set<String> silentFields = const {},
     this.maxChunkBytes = FolderTransport.defaultMaxChunkBytes,
-  }) : node = Node(
-         id,
-         startMs: startMs,
-         opIdPrefix: opIdPrefix,
-         silentFields: silentFields,
-       ) {
+  }) {
+    node = ScenarioNode(
+      probe,
+      id,
+      startMs: startMs,
+      opIdPrefix: opIdPrefix,
+      silentFields: silentFields,
+    );
     transport = transportFor(fs);
   }
 
-  final Node node;
+  final MemoryProbe probe = MemoryProbe();
+  late final ScenarioNode node;
   final SyncFs fs;
   final int maxChunkBytes;
   final MemorySyncStateStore state = MemorySyncStateStore();
   late final FolderTransport transport;
 
   MergeEngine get engine => node.engine;
+
+  Map<String, Object?>? task(String id) => probe.store.entity('task', id);
+
+  Map<String, Map<String, Object?>> alive(String type) =>
+      probe.store.alive(type);
 
   Future<FolderSyncReport> sync() => transport.sync();
 
@@ -54,18 +60,37 @@ final class FaultyFs implements SyncFs {
 
   final MemorySyncFs inner;
 
-  /// Номер вызова writeString чанка (с 1), который бросит исключение.
+  /// Номер записи чанка (с 1), которая бросит исключение.
   int? failChunkWriteNo;
   int _chunkWrites = 0;
 
   /// Пути, чтение которых бросает исключение.
   final Set<String> unreadable = {};
 
-  @override
-  Future<bool> exists(String path) => inner.exists(path);
+  /// Пути, которых нет в списке файлов, хотя на диске они есть (облачный
+  /// клиент докачал файл после чтения списка).
+  final Set<String> unlisted = {};
+
+  /// Вызывается перед первой проверкой существования пути — так другое
+  /// устройство «успевает» создать файл между проверкой и записью.
+  Future<void> Function(String path)? beforeFirstExists;
 
   @override
-  Future<List<String>> list(String dir) => inner.list(dir);
+  Future<bool> exists(String path) async {
+    final hook = beforeFirstExists;
+    if (hook != null) {
+      beforeFirstExists = null;
+      await hook(path);
+      return false;
+    }
+    return inner.exists(path);
+  }
+
+  @override
+  Future<List<String>> list(String dir) async => [
+    for (final name in await inner.list(dir))
+      if (!unlisted.contains('$dir/$name')) name,
+  ];
 
   @override
   Future<String> readString(String path) {
@@ -75,12 +100,23 @@ final class FaultyFs implements SyncFs {
     return inner.readString(path);
   }
 
+  /// `info.json` не записывается (облачный клиент держит файл).
+  bool failInfoWrite = false;
+
   @override
   Future<void> writeString(String path, String content) {
+    if (failInfoWrite && path.endsWith('info.json')) {
+      throw Exception('файл занят другим процессом');
+    }
+    return inner.writeString(path, content);
+  }
+
+  @override
+  Future<bool> writeStringIfAbsent(String path, String content) {
     if (path.endsWith('.ndjson') && ++_chunkWrites == failChunkWriteNo) {
       throw Exception('диск переполнен');
     }
-    return inner.writeString(path, content);
+    return inner.writeStringIfAbsent(path, content);
   }
 
   @override
@@ -113,18 +149,6 @@ Future<void> syncAll(List<Peer> peers) async {
   }
 }
 
-/// Все узлы пришли к одинаковым задачам и одинаковым конфликтам.
-Future<void> expectConverged(List<Peer> peers) async {
-  final first = peers.first.node;
-  for (final p in peers.skip(1)) {
-    expect(p.node.store.alive('task'), first.store.alive('task'));
-    expect(
-      (await p.node.conflicts()).map((c) => (c.id, c.resolved)),
-      (await first.conflicts()).map((c) => (c.id, c.resolved)),
-    );
-  }
-}
-
 void main() {
   late MemorySyncFs fs;
   late Peer a;
@@ -136,14 +160,12 @@ void main() {
     b = Peer('b', fs);
   });
 
-  /// Задача t1 есть на обоих узлах; часы сдвинуты так, что следующие правки
-  /// «параллельны» и упорядочены: a раньше b.
-  Future<void> sharedTask() async {
-    await a.engine.mutate('task', 't1', {'title': 'v0', 'priority': 4});
-    await syncAll([a, b]);
-    a.node.advance(1000);
-    b.node.advance(2000);
-  }
+  // Сценарии из «Инвариантов реализации» — общие с приложением (drift + диск).
+  group('сценарии слияния через папку', () {
+    for (final scenario in folderSyncScenarios) {
+      test(scenario.name, () => scenario.run(memoryFolderSyncEnv));
+    }
+  });
 
   group('раскладка папки', () {
     test(
@@ -213,7 +235,7 @@ void main() {
         }
       }
       await b.sync();
-      expect(b.node.store.alive('task'), hasLength(7));
+      expect(b.alive('task'), hasLength(7));
     });
 
     test('копия облачного клиента «000001 (1).ndjson» не читается', () async {
@@ -225,7 +247,7 @@ void main() {
       );
       final report = await b.sync();
       expect(report.issues, isEmpty);
-      expect(b.node.task('t1'), {'title': 'v1'});
+      expect(b.task('t1'), {'title': 'v1'});
     });
 
     test('ops одной правки (общий HLC) не делятся между чанками', () async {
@@ -259,8 +281,31 @@ void main() {
 
       expect(retry.issues, isEmpty);
       await b.sync();
-      expect(b.node.store.alive('task'), a.node.store.alive('task'));
-      expect(b.node.task('t2'), hasLength(3));
+      expect(b.alive('task'), a.alive('task'));
+      expect(b.task('t2'), hasLength(3));
+    });
+
+    test('info.json не записался (файл занят) — замечание в отчёте, чанки '
+        'выгружены, синхронизация не падает', () async {
+      final faulty = FaultyFs(fs)..failInfoWrite = true;
+      a = Peer('a', faulty);
+      await a.engine.mutate('task', 't1', {'title': 'v1'});
+      final report = await a.sync();
+
+      expect(report.writtenChunks, [1]);
+      expect(report.issues.single.kind, ChunkIssueKind.io);
+      expect(report.issues.single.detail, contains('info.json'));
+      await b.sync();
+      expect(b.task('t1'), {'title': 'v1'});
+    });
+
+    test('MemorySyncFs.writeStringIfAbsent — одновременные вызовы: true ровно '
+        'у одного', () async {
+      final results = await Future.wait([
+        for (var i = 0; i < 5; i++) fs.writeStringIfAbsent('x.json', '$i'),
+      ]);
+      expect(results.where((r) => r), hasLength(1));
+      expect(fs.files['x.json'], '${results.indexOf(true)}');
     });
 
     test('лишний файл в nodes/ (desktop.ini) не мешает', () async {
@@ -269,204 +314,44 @@ void main() {
       await fs.writeString('$root/nodes/desktop.ini', '[.ShellClassInfo]');
       final report = await b.sync();
       expect(report.issues, isEmpty);
-      expect(b.node.task('t1'), {'title': 'v1'});
+      expect(b.task('t1'), {'title': 'v1'});
     });
-  });
 
-  group('сценарии слияния через папку', () {
-    test('создание на одном узле доходит до другого', () async {
-      await a.engine.mutate('task', 't1', {'title': 'Отчёт', 'priority': 1});
+    test('список файлов отстал от диска — чанк с занятым номером не '
+        'перезаписан, взят следующий', () async {
+      await a.engine.mutate('task', 't1', {'title': 'до копии'});
       await a.sync();
-      final report = await b.sync();
-      expect(report.received.applied, 2);
-      expect(b.node.task('t1'), {'title': 'Отчёт', 'priority': 1});
-    });
+      final chunk1 = fs.files[chunkPath('a', 1)];
 
-    test(
-      'параллельная правка разных полей — сохраняются обе, без конфликта',
-      () async {
-        await sharedTask();
-        await a.engine.mutate('task', 't1', {'title': 'от a'});
-        await b.engine.mutate('task', 't1', {'priority': 1});
-        await syncAll([a, b]);
-
-        expect(a.node.task('t1'), {'title': 'от a', 'priority': 1});
-        expect(await a.node.conflicts(), isEmpty);
-        await expectConverged([a, b]);
-      },
-    );
-
-    test(
-      'параллельная правка одного поля — конфликт с одним id на обоих',
-      () async {
-        await sharedTask();
-        await a.engine.mutate('task', 't1', {'title': 'от a'});
-        await b.engine.mutate('task', 't1', {'title': 'от b'});
-        await a.sync();
-        final atB = await b.sync();
-        final atA = await a.sync();
-
-        expect(atB.received.conflicts, hasLength(1));
-        expect(atA.received.conflicts.map((c) => c.id), [
-          atB.received.conflicts.single.id,
-        ]);
-        expect(a.node.task('t1')!['title'], 'от b');
-        await expectConverged([a, b]);
-      },
-    );
-
-    test('последовательная правка — конфликта нет', () async {
-      await sharedTask();
-      await a.engine.mutate('task', 't1', {'title': 'от a'});
-      await syncAll([a, b]);
-      await b.engine.mutate('task', 't1', {'title': 'от b'});
-      await syncAll([a, b]);
-
-      expect(a.node.task('t1')!['title'], 'от b');
-      expect(await a.node.conflicts(), isEmpty);
-      await expectConverged([a, b]);
-    });
-
-    test('правка против удаления — конфликт delete на обоих', () async {
-      await sharedTask();
-      await a.engine.delete('task', 't1');
-      await b.engine.mutate('task', 't1', {'title': 'от b'});
-      await syncAll([a, b]);
-
-      final conflicts = await a.node.conflicts();
-      expect(conflicts.single.kind, ConflictKind.delete);
-      expect(a.node.task('t1')![Op.deletedField], isTrue);
-      await expectConverged([a, b]);
-    });
-
-    test('разрешение на одном узле закрывает конфликт на другом', () async {
-      await sharedTask();
-      await a.engine.mutate('task', 't1', {'title': 'от a'});
-      await b.engine.mutate('task', 't1', {'title': 'от b'});
-      await syncAll([a, b]);
-      final id = (await a.node.conflicts()).single.id;
-
-      await a.engine.resolveConflict(id, {'title': 'от a'});
-      await syncAll([a, b]);
-
-      expect((await b.node.conflicts()).single.resolved, isTrue);
-      expect(b.node.task('t1')!['title'], 'от a');
-      await expectConverged([a, b]);
-    });
-
-    test(
-      'конфликт, разрешённый в более позднем чанке, не попадает в отчёт',
-      () async {
-        await sharedTask();
-        await a.engine.mutate('task', 't1', {'title': 'от a'});
-        await a.sync();
-        await b.engine.mutate('task', 't1', {'title': 'от b'});
-        await b.sync();
-        final id = (await b.node.conflicts()).single.id;
-        await b.engine.resolveConflict(id, const {});
-        await b.sync();
-
-        final report = await a.sync();
-        expect(report.received.conflicts, isEmpty);
-        expect((await a.node.conflicts()).single.resolved, isTrue);
-      },
-    );
-
-    test('переупорядочивание — порядок сходится, конфликта нет', () async {
-      a = Peer('a', fs, silentFields: {'order_key'});
-      b = Peer('b', fs, silentFields: {'order_key'});
-      await sharedTask();
-      await a.engine.mutate('task', 't1', {'order_key': 'a0'});
-      await b.engine.mutate('task', 't1', {'order_key': 'Zz'});
-      await syncAll([a, b]);
-
-      expect(a.node.task('t1')!['order_key'], 'Zz');
-      expect(await a.node.conflicts(), isEmpty);
-      await expectConverged([a, b]);
-    });
-
-    test('оба завершили повторяющуюся — две completion, один срок', () async {
-      await a.engine.mutate('task', 't1', {
-        'title': 'Зарядка',
-        'due': '2026-10-23',
-      });
-      await syncAll([a, b]);
-      a.node.advance(1000);
-      b.node.advance(2000);
-      for (final (p, id) in [(a, 'c-a'), (b, 'c-b')]) {
-        await p.engine.mutate('completion', id, {
-          'task_id': 't1',
-          'due_was': '2026-10-23',
-        });
-        await p.engine.mutate('task', 't1', {'due': '2026-10-24'});
-      }
-      await syncAll([a, b]);
-
-      expect(
-        a.node.store.alive('completion').keys,
-        unorderedEquals(['c-a', 'c-b']),
+      // Восстановленная копия a не видит в списке уже лежащий чанк 1.
+      final lagging = FaultyFs(fs)..unlisted.add('$root/nodes/a/000001.ndjson');
+      final restored = Peer(
+        'a',
+        lagging,
+        startMs: scenarioStartMs + 60000,
+        opIdPrefix: 'a2',
       );
-      expect(a.node.task('t1')!['due'], '2026-10-24');
-      expect(await a.node.conflicts(), isEmpty, reason: 'значения due равны');
-      await expectConverged([a, b]);
+      await restored.engine.mutate('task', 't2', {'title': 'после'});
+      final report = await restored.sync();
+
+      expect(report.writtenChunks, [2]);
+      expect(fs.files[chunkPath('a', 1)], chunk1);
+      await b.sync();
+      expect(b.alive('task').keys, unorderedEquals(['t1', 't2']));
     });
 
-    test(
-      'долгий офлайн: узел вчитывает все накопленные чанки по порядку',
-      () async {
-        await sharedTask();
-        for (var i = 1; i <= 5; i++) {
-          a.node.advance(60000);
-          await a.engine.mutate('task', 't1', {'title': 'a$i'});
-          await a.engine.mutate('task', 'n$i', {'title': 'новая $i'});
-          await a.sync();
-        }
-        b.node.advance(600000);
-        await b.engine.mutate('task', 't1', {'priority': 2});
-        final report = await b.sync();
+    test('format.json создан другим устройством между проверкой и записью — '
+        'берётся его id, файл не затёрт', () async {
+      const other = '{"v":1,"folder_id":"чужая"}\n';
+      final racing = FaultyFs(fs)
+        ..beforeFirstExists = (path) =>
+            fs.writeString('$root/format.json', other);
+      a = Peer('a', racing);
+      await a.engine.mutate('task', 't1', {'title': 'v1'});
+      await a.sync();
 
-        expect(report.issues, isEmpty);
-        expect(await b.state.chunkCursor('a'), 6);
-        expect(b.node.task('t1'), {'title': 'a5', 'priority': 2});
-        await syncAll([a, b]);
-        await expectConverged([a, b]);
-      },
-    );
-
-    test('повторная доставка (сброс курсора) ничего не меняет', () async {
-      await sharedTask();
-      await a.engine.mutate('task', 't1', {'title': 'от a'});
-      await b.engine.mutate('task', 't1', {'title': 'от b'});
-      await syncAll([a, b]);
-      final conflicts = await b.node.conflicts();
-      final opCount = b.node.store.opCount;
-
-      await b.state.setChunkCursor('a', 0);
-      final report = await b.sync();
-
-      expect(report.received.applied, 0);
-      expect(report.received.duplicate, greaterThan(0));
-      expect(report.received.conflicts, isEmpty);
-      expect(b.node.store.opCount, opCount);
-      expect(await b.node.conflicts(), conflicts);
-      await expectConverged([a, b]);
-    });
-
-    test('три узла: конфликт a и b у c тот же, что у них', () async {
-      final c = Peer('c', fs);
-      await a.engine.mutate('task', 't1', {'title': 'v0'});
-      await syncAll([a, b, c]);
-      a.node.advance(1000);
-      b.node.advance(2000);
-      c.node.advance(3000);
-      await a.engine.mutate('task', 't1', {'title': 'от a'});
-      await b.engine.mutate('task', 't1', {'title': 'от b'});
-      await c.engine.mutate('task', 't1', {'priority': 3});
-      await syncAll([a, b, c]);
-
-      expect(await c.node.conflicts(), hasLength(1));
-      expect(c.node.task('t1'), {'title': 'от b', 'priority': 3});
-      await expectConverged([a, b, c]);
+      expect(fs.files['$root/format.json'], other);
+      expect(await a.state.folderId(), 'чужая');
     });
   });
 
@@ -499,12 +384,12 @@ void main() {
         final first = await b.sync();
         expect(first.issues.single.kind, ChunkIssueKind.missing);
         expect(first.issues.single.seq, 1);
-        expect(b.node.store.alive('task'), isEmpty);
+        expect(b.alive('task'), isEmpty);
 
         await deliver(chunkPath('a', 1));
         final second = await b.sync();
         expect(second.issues, isEmpty);
-        expect(b.node.store.alive('task').keys, ['t1', 't2']);
+        expect(b.alive('task').keys, ['t1', 't2']);
         expect(await b.state.chunkCursor('a'), 2);
       },
     );
@@ -525,7 +410,7 @@ void main() {
 
         await deliver(chunkPath('a', 1));
         await b.sync();
-        expect(b.node.task('t1'), {'title': 'первая'});
+        expect(b.task('t1'), {'title': 'первая'});
         expect(await b.state.chunkCursor('a'), 1);
       },
     );
@@ -550,7 +435,7 @@ void main() {
 
       final report = await b.sync();
       expect(report.issues.single.kind, ChunkIssueKind.incomplete);
-      expect(b.node.task('t1'), isNull);
+      expect(b.task('t1'), isNull);
       expect(await b.state.chunkCursor('a'), 0);
     });
 
@@ -563,7 +448,7 @@ void main() {
       );
       final report = await b.sync();
       expect(report.issues.single.kind, ChunkIssueKind.malformed);
-      expect(b.node.task('t1'), isNull);
+      expect(b.task('t1'), isNull);
     });
 
     test('нечитаемый чужой файл — в отчёте, своя выгрузка идёт', () async {
@@ -589,11 +474,11 @@ void main() {
         final first = await b.sync();
         expect(first.issues.single.kind, ChunkIssueKind.malformed);
         expect(first.issues.single.detail, startsWith('строка 1'));
-        expect(b.node.store.alive('task'), isEmpty);
+        expect(b.alive('task'), isEmpty);
 
         await deliver(chunkPath('a', 1));
         await b.sync();
-        expect(b.node.task('t1'), {'title': 'первая'});
+        expect(b.task('t1'), {'title': 'первая'});
       },
     );
 
@@ -606,19 +491,19 @@ void main() {
     });
 
     test('op из будущего — чанк перечитывается, когда часы догонят', () async {
-      final c = Peer('c', fs, startMs: startMs + 2 * 3600 * 1000);
+      final c = Peer('c', fs, startMs: scenarioStartMs + 2 * 3600 * 1000);
       await c.engine.mutate('task', 'tc', {'title': 'из будущего'});
       await c.sync();
       final atA = await a.sync();
 
       expect(atA.issues.single.kind, ChunkIssueKind.rejected);
       expect(await a.state.chunkCursor('c'), 0);
-      expect(a.node.task('tc'), isNull);
+      expect(a.task('tc'), isNull);
 
       a.node.advance(2 * 3600 * 1000);
       final later = await a.sync();
       expect(later.issues, isEmpty);
-      expect(a.node.task('tc'), {'title': 'из будущего'});
+      expect(a.task('tc'), {'title': 'из будущего'});
     });
   });
 
@@ -648,7 +533,7 @@ void main() {
       final restored = Peer(
         'a',
         fs,
-        startMs: startMs + 60000,
+        startMs: scenarioStartMs + 60000,
         opIdPrefix: 'a2',
       );
       await restored.engine.mutate('task', 't2', {
@@ -658,9 +543,9 @@ void main() {
 
       expect(report.writtenChunks, [2]);
       expect(fs.files[chunkPath('a', 1)], chunk1);
-      expect(restored.node.task('t1'), {'title': 'до копии'});
+      expect(restored.task('t1'), {'title': 'до копии'});
       await b.sync();
-      expect(b.node.store.alive('task').keys, unorderedEquals(['t1', 't2']));
+      expect(b.alive('task').keys, unorderedEquals(['t1', 't2']));
     });
 
     test(
@@ -677,7 +562,7 @@ void main() {
         final restored = Peer(
           'a',
           fs,
-          startMs: startMs + 60000,
+          startMs: scenarioStartMs + 60000,
           opIdPrefix: 'a2',
         );
         final chunk1 = chunkOps(fs, 'a', 1);
@@ -696,7 +581,7 @@ void main() {
           expect(fs.files[chunkPath('a', seq)], before[chunkPath('a', seq)]);
         }
         expect(
-          restored.node.store.alive('task').keys,
+          restored.alive('task').keys,
           unorderedEquals(['t1', 't2', 't3']),
         );
         expect(await restored.state.chunkCursor('a'), 3);
@@ -715,15 +600,15 @@ void main() {
       await c.sync();
 
       expect(chunkOps(newFs, 'a', 1), hasLength(2));
-      expect(b.node.task('t2'), {'title': 'вторая'});
-      expect(c.node.store.alive('task').keys, unorderedEquals(['t1', 't2']));
+      expect(b.task('t2'), {'title': 'вторая'});
+      expect(c.alive('task').keys, unorderedEquals(['t1', 't2']));
     });
 
     test('часы движка отстают от водяного знака — громкая ошибка', () async {
       await a.state.resetForFolder('x');
       await fs.writeString('$root/format.json', '{"v":1,"folder_id":"x"}\n');
       await a.state.setUploadedUpTo(
-        const Hlc(wallMs: startMs + 3600000, counter: 0, nodeId: 'a'),
+        const Hlc(wallMs: scenarioStartMs + 3600000, counter: 0, nodeId: 'a'),
       );
       await a.engine.mutate('task', 't1', {'title': 'v1'});
       await expectLater(a.sync(), throwsStateError);
