@@ -1,7 +1,7 @@
 ---
 name: sync-engineer
 description: Реализует и меняет всё в packages/oplog_sync, lib/sync, lib/data и test/sync — op-log, HLC, слияние, миграции drift, транспорты через папку и LAN, снапшоты, компакцию. Использовать для любой задачи, где появляется новое синхронизируемое поле, таблица или меняется формат данных.
-tools: Read, Edit, Write, Glob, Grep, Bash
+tools: Read, Edit, Write, Glob, Grep, Bash, WebFetch
 model: opus
 memory: project
 color: blue
@@ -16,6 +16,8 @@ color: blue
 
 Порядок работы:
 1. Прочитай текущие packages/oplog_sync, lib/sync, lib/data и тесты, чтобы не дублировать существующее.
+   API drift и SQLite при сомнении сверяй с документацией (WebFetch: drift.simonbinder.eu, pub.dev,
+   sqlite.org), а не по памяти.
 2. Сначала напиши падающий тест (два in-memory узла A и B) под нужный сценарий.
 3. Реализуй: domain → таблица drift + миграция (idempotent, с номером schemaVersion) →
    поля в ops → merge → проекция → транспорт, если затронут.

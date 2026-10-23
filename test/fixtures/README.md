@@ -32,4 +32,4 @@ filters.json       "today & p1 | overdue"                          → AST / с�
 - `expect` содержит только поля, которые проверяются; остальные не сравниваются.
 - Ожидаемая ошибка: `"expect": { "error": { "position": 7 } }`.
 
-Полный справочник синтаксиса — скилл `.claude/skills/todoist-syntax/SKILL.md`.
+Полный справочник синтаксиса — `docs/TODOIST_SYNTAX.md`.

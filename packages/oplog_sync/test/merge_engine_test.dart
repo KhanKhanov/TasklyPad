@@ -1,38 +1,7 @@
 import 'package:oplog_sync/oplog_sync.dart';
 import 'package:test/test.dart';
 
-/// Тестовый узел: движок + его хранилище + управляемые часы.
-final class Node {
-  Node(String id, {int startMs = 1761110400000})
-    : store = MemoryOpStore(),
-      _now = startMs {
-    engine = MergeEngine(
-      nodeId: id,
-      store: store,
-      nowMs: () => _now,
-      newOpId: () => '$id-${++_seq}',
-    );
-  }
-
-  final MemoryOpStore store;
-  late final MergeEngine engine;
-  int _now;
-  int _seq = 0;
-
-  /// Сдвинуть часы узла вперёд.
-  void advance(int ms) => _now += ms;
-
-  Map<String, Object?>? task(String id) => store.entity('task', id);
-
-  /// Отдать все свои ops другому узлу (имитация транспорта).
-  Future<ApplyReport> pushTo(Node other) =>
-      other.engine.applyAll(store.opsOf(engine.nodeId));
-}
-
-Future<void> syncBoth(Node a, Node b) async {
-  await a.pushTo(b);
-  await b.pushTo(a);
-}
+import 'support/test_node.dart';
 
 void main() {
   late Node a;

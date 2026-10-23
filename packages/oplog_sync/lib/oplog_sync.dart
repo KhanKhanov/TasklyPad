@@ -3,6 +3,7 @@
 /// Пакет не зависит от Flutter и файловой системы — см. README.md.
 library;
 
+export 'src/conflict.dart';
 export 'src/folder_transport.dart';
 export 'src/fs.dart';
 export 'src/hlc.dart';

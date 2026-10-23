@@ -8,21 +8,16 @@ Flutter-проект `planner` (рабочее имя кода; репозито
 
 ```
 lib/                      приложение: app, core, domain, data, sync, nlp, features, platform
-                          (README.md в каждом слое; схема — .claude/rules/architecture.md)
+                          (назначение слоя — README.md в каждой папке)
 packages/oplog_sync/      ядро синхронизации — чистый Dart-пакет: Hlc, Op, MergeEngine, SyncFs
 test/                     зеркалит lib/; test/core — ядро; test/fixtures — таблицы примеров Todoist
-CLAUDE.md                 роль, стек, команды, процесс — читается каждую сессию
-.claude/rules/            правила: архитектура, синк, стиль Dart, тесты, Windows, Android, паритет,
-                          обучение (teaching.md — объяснять термины и решения)
-.claude/agents/           architect, sync-engineer, flutter-ui, platform-integrator, qa-tester,
-                          parity-reviewer, code-reviewer
-.claude/skills/           /bootstrap, /feature, /sync-check, /release, todoist-syntax (справочник)
-.claude/hooks/            guard-generated.ps1 (блок правок *.g.dart), format-dart.ps1 (dart format)
-.claude/settings.json     разрешения и хуки
 docs/TODOIST_PARITY.md    ТЗ — чек-лист функций Todoist со статусами
-docs/SYNC_DESIGN.md       дизайн синхронизации (op-log CRDT, папка, LAN)
+docs/TODOIST_SYNTAX.md    справочник синтаксиса Todoist для парсеров (quick add, повторения, фильтры)
+docs/SYNC_DESIGN.md       дизайн синхронизации (op-log CRDT, папка, LAN) и инварианты реализации
 docs/ROADMAP.md           этапы M0–M12
 docs/GLOSSARY.md          глоссарий терминов проекта (пополняется по ходу работы)
+CONTRIBUTING.md           правила разработки и чек-лист «Готово»
 ```
 
-Порядок: `/feature <пункт из TODOIST_PARITY>` по этапам ROADMAP → `/sync-check` → `/release`.
+Порядок работы: фича по пункту docs/TODOIST_PARITY.md в рамках этапа из ROADMAP → проверки
+синхронизации (тесты пакета и двухузловые сценарии) → релиз (MSIX + APK).

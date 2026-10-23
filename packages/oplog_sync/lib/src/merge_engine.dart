@@ -1,3 +1,4 @@
+import 'conflict.dart';
 import 'hlc.dart';
 import 'op.dart';
 
@@ -21,7 +22,20 @@ abstract interface class OpStore {
   /// Все ops журнала (порядок любой — движок сортирует сам).
   Future<List<Op>> allOps();
 
-  /// Очистить проекции (журнал остаётся) — для [MergeEngine.rebuild].
+  /// Все ops журнала по одной сущности — для детекции конфликтов.
+  Future<List<Op>> opsForEntity(String entityType, String entityId);
+
+  /// Сохранить производную запись конфликта, если её ещё нет.
+  ///
+  /// [Conflict.resolved] здесь игнорируется: он приходит только op-ом на
+  /// сущность [conflictEntityType]. Возвращает `true`, если запись новая.
+  Future<bool> putConflict(Conflict conflict);
+
+  /// Все известные конфликты; `resolved` — из проекции op-ов.
+  Future<List<Conflict>> conflicts();
+
+  /// Очистить проекции и записи конфликтов (журнал остаётся) — для
+  /// [MergeEngine.rebuild].
   Future<void> clearProjections();
 
   /// Выполнить [action] атомарно: либо всё, либо ничего.
@@ -52,6 +66,9 @@ final class ApplyReport {
   int stale = 0;
   int rejected = 0;
 
+  /// Конфликты, впервые найденные при применении пакета (для уведомления).
+  final List<Conflict> conflicts = <Conflict>[];
+
   int get total => applied + duplicate + stale + rejected;
 
   void add(ApplyResult result) {
@@ -70,7 +87,7 @@ final class ApplyReport {
   @override
   String toString() =>
       'ApplyReport(applied: $applied, duplicate: $duplicate, '
-      'stale: $stale, rejected: $rejected)';
+      'stale: $stale, rejected: $rejected, conflicts: ${conflicts.length})';
 }
 
 /// Движок слияния: единственная точка, через которую меняются данные.
@@ -78,13 +95,15 @@ final class ApplyReport {
 /// Локальные правки идут через [mutate] — он создаёт ops и сразу применяет их.
 /// Чужие ops приходят через [apply] / [applyAll]. Правило одно: op применяется,
 /// если её HLC больше HLC текущего значения поля (LWW по полю). Порядок доставки
-/// не важен, повторная доставка безвредна.
+/// не важен, повторная доставка безвредна. Параллельные правки одного поля
+/// дополнительно записываются как [Conflict] — для выбора пользователем.
 final class MergeEngine {
   MergeEngine({
     required this.nodeId,
     required this.store,
     required this.nowMs,
     required this.newOpId,
+    this.silentFields = const {},
     Hlc? initialClock,
   }) : _clock = initialClock ?? Hlc.zero(nodeId) {
     if (nodeId.isEmpty || nodeId.contains(':')) {
@@ -102,6 +121,11 @@ final class MergeEngine {
 
   /// Генератор op_id (в приложении — UUIDv7).
   final String Function() newOpId;
+
+  /// Поля, параллельная правка которых не считается конфликтом (например,
+  /// ключ порядка: о переставленной задаче пользователя не спрашиваем).
+  final Set<String> silentFields;
+
   Hlc _clock;
 
   /// Текущее состояние часов узла. Приложение сохраняет его между запусками.
@@ -109,53 +133,117 @@ final class MergeEngine {
 
   /// Локальная правка: для каждого поля из [fields] создаётся op с общим HLC,
   /// пишется в журнал и в проекцию. Возвращает созданные ops (для транспорта).
+  ///
+  /// `base` всех ops — максимальный HLC известных ops этой сущности с других
+  /// узлов: так получатель поймёт, какие чужие правки автор уже видел.
+  ///
+  /// Конфликты, найденные при локальной правке (например, правка задачи,
+  /// которую другой узел уже удалил), сохраняются в [OpStore.conflicts]
+  /// так же, как при приёме, но в возвращаемый список не попадают.
   Future<List<Op>> mutate(
     String entityType,
     String entityId,
     Map<String, Object?> fields,
   ) async {
     if (fields.isEmpty) return const [];
-    _clock = _clock.tick(nowMs());
-    final ops = [
-      for (final entry in fields.entries)
-        Op(
-          opId: newOpId(),
-          nodeId: nodeId,
-          hlc: _clock,
-          entityType: entityType,
-          entityId: entityId,
-          field: entry.key,
-          value: entry.value,
-        ),
-    ];
-    await store.transaction(() async {
+    return store.transaction(() async {
+      _clock = _clock.tick(nowMs());
+      final base = _maxForeignHlc(
+        await store.opsForEntity(entityType, entityId),
+      );
+      final ops = <Op>[];
+      for (final entry in fields.entries) {
+        ops.add(
+          Op(
+            opId: newOpId(),
+            nodeId: nodeId,
+            hlc: _clock,
+            entityType: entityType,
+            entityId: entityId,
+            field: entry.key,
+            value: entry.value,
+            base: base,
+          ),
+        );
+      }
       for (final op in ops) {
         await store.appendOp(op);
         await store.writeField(op);
       }
+      // Проверка та же, что у получателя, — иначе узлы могли бы разойтись.
+      for (final op in ops) {
+        await _detectConflicts(op, null);
+      }
+      return ops;
     });
-    return ops;
   }
 
   /// Пометить сущность удалённой (tombstone).
   Future<List<Op>> delete(String entityType, String entityId) =>
       mutate(entityType, entityId, {Op.deletedField: true});
 
-  /// Применить одну чужую op.
-  Future<ApplyResult> apply(Op op) => store.transaction(() => _applyInTx(op));
+  /// Применить одну чужую op. Найденные конфликты — в [OpStore.conflicts];
+  /// транспортам, которым нужен список новых конфликтов, — [applyAll].
+  Future<ApplyResult> apply(Op op) =>
+      store.transaction(() => _applyInTx(op, ApplyReport()));
 
   /// Применить пакет ops одной транзакцией.
+  ///
+  /// [ApplyReport.conflicts] — новые конфликты, ещё не разрешённые к концу
+  /// пакета: если тот же пакет принёс и выбор пользователя с другого
+  /// устройства, уведомлять не о чем.
   Future<ApplyReport> applyAll(Iterable<Op> ops) {
     return store.transaction(() async {
       final report = ApplyReport();
       for (final op in ops) {
-        report.add(await _applyInTx(op));
+        report.add(await _applyInTx(op, report));
+      }
+      if (report.conflicts.isNotEmpty) {
+        final resolved = {
+          for (final c in await store.conflicts())
+            if (c.resolved) c.id,
+        };
+        report.conflicts.removeWhere((c) => resolved.contains(c.id));
       }
       return report;
     });
   }
 
-  Future<ApplyResult> _applyInTx(Op op) async {
+  /// Выбор пользователя по конфликту [conflictId].
+  ///
+  /// [fields] записываются обычной правкой сущности (автор видел обе стороны
+  /// спора, поэтому это последовательная правка, а не новый конфликт; пустая
+  /// карта — «оставить как есть»). Все открытые конфликты того же поля
+  /// сущности (для удаления — все конфликты удаления) помечаются `resolved`,
+  /// и эта отметка доходит до других узлов. Уже разрешённый конфликт — без
+  /// изменений, ops не создаются.
+  Future<List<Op>> resolveConflict(
+    String conflictId,
+    Map<String, Object?> fields,
+  ) {
+    return store.transaction(() async {
+      final all = await store.conflicts();
+      final target = all.where((c) => c.id == conflictId).firstOrNull;
+      if (target == null) {
+        throw ArgumentError.value(conflictId, 'conflictId', 'нет такого');
+      }
+      if (target.resolved) return const <Op>[];
+      final ops = [...await mutate(target.entityType, target.entityId, fields)];
+      for (final c in all) {
+        if (c.resolved || c.entityId != target.entityId) continue;
+        final sameField =
+            c.kind == target.kind &&
+            (c.field == target.field || c.kind == ConflictKind.delete);
+        if (!sameField) continue;
+        ops.addAll(
+          await mutate(conflictEntityType, c.id, {conflictResolvedField: true}),
+        );
+      }
+      return ops;
+    });
+  }
+
+  Future<ApplyResult> _applyInTx(Op op, ApplyReport report) async {
     if (await store.containsOp(op.opId)) return ApplyResult.duplicate;
     try {
       _clock = _clock.receive(op.hlc, nowMs());
@@ -163,13 +251,31 @@ final class MergeEngine {
       return ApplyResult.rejected;
     }
     await store.appendOp(op);
+    await _detectConflicts(op, report);
     final current = await store.fieldHlc(op.entityType, op.entityId, op.field);
     if (current != null && !(op.hlc > current)) return ApplyResult.stale;
     await store.writeField(op);
     return ApplyResult.applied;
   }
 
-  /// Пересобрать проекции с нуля из журнала.
+  Future<void> _detectConflicts(Op op, ApplyReport? report) async {
+    if (op.entityType == conflictEntityType) return;
+    final entityOps = await store.opsForEntity(op.entityType, op.entityId);
+    for (final c in findConflicts(op, entityOps, silentFields: silentFields)) {
+      if (await store.putConflict(c)) report?.conflicts.add(c);
+    }
+  }
+
+  Hlc? _maxForeignHlc(List<Op> ops) {
+    Hlc? max;
+    for (final op in ops) {
+      if (op.nodeId == nodeId) continue;
+      if (max == null || op.hlc > max) max = op.hlc;
+    }
+    return max;
+  }
+
+  /// Пересобрать проекции и конфликты с нуля из журнала.
   ///
   /// Проверка целостности и кнопка «пересобрать базу» в настройках: результат
   /// обязан совпадать с состоянием, накопленным инкрементально.
@@ -178,6 +284,7 @@ final class MergeEngine {
       final ops = await store.allOps()
         ..sort((a, b) => a.hlc.compareTo(b.hlc));
       await store.clearProjections();
+      final byEntity = <String, List<Op>>{};
       for (final op in ops) {
         final current = await store.fieldHlc(
           op.entityType,
@@ -186,6 +293,20 @@ final class MergeEngine {
         );
         if (current == null || op.hlc > current) {
           await store.writeField(op);
+        }
+        byEntity
+            .putIfAbsent('${op.entityType}\u0000${op.entityId}', () => [])
+            .add(op);
+      }
+      for (final group in byEntity.values) {
+        for (final op in group) {
+          for (final c in findConflicts(
+            op,
+            group,
+            silentFields: silentFields,
+          )) {
+            await store.putConflict(c);
+          }
         }
       }
     });
@@ -201,6 +322,8 @@ final class MemoryOpStore implements OpStore {
       <String, Map<String, Map<String, Object?>>>{};
 
   final Map<String, Hlc> _fieldHlc = <String, Hlc>{};
+
+  final Map<String, Conflict> _conflicts = <String, Conflict>{};
 
   static String _key(String type, String id, String field) =>
       '$type\u0000$id\u0000$field';
@@ -253,9 +376,31 @@ final class MemoryOpStore implements OpStore {
   Future<List<Op>> allOps() async => _ops.values.toList();
 
   @override
+  Future<List<Op>> opsForEntity(String entityType, String entityId) async =>
+      _ops.values
+          .where((op) => op.entityType == entityType && op.entityId == entityId)
+          .toList();
+
+  @override
+  Future<bool> putConflict(Conflict conflict) async {
+    if (_conflicts.containsKey(conflict.id)) return false;
+    _conflicts[conflict.id] = conflict.withResolved(false);
+    return true;
+  }
+
+  @override
+  Future<List<Conflict>> conflicts() async => [
+    for (final c in _conflicts.values)
+      c.withResolved(
+        entity(conflictEntityType, c.id)?[conflictResolvedField] == true,
+      ),
+  ];
+
+  @override
   Future<void> clearProjections() async {
     _entities.clear();
     _fieldHlc.clear();
+    _conflicts.clear();
   }
 
   @override
