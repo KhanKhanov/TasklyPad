@@ -8,6 +8,7 @@ abstract interface class SyncFs {
   Future<bool> exists(String path);
 
   /// Имена (не пути) файлов и папок непосредственно внутри [dir].
+  /// Нет такой папки или [dir] — файл: пустой список, не ошибка.
   Future<List<String>> list(String dir);
 
   Future<String> readString(String path);

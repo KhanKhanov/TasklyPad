@@ -22,6 +22,12 @@ void main() {
       expect(() => Hlc.parse('x:0001:n'), throwsFormatException);
     });
 
+    test('parse — значения вне диапазона → FormatException, а не assert', () {
+      expect(() => Hlc.parse('-5:0001:n'), throwsFormatException);
+      expect(() => Hlc.parse('1:-1:n'), throwsFormatException);
+      expect(() => Hlc.parse('1:10000:n'), throwsFormatException);
+    });
+
     test('сравнение строк совпадает с compareTo', () {
       final samples = [
         const Hlc(wallMs: t0, counter: 0, nodeId: 'b'),

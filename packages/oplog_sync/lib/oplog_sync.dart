@@ -9,3 +9,4 @@ export 'src/fs.dart';
 export 'src/hlc.dart';
 export 'src/merge_engine.dart';
 export 'src/op.dart';
+export 'src/sync_state.dart';

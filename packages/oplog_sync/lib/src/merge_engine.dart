@@ -25,6 +25,10 @@ abstract interface class OpStore {
   /// Все ops журнала по одной сущности — для детекции конфликтов.
   Future<List<Op>> opsForEntity(String entityType, String entityId);
 
+  /// Ops узла [nodeId] с HLC строго больше [after] (`null` — все),
+  /// отсортированные по HLC. Транспорт выгружает так свои новые ops.
+  Future<List<Op>> opsOfNodeAfter(String nodeId, Hlc? after);
+
   /// Сохранить производную запись конфликта, если её ещё нет.
   ///
   /// [Conflict.resolved] здесь игнорируется: он приходит только op-ом на
@@ -380,6 +384,15 @@ final class MemoryOpStore implements OpStore {
       _ops.values
           .where((op) => op.entityType == entityType && op.entityId == entityId)
           .toList();
+
+  @override
+  Future<List<Op>> opsOfNodeAfter(String nodeId, Hlc? after) async =>
+      _ops.values
+          .where(
+            (op) => op.nodeId == nodeId && (after == null || op.hlc > after),
+          )
+          .toList()
+        ..sort((a, b) => a.hlc.compareTo(b.hlc));
 
   @override
   Future<bool> putConflict(Conflict conflict) async {

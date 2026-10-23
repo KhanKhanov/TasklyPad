@@ -27,7 +27,14 @@ final class Hlc implements Comparable<Hlc> {
     }
     final wall = int.tryParse(parts[0]);
     final counter = int.tryParse(parts[1], radix: 16);
-    if (wall == null || counter == null || parts[2].isEmpty) {
+    // Строка может прийти из чужого файла — диапазоны проверяем здесь, а не
+    // assert-ом конструктора, который в release-сборке отключён.
+    if (wall == null ||
+        wall < 0 ||
+        counter == null ||
+        counter < 0 ||
+        counter > maxCounter ||
+        parts[2].isEmpty) {
       throw FormatException('Неверный формат HLC', text);
     }
     return Hlc(wallMs: wall, counter: counter, nodeId: parts[2]);
