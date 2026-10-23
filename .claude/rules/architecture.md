@@ -20,7 +20,8 @@ test/          зеркалит lib/; test/sync — двухузловые сц�
 ```
 
 ## Правила
-- `packages/oplog_sync` не зависит от Flutter и drift: только `dart:core`, `dart:async`, `dart:convert`.
+- `packages/oplog_sync` не зависит от Flutter и drift: только `dart:core`, `dart:async`, `dart:convert`,
+  `package:meta` и `package:crypto` (SHA-256 для детерминированных id; решение 23.10.2026).
   Всё платформенное приходит через интерфейсы. Это позволяет гонять тысячи сценариев слияния
   обычным `dart test` и однажды опубликовать пакет отдельно.
 - UI не трогает drift напрямую: только провайдеры → репозитории. Виджеты без бизнес-логики.

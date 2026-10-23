@@ -17,6 +17,7 @@ final class Op {
     required this.entityId,
     required this.field,
     required this.value,
+    this.base,
   });
 
   /// Разбор из JSON-карты (обратно к [toJson]).
@@ -37,6 +38,11 @@ final class Op {
       entityId: str('entity_id'),
       field: str('field'),
       value: json['value'],
+      base: switch (json['base']) {
+        null => null,
+        final String text => Hlc.parse(text),
+        final other => throw FormatException('Op: "base" не строка', other),
+      },
     );
   }
 
@@ -64,6 +70,12 @@ final class Op {
   /// Значение — любой JSON-совместимый объект, включая `null`.
   final Object? value;
 
+  /// Что автор знал о сущности перед правкой: максимальный HLC ops этой
+  /// сущности от *других* узлов в его журнале (`null` — ничего). По нему
+  /// параллельная правка (конфликт) отличается от последовательной: автор
+  /// видел чужую op, если `base >= её hlc` (см. [findConflicts]).
+  final Hlc? base;
+
   bool get isTombstone => field == deletedField && value == true;
 
   Map<String, Object?> toJson() => <String, Object?>{
@@ -74,6 +86,7 @@ final class Op {
     'entity_id': entityId,
     'field': field,
     'value': value,
+    'base': base?.toString(),
   };
 
   @override
