@@ -1,0 +1,11 @@
+# Настройки кодогенерации. drift_dev: где лежит база и куда make-migrations
+# складывает снимки схемы (drift_schemas/) и тесты миграций.
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          databases:
+            app_database: lib/data/app_database.dart
+          schema_dir: drift_schemas/
+          test_dir: test/data/migrations/

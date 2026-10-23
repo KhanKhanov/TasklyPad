@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'conflict.dart';
 import 'hlc.dart';
 import 'op.dart';
@@ -318,16 +321,26 @@ final class MergeEngine {
 }
 
 /// Хранилище в памяти — для тестов и как эталон поведения для drift-адаптера.
+///
+/// Ведёт себя как база: значения проходят через JSON (не-JSON значение —
+/// ошибка), транзакции выполняются по одной, а исключение откатывает
+/// изменения своего уровня вложенности.
 final class MemoryOpStore implements OpStore {
-  final Map<String, Op> _ops = <String, Op>{};
+  Map<String, Op> _ops = <String, Op>{};
 
   /// entityType → entityId → field → value
-  final Map<String, Map<String, Map<String, Object?>>> _entities =
+  Map<String, Map<String, Map<String, Object?>>> _entities =
       <String, Map<String, Map<String, Object?>>>{};
 
-  final Map<String, Hlc> _fieldHlc = <String, Hlc>{};
+  Map<String, Hlc> _fieldHlc = <String, Hlc>{};
 
-  final Map<String, Conflict> _conflicts = <String, Conflict>{};
+  Map<String, Conflict> _conflicts = <String, Conflict>{};
+
+  /// Ключ зоны, внутри которой идёт транзакция этого хранилища.
+  final Object _txZoneKey = Object();
+
+  /// Хвост очереди внешних транзакций.
+  Future<void> _txTail = Future<void>.value();
 
   static String _key(String type, String id, String field) =>
       '$type\u0000$id\u0000$field';
@@ -358,7 +371,19 @@ final class MemoryOpStore implements OpStore {
   Future<bool> containsOp(String opId) async => _ops.containsKey(opId);
 
   @override
-  Future<void> appendOp(Op op) async => _ops[op.opId] = op;
+  Future<void> appendOp(Op op) async {
+    if (_ops.containsKey(op.opId)) return;
+    _ops[op.opId] = Op(
+      opId: op.opId,
+      nodeId: op.nodeId,
+      hlc: op.hlc,
+      entityType: op.entityType,
+      entityId: op.entityId,
+      field: op.field,
+      value: _viaJson(op.value),
+      base: op.base,
+    );
+  }
 
   @override
   Future<Hlc?> fieldHlc(
@@ -369,10 +394,11 @@ final class MemoryOpStore implements OpStore {
 
   @override
   Future<void> writeField(Op op) async {
+    final value = _viaJson(op.value);
     _entities
             .putIfAbsent(op.entityType, () => {})
             .putIfAbsent(op.entityId, () => {})[op.field] =
-        op.value;
+        value;
     _fieldHlc[_key(op.entityType, op.entityId, op.field)] = op.hlc;
   }
 
@@ -416,6 +442,47 @@ final class MemoryOpStore implements OpStore {
     _conflicts.clear();
   }
 
+  /// Вложенный вызов (из той же транзакции) выполняется сразу, внешний —
+  /// после завершения предыдущих внешних, как в базе с одним соединением.
   @override
-  Future<T> transaction<T>(Future<T> Function() action) => action();
+  Future<T> transaction<T>(Future<T> Function() action) {
+    if (identical(Zone.current[_txZoneKey], this)) return _withRollback(action);
+    final previous = _txTail;
+    final done = Completer<void>();
+    _txTail = done.future;
+    return previous
+        .then(
+          (_) => runZoned(
+            () => _withRollback(action),
+            zoneValues: {_txZoneKey: this},
+          ),
+        )
+        .whenComplete(done.complete);
+  }
+
+  Future<T> _withRollback<T>(Future<T> Function() action) async {
+    final ops = Map.of(_ops);
+    final entities = {
+      for (final type in _entities.entries)
+        type.key: {
+          for (final entity in type.value.entries)
+            entity.key: Map.of(entity.value),
+        },
+    };
+    final fieldHlc = Map.of(_fieldHlc);
+    final conflicts = Map.of(_conflicts);
+    try {
+      return await action();
+    } catch (_) {
+      _ops = ops;
+      _entities = entities;
+      _fieldHlc = fieldHlc;
+      _conflicts = conflicts;
+      rethrow;
+    }
+  }
+
+  /// Значение после записи в базу и чтения обратно: только JSON-типы.
+  /// Не-JSON значение (например, `DateTime`) — [JsonUnsupportedObjectError].
+  static Object? _viaJson(Object? value) => jsonDecode(jsonEncode(value));
 }

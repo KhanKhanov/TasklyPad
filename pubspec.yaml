@@ -25,6 +25,8 @@ dependencies:
   # sqlite3_flutter_libs больше не нужен (помечен EOL на pub.dev).
   drift: ^2.35.2
   drift_flutter: ^0.3.1
+  # Прямой доступ к соединению SQLite до миграций (версия схемы, VACUUM INTO).
+  sqlite3: ^3.7.1
 
   # Модели и сериализация
   freezed_annotation: ^3.1.0

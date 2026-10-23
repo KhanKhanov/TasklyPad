@@ -11,6 +11,11 @@
 - `SyncStateStore` + `MemorySyncStateStore` (курсоры и водяной знак выгрузки, привязаны к `folder_id`),
   `OpStore.opsOfNodeAfter`.
 - `Hlc.parse` проверяет диапазоны wall и counter (строки приходят из чужих файлов).
+- `package:oplog_sync/testing.dart` — контрактные сценарии `OpStore` и `SyncStateStore` для любых
+  реализаций (`opStoreScenarios`, `syncStateScenarios`, `OpStoreProbe`, `ScenarioNode`, `check`).
+- `MemoryOpStore` ведёт себя как база: `transaction` откатывает изменения своего уровня вложенности и
+  выполняет внешние транзакции по одной; значения проходят через JSON (не-JSON — ошибка);
+  повторный `appendOp` с тем же `op_id` не заменяет запись.
 
 ## 0.1.0
 
