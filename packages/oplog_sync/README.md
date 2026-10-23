@@ -15,7 +15,8 @@ lib/src/op.dart               Op — одна неизменяемая опер�
 lib/src/merge_engine.dart     OpStore (интерфейс) + MemoryOpStore + MergeEngine (apply / mutate / resolveConflict / rebuild)
 lib/src/conflict.dart         Conflict, findConflicts — детекция параллельных правок, conflictId (SHA-256 → UUIDv8)
 lib/src/fs.dart               SyncFs (интерфейс) + MemorySyncFs для тестов
-lib/src/folder_transport.dart FolderTransport — обмен через общую папку (M1)
+lib/src/sync_state.dart       SyncStateStore (интерфейс) + MemorySyncStateStore — курсоры чтения и водяной знак выгрузки
+lib/src/folder_transport.dart FolderTransport — обмен через общую папку: неизменяемые чанки, курсоры по узлам
 ```
 
 Проверка: `dart test` из этой папки.

@@ -2,14 +2,21 @@ import 'package:oplog_sync/oplog_sync.dart';
 
 /// Тестовый узел: движок + его хранилище + управляемые часы.
 final class Node {
-  Node(String id, {int startMs = 1761110400000, Set<String>? silentFields})
-    : store = MemoryOpStore(),
-      _now = startMs {
+  /// [opIdPrefix] — для второго «воплощения» того же узла (восстановление
+  /// из резервной копии), чтобы его op_id не совпали с прежними.
+  Node(
+    String id, {
+    int startMs = 1761110400000,
+    Set<String>? silentFields,
+    String? opIdPrefix,
+  }) : store = MemoryOpStore(),
+       _now = startMs {
+    final prefix = opIdPrefix ?? id;
     engine = MergeEngine(
       nodeId: id,
       store: store,
       nowMs: () => _now,
-      newOpId: () => '$id-${++_seq}',
+      newOpId: () => '$prefix-${++_seq}',
       silentFields: silentFields ?? const {},
     );
   }
