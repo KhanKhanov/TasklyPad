@@ -98,7 +98,7 @@ void main() {
         'дают одну базу', () async {
       final random = Random(seed);
       final nodes = [await _node('a'), await _node('b'), await _node('c')];
-      final ids = ['t0', 't1', 't2', 't3', 'p0', 'p1', 's0'];
+      final ids = ['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0'];
 
       T pick<T>(List<T> list) => list[random.nextInt(list.length)];
 
@@ -128,7 +128,16 @@ void main() {
                 ]),
               },
               {Op.deletedField: random.nextBool()},
-              {'deadline': '2026-12-0${random.nextInt(9) + 1}'},
+              {
+                TaskFields.deadline: {
+                  'date': '2026-12-0${random.nextInt(9) + 1}',
+                },
+              },
+              {TaskFields.isCollapsed: random.nextBool()},
+              // Поле, которого эта версия не знает (от более новой).
+              {
+                'responsible_uid': pick(['u1', 'u2']),
+              },
             ]),
         },
         'p' => {
@@ -138,8 +147,15 @@ void main() {
             'z',
           ]),
         },
+        'l' => {
+          pick([LabelFields.name, LabelFields.color]): pick(['дом', 'red']),
+        },
+        'x' => pick<Map<String, Object?>>([
+          {TaskLabelFields.taskId: 't0', TaskLabelFields.labelId: 'l0'},
+          {Op.deletedField: random.nextBool()},
+        ]),
         _ => {
-          'name': pick(['Покупки', 'Работа']),
+          SectionFields.name: pick(['Покупки', 'Работа']),
         },
       };
 
@@ -152,7 +168,9 @@ void main() {
           final type = switch (id[0]) {
             't' => EntityTypes.task,
             'p' => EntityTypes.project,
-            _ => 'section',
+            'l' => EntityTypes.label,
+            'x' => EntityTypes.taskLabel,
+            _ => EntityTypes.section,
           };
           await node.engine.mutate(type, id, randomFields(id));
         } else {
