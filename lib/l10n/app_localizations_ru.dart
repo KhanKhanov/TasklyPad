@@ -17,4 +17,17 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get inboxEmpty => 'Пока нет задач';
+
+  @override
+  String get startupErrorTitle => 'Не удалось открыть данные';
+
+  @override
+  String startupSchemaTooNew(int found, int supported) {
+    return 'Данные сохранены более новой версией приложения (схема $found, эта версия знает до $supported). Обновите приложение — данные не тронуты.';
+  }
+
+  @override
+  String startupErrorDetails(String error) {
+    return 'Данные не изменены. Подробности: $error';
+  }
 }

@@ -115,6 +115,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пока нет задач'**
   String get inboxEmpty;
+
+  /// Заголовок экрана, если база не открылась при запуске
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть данные'**
+  String get startupErrorTitle;
+
+  /// База создана более новой версией приложения
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные сохранены более новой версией приложения (схема {found}, эта версия знает до {supported}). Обновите приложение — данные не тронуты.'**
+  String startupSchemaTooNew(int found, int supported);
+
+  /// Прочая ошибка открытия базы при запуске
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные не изменены. Подробности: {error}'**
+  String startupErrorDetails(String error);
 }
 
 class _AppLocalizationsDelegate

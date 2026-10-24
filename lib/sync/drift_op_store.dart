@@ -64,6 +64,29 @@ final class DriftOpStore implements OpStore {
     return row == null ? null : Hlc.parse(row.hlc);
   }
 
+  /// Текущее значение поля (победитель LWW) или `null`, если поля нет.
+  /// Включает ключи, которых приложение не знает, — для слияния объектов.
+  Future<Object?> fieldValue(
+    String entityType,
+    String entityId,
+    String field,
+  ) async {
+    final row = await _fieldVersion(entityType, entityId, field);
+    return row == null ? null : jsonDecode(row.valueJson);
+  }
+
+  /// Наибольшая метка времени в журнале по всем узлам или `null`.
+  ///
+  /// Сравнение строк в SQL здесь корректно и для разных узлов: время и
+  /// счётчик в начале строки фиксированной ширины, а часть узла вызывающему
+  /// не нужна — он берёт только время и счётчик.
+  Future<Hlc?> maxHlc() async {
+    final max = _db.ops.hlc.max();
+    final row = await (_db.selectOnly(_db.ops)..addColumns([max])).getSingle();
+    final text = row.read(max);
+    return text == null ? null : Hlc.parse(text);
+  }
+
   /// Записать версию поля и, если тип и поле известны реестру, колонку
   /// проекции. HLC не сравнивает — это делает движок.
   ///

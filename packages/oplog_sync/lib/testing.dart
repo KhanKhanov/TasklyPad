@@ -1,7 +1,8 @@
-/// Контрактные сценарии для реализаций [OpStore] и [SyncStateStore].
+/// Контрактные сценарии для реализаций [OpStore], [SyncStateStore] и [SyncFs]
+/// и сценарии синхронизации двух и трёх узлов через общую папку.
 ///
-/// Один набор проверок для всех хранилищ: пакет прогоняет его на
-/// [MemoryOpStore], приложение — на своей реализации поверх базы. Не зависит
+/// Один набор проверок для всех реализаций: пакет прогоняет его в памяти,
+/// приложение — на базе drift и папке на диске. Не зависит
 /// от `package:test`: сценарий — обычная функция, которая при расхождении
 /// бросает [ContractFailure]; тесты оборачивают каждый сценарий в `test()`.
 library;
@@ -767,6 +768,82 @@ final List<ContractScenario<ProbeFactory>> _engineScenarios = [
     check(await b.taskField('t1', 'title'), 'от a после', 'title на b');
   }),
 
+  _scenario('движок: часы не восстановлены после перезапуска — правка всё '
+      'равно позже известных ops сущности, узлы сходятся', (run) async {
+    final (a, b) = await run.ab();
+    a.advance(30 * 60 * 1000); // часы a впереди, но в пределах допуска
+    await a.engine.mutate('task', 't1', {'title': 'от a'});
+    await a.pushTo(b);
+    // «Перезапуск» b: тот же журнал, часы движка с нуля.
+    final restarted = ScenarioNode(b.probe, 'b', opIdPrefix: 'b2');
+    final ops = await restarted.engine.mutate('task', 't1', {'title': 'от b'});
+    checkThat(
+      ops.single.hlc > (await a.opsOf('a')).single.hlc,
+      'правка b позже правки a',
+    );
+    await restarted.pushTo(a);
+    check(await a.taskField('t1', 'title'), 'от b', 'title на a');
+    check(await restarted.taskField('t1', 'title'), 'от b', 'title на b');
+  }),
+
+  _scenario('переиздание: копия базы с новым id — порядок LWW как у '
+      'оригинала, более новая чужая правка побеждает', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedTask(a, b);
+    await a.engine.mutate('task', 't1', {'title': 'X1 офлайн'});
+    await b.engine.mutate('task', 't1', {'title': 'X2 позже'});
+    // База a скопирована на другое устройство (новый id c), a больше нет.
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    final adopted = await c.engine.adopt('a', null);
+    check((adopted.map((o) => o.field).toList()..sort()), [
+      'priority',
+      'title',
+    ], 'переизданы поля-победители a');
+    check(adopted.map((o) => o.hlc.wallMs).toSet().toList()..sort(), [
+      scenarioStartMs,
+      scenarioStartMs + 1000,
+    ], 'время исходных ops сохранено');
+    await c.pushTo(b);
+    await b.pushTo(c);
+    check(await b.taskField('t1', 'title'), 'X2 позже', 'title на b');
+    check(await c.taskField('t1', 'title'), 'X2 позже', 'title на c');
+    final onB = await b.conflicts();
+    check(onB.length, 1, 'конфликт X1/X2 на b');
+    check(onB.single.field, 'title', 'поле конфликта');
+  }),
+
+  _scenario('переиздание: после водяного знака — только невыгруженные '
+      'победители', (run) async {
+    final a = await run.node('a');
+    final created = await a.engine.mutate('task', 't1', {
+      'title': 'v0',
+      'priority': 4,
+    });
+    a.advance(10);
+    await a.engine.mutate('task', 't1', {'title': 'v1'});
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    final adopted = await c.engine.adopt('a', created.first.hlc);
+    check(adopted.map((o) => (o.field, o.value)).toList(), [
+      ('title', 'v1'),
+    ], 'переиздано');
+    checkThat(!(c.engine.clock < adopted.single.hlc), 'часы не позади копий');
+  }),
+
+  _scenario('переиздание: правка и удаление прежнего узла — без ложных '
+      'конфликтов, инкрементально == rebuild', (run) async {
+    final a = await run.node('a');
+    await a.engine.mutate('task', 't1', {'title': 'x'});
+    a.advance(10);
+    await a.engine.delete('task', 't1');
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    await c.engine.adopt('a', null);
+    check(await c.conflicts(), <Conflict>[], 'конфликты');
+    final entity = await c.task('t1');
+    await c.engine.rebuild();
+    check(await c.conflicts(), <Conflict>[], 'конфликты после rebuild');
+    check(await c.task('t1'), entity, 'задача после rebuild');
+  }),
+
   _scenario('движок: op из далёкого будущего — rejected, в журнал не '
       'попадает', (run) async {
     final (a, b) = await run.ab();
@@ -1241,5 +1318,509 @@ final List<ContractScenario<SyncStateFactory>> syncStateScenarios = [
     check(await state.folderId(), 'f2', 'folderId');
     check(await state.chunkCursor('a'), 0, 'курсор a');
     check(await state.uploadedUpTo(), null, 'uploadedUpTo');
+  }),
+];
+
+// ---------------------------------------------------------------------------
+// Сценарии SyncFs
+// ---------------------------------------------------------------------------
+
+/// Новая пустая папка для сценария.
+typedef SyncFsFactory = Future<SyncFs> Function();
+
+/// Фабрика папок в памяти.
+Future<SyncFs> memorySyncFsFactory() async => MemorySyncFs();
+
+/// Все сценарии контракта [SyncFs].
+final List<ContractScenario<SyncFsFactory>> syncFsScenarios = [
+  ContractScenario('фс: корень существует, неизвестный путь — нет', (
+    create,
+  ) async {
+    final fs = await create();
+    checkThat(await fs.exists(''), 'корень');
+    checkThat(!await fs.exists('нет/такого'), 'неизвестный путь');
+  }),
+
+  ContractScenario('фс: writeString создаёт родительские папки, readString '
+      'читает', (create) async {
+    final fs = await create();
+    await fs.writeString('nodes/a/000001.ndjson', '{"x":1}\n');
+    checkThat(await fs.exists('nodes'), 'папка nodes');
+    checkThat(await fs.exists('nodes/a'), 'папка nodes/a');
+    checkThat(await fs.exists('nodes/a/000001.ndjson'), 'файл');
+    check(await fs.readString('nodes/a/000001.ndjson'), '{"x":1}\n', 'текст');
+  }),
+
+  ContractScenario('фс: текст в UTF-8 — без искажений', (create) async {
+    final fs = await create();
+    const text = '«ёлка» 🙂 漢字 "кавычки" \\ \t\n';
+    await fs.writeString('u.txt', text);
+    check(await fs.readString('u.txt'), text, 'текст');
+  }),
+
+  ContractScenario('фс: writeString заменяет файл целиком', (create) async {
+    final fs = await create();
+    await fs.writeString('info.json', 'длинное старое содержимое');
+    await fs.writeString('info.json', 'новое');
+    check(await fs.readString('info.json'), 'новое', 'текст');
+  }),
+
+  ContractScenario('фс: после записи в папке только целевые файлы', (
+    create,
+  ) async {
+    final fs = await create();
+    await fs.writeString('d/a.json', '1');
+    await fs.writeString('d/a.json', '2');
+    await fs.writeStringIfAbsent('d/b.json', '3');
+    await fs.writeStringIfAbsent('d/b.json', '4');
+    check(await fs.list('d'), ['a.json', 'b.json'], 'файлы папки');
+  }),
+
+  ContractScenario('фс: writeStringIfAbsent — новый файл true, существующий '
+      'false и не тронут', (create) async {
+    final fs = await create();
+    checkThat(
+      await fs.writeStringIfAbsent('nodes/a/000001.ndjson', 'первый'),
+      'новый файл',
+    );
+    checkThat(
+      !await fs.writeStringIfAbsent('nodes/a/000001.ndjson', 'второй'),
+      'существующий файл',
+    );
+    check(await fs.readString('nodes/a/000001.ndjson'), 'первый', 'текст');
+  }),
+
+  ContractScenario('фс: list — только прямые дети, по алфавиту', (
+    create,
+  ) async {
+    final fs = await create();
+    await fs.writeString('nodes/b/1.ndjson', '');
+    await fs.writeString('nodes/a/1.ndjson', '');
+    await fs.writeString('nodes/a/2.ndjson', '');
+    await fs.writeString('format.json', '{}');
+    check(await fs.list(''), ['format.json', 'nodes'], 'корень');
+    check(await fs.list('nodes'), ['a', 'b'], 'nodes');
+    check(await fs.list('nodes/a'), ['1.ndjson', '2.ndjson'], 'nodes/a');
+  }),
+
+  ContractScenario('фс: list несуществующей папки или файла — пусто', (
+    create,
+  ) async {
+    final fs = await create();
+    await fs.writeString('f.json', '{}');
+    check(await fs.list('нет'), <String>[], 'несуществующая папка');
+    check(await fs.list('f.json'), <String>[], 'файл вместо папки');
+  }),
+
+  ContractScenario('фс: appendString создаёт файл и дописывает в конец', (
+    create,
+  ) async {
+    final fs = await create();
+    await fs.appendString('log/x.ndjson', 'a\n');
+    await fs.appendString('log/x.ndjson', 'b\n');
+    check(await fs.readString('log/x.ndjson'), 'a\nb\n', 'текст');
+  }),
+
+  ContractScenario('фс: createDir — вложенные папки, повтор не ошибка', (
+    create,
+  ) async {
+    final fs = await create();
+    await fs.createDir('a/b/c');
+    await fs.createDir('a/b/c');
+    checkThat(await fs.exists('a/b/c'), 'a/b/c');
+    check(await fs.list('a/b'), ['c'], 'a/b');
+  }),
+
+  ContractScenario('фс: readString несуществующего файла — исключение', (
+    create,
+  ) async {
+    final fs = await create();
+    await checkThrows<Object>(() => fs.readString('нет.json'), 'readString');
+  }),
+];
+
+// ---------------------------------------------------------------------------
+// Сценарии синхронизации через папку
+// ---------------------------------------------------------------------------
+
+/// Путь к папке синхронизации внутри общей папки сценария.
+const String scenarioRoot = 'planner-sync';
+
+/// Хранилища одного узла: журнал с проекциями и состояние транспорта
+/// (в приложении — одна база).
+typedef NodeStorage = ({OpStoreProbe probe, SyncStateStore state});
+
+/// Окружение сценария: общая папка («облако, доставляющее мгновенно») и
+/// фабрика хранилищ для каждого нового узла.
+final class FolderSyncEnv {
+  const FolderSyncEnv({required this.fs, required this.storage});
+
+  final SyncFs fs;
+  final Future<NodeStorage> Function() storage;
+}
+
+/// Новое окружение для сценария.
+typedef FolderSyncEnvFactory = Future<FolderSyncEnv> Function();
+
+/// Окружение в памяти.
+Future<FolderSyncEnv> memoryFolderSyncEnv() async => FolderSyncEnv(
+  fs: MemorySyncFs(),
+  storage: () async => (probe: MemoryProbe(), state: MemorySyncStateStore()),
+);
+
+/// Узел сценария с транспортом через общую папку.
+final class ScenarioPeer {
+  ScenarioPeer(this.node, this.state, SyncFs fs, {String root = scenarioRoot})
+    : transport = FolderTransport(
+        fs: fs,
+        engine: node.engine,
+        state: state,
+        root: root,
+        deviceInfo: {'name': 'Устройство ${node.engine.nodeId}'},
+      );
+
+  final ScenarioNode node;
+  final SyncStateStore state;
+  final FolderTransport transport;
+
+  MergeEngine get engine => node.engine;
+
+  Future<FolderSyncReport> sync() => transport.sync();
+}
+
+/// Два круга синхронизации: после них каждый узел видел ops всех остальных.
+Future<void> syncRounds(List<ScenarioPeer> peers) async {
+  for (var round = 0; round < 2; round++) {
+    for (final p in peers) {
+      await p.sync();
+    }
+  }
+}
+
+/// Все узлы пришли к одинаковым сущностям и одинаковым конфликтам.
+Future<void> checkConverged(List<ScenarioPeer> peers) async {
+  final first = peers.first.node;
+  for (final p in peers.skip(1)) {
+    final at = 'узел ${p.engine.nodeId} == ${first.engine.nodeId}';
+    for (final type in const ['task', 'project', 'completion']) {
+      check(
+        await p.node.probe.alive(type),
+        await first.probe.alive(type),
+        '$type, $at',
+      );
+    }
+    check(
+      [for (final c in await p.node.conflicts()) '${c.id}:${c.resolved}'],
+      [for (final c in await first.conflicts()) '${c.id}:${c.resolved}'],
+      'конфликты, $at',
+    );
+  }
+}
+
+/// Создаёт узлы сценария и в конце проверяет согласованность их хранилищ.
+final class _FolderRun {
+  _FolderRun(this._env);
+
+  final FolderSyncEnv _env;
+  final List<ScenarioPeer> _peers = [];
+
+  Future<ScenarioPeer> peer(
+    String id, {
+    Set<String> silentFields = const {},
+  }) async {
+    final storage = await _env.storage();
+    final peer = ScenarioPeer(
+      ScenarioNode(storage.probe, id, silentFields: silentFields),
+      storage.state,
+      _env.fs,
+    );
+    _peers.add(peer);
+    return peer;
+  }
+
+  Future<(ScenarioPeer, ScenarioPeer)> ab({
+    Set<String> silentFields = const {},
+  }) async => (
+    await peer('a', silentFields: silentFields),
+    await peer('b', silentFields: silentFields),
+  );
+
+  Future<void> finish() async {
+    for (final p in _peers) {
+      await p.node.probe.checkConsistency();
+    }
+  }
+}
+
+ContractScenario<FolderSyncEnvFactory> _folderScenario(
+  String name,
+  Future<void> Function(_FolderRun run) body,
+) => ContractScenario(name, (create) async {
+  final run = _FolderRun(await create());
+  await body(run);
+  await run.finish();
+});
+
+/// Задача t1 есть на обоих узлах; часы сдвинуты так, что следующие правки
+/// «параллельны» и упорядочены: a раньше b.
+Future<void> _sharedFolderTask(ScenarioPeer a, ScenarioPeer b) async {
+  await a.engine.mutate('task', 't1', {'content': 'v0', 'priority': 4});
+  await syncRounds([a, b]);
+  a.node.advance(1000);
+  b.node.advance(2000);
+}
+
+/// Сценарии из «Инвариантов реализации» (docs/SYNC_DESIGN.md) через папку.
+/// Поля — настоящие поля задачи, чтобы база проверила и типизированные таблицы.
+final List<ContractScenario<FolderSyncEnvFactory>> folderSyncScenarios = [
+  _folderScenario('папка: создание на одном узле доходит до другого', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await a.engine.mutate('task', 't1', {'content': 'Отчёт', 'priority': 1});
+    await a.sync();
+    final report = await b.sync();
+    check(report.received.applied, 2, 'применено');
+    check(await b.node.task('t1'), {
+      'content': 'Отчёт',
+      'priority': 1,
+    }, 'задача на b');
+  }),
+
+  _folderScenario('папка: параллельная правка разных полей — сохраняются обе, '
+      'без конфликта', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await b.engine.mutate('task', 't1', {'priority': 1});
+    await syncRounds([a, b]);
+
+    check(await a.node.task('t1'), {
+      'content': 'от a',
+      'priority': 1,
+    }, 'задача на a');
+    check(await a.node.conflicts(), <Conflict>[], 'конфликты');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: параллельная правка одного поля — конфликт с одним '
+      'id на обоих', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await a.sync();
+    final atB = await b.sync();
+    final atA = await a.sync();
+
+    check(atB.received.conflicts.length, 1, 'новых конфликтов на b');
+    check(atA.received.conflicts.map((c) => c.id).toList(), [
+      atB.received.conflicts.single.id,
+    ], 'id конфликта на a');
+    check(await a.node.taskField('t1', 'content'), 'от b', 'LWW на a');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: последовательная правка — конфликта нет', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await syncRounds([a, b]);
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await syncRounds([a, b]);
+
+    check(await a.node.taskField('t1', 'content'), 'от b', 'content на a');
+    check(await a.node.conflicts(), <Conflict>[], 'конфликты');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: правка против удаления — конфликт delete на обоих', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.delete('task', 't1');
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await syncRounds([a, b]);
+
+    check(
+      (await a.node.conflicts()).single.kind,
+      ConflictKind.delete,
+      'вид конфликта',
+    );
+    check(await a.node.taskField('t1', Op.deletedField), true, 'tombstone');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: отмена удаления доходит до другого узла', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.delete('task', 't1');
+    await syncRounds([a, b]);
+    check(await b.node.probe.alive('task'), <String, Object?>{}, 'удалена');
+
+    a.node.advance(100);
+    await a.engine.mutate('task', 't1', {Op.deletedField: false});
+    await syncRounds([a, b]);
+    check((await b.node.probe.alive('task')).keys.toList(), [
+      't1',
+    ], 'вернулась на b');
+    check(await b.node.conflicts(), <Conflict>[], 'конфликты');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: разрешение на одном узле закрывает конфликт на '
+      'другом', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await syncRounds([a, b]);
+    final id = (await a.node.conflicts()).single.id;
+
+    await a.engine.resolveConflict(id, {'content': 'от a'});
+    await syncRounds([a, b]);
+
+    check((await b.node.conflicts()).single.resolved, true, 'resolved на b');
+    check(await b.node.taskField('t1', 'content'), 'от a', 'content на b');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: конфликт, разрешённый в более позднем чанке, не '
+      'попадает в отчёт', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await a.sync();
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await b.sync();
+    final id = (await b.node.conflicts()).single.id;
+    await b.engine.resolveConflict(id, const {});
+    await b.sync();
+
+    final report = await a.sync();
+    check(report.received.conflicts, <Conflict>[], 'конфликты в отчёте');
+    check((await a.node.conflicts()).single.resolved, true, 'resolved на a');
+  }),
+
+  _folderScenario('папка: переупорядочивание — порядок сходится, конфликта '
+      'нет', (run) async {
+    final (a, b) = await run.ab(silentFields: {'order_key'});
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'order_key': 'a0'});
+    await b.engine.mutate('task', 't1', {'order_key': 'Zz'});
+    await syncRounds([a, b]);
+
+    check(await a.node.taskField('t1', 'order_key'), 'Zz', 'order_key на a');
+    check(await a.node.conflicts(), <Conflict>[], 'конфликты');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: оба завершили повторяющуюся — две completion, один '
+      'срок, правило повторения цело', (run) async {
+    final (a, b) = await run.ab();
+    const due0 = {
+      'date': '2026-10-23',
+      'string': 'каждый день',
+      'is_recurring': true,
+    };
+    const due1 = {
+      'date': '2026-10-24',
+      'string': 'каждый день',
+      'is_recurring': true,
+    };
+    await a.engine.mutate('task', 't1', {'content': 'Зарядка', 'due': due0});
+    await syncRounds([a, b]);
+    a.node.advance(1000);
+    b.node.advance(2000);
+    for (final (p, id) in [(a, 'c-a'), (b, 'c-b')]) {
+      // Завершение повторяющейся = событие completion + новый срок.
+      await p.engine.mutate('completion', id, {
+        'task_id': 't1',
+        'due_was': '2026-10-23',
+      });
+      await p.engine.mutate('task', 't1', {'due': due1});
+    }
+    await syncRounds([a, b]);
+
+    check(((await a.node.probe.alive('completion')).keys.toList()..sort()), [
+      'c-a',
+      'c-b',
+    ], 'completion на a');
+    check(await a.node.taskField('t1', 'due'), due1, 'срок на a');
+    check(await a.node.conflicts(), <Conflict>[], 'конфликты: сроки равны');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: долгий офлайн — узел вчитывает все накопленные '
+      'чанки по порядку', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    for (var i = 1; i <= 5; i++) {
+      a.node.advance(60000);
+      await a.engine.mutate('task', 't1', {'content': 'a$i'});
+      await a.engine.mutate('task', 'n$i', {'content': 'новая $i'});
+      await a.sync();
+    }
+    b.node.advance(600000);
+    await b.engine.mutate('task', 't1', {'priority': 2});
+    final report = await b.sync();
+
+    check(report.issues, <ChunkIssue>[], 'проблемы чтения');
+    check(await b.state.chunkCursor('a'), 6, 'курсор a на b');
+    check(await b.node.task('t1'), {
+      'content': 'a5',
+      'priority': 2,
+    }, 'задача на b');
+    await syncRounds([a, b]);
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: повторная доставка (сброс курсора) ничего не '
+      'меняет', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedFolderTask(a, b);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await syncRounds([a, b]);
+    final conflicts = await b.node.conflicts();
+    final opCount = await b.node.opCount();
+
+    await b.state.setChunkCursor('a', 0);
+    final report = await b.sync();
+
+    check(report.received.applied, 0, 'применено');
+    checkThat(report.received.duplicate > 0, 'есть дубликаты');
+    check(report.received.conflicts, <Conflict>[], 'новые конфликты');
+    check(await b.node.opCount(), opCount, 'размер журнала');
+    check(await b.node.conflicts(), conflicts, 'конфликты');
+    await checkConverged([a, b]);
+  }),
+
+  _folderScenario('папка: три узла — конфликт a и b у c тот же, что у них', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    final c = await run.peer('c');
+    await a.engine.mutate('task', 't1', {'content': 'v0'});
+    await syncRounds([a, b, c]);
+    a.node.advance(1000);
+    b.node.advance(2000);
+    c.node.advance(3000);
+    await a.engine.mutate('task', 't1', {'content': 'от a'});
+    await b.engine.mutate('task', 't1', {'content': 'от b'});
+    await c.engine.mutate('task', 't1', {'priority': 3});
+    await syncRounds([a, b, c]);
+
+    check((await c.node.conflicts()).length, 1, 'конфликтов на c');
+    check(await c.node.task('t1'), {
+      'content': 'от b',
+      'priority': 3,
+    }, 'задача на c');
+    await checkConverged([a, b, c]);
   }),
 ];

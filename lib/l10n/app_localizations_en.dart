@@ -17,4 +17,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inboxEmpty => 'No tasks yet';
+
+  @override
+  String get startupErrorTitle => 'Couldn\'t open your data';
+
+  @override
+  String startupSchemaTooNew(int found, int supported) {
+    return 'Your data was saved by a newer version of the app (schema $found, this version supports up to $supported). Update the app — your data is untouched.';
+  }
+
+  @override
+  String startupErrorDetails(String error) {
+    return 'Your data was not changed. Details: $error';
+  }
 }
