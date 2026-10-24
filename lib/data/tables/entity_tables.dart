@@ -23,6 +23,9 @@ class Projects extends Table {
 
   /// `list`, `board` или `calendar`; незнакомое значение UI показывает списком.
   TextColumn get viewStyle => text().withDefault(const Constant('list'))();
+
+  /// Подпроекты свёрнуты в сайдбаре.
+  BoolColumn get isCollapsed => boolean().withDefault(const Constant(false))();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
@@ -33,6 +36,7 @@ class Projects extends Table {
 @DataClassName('TaskRow')
 @TableIndex(name: 'tasks_by_project', columns: {#projectId, #orderKey})
 @TableIndex(name: 'tasks_by_due', columns: {#dueDate})
+@TableIndex(name: 'tasks_by_parent', columns: {#parentId})
 class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get content => text().withDefault(const Constant(''))();
@@ -51,11 +55,69 @@ class Tasks extends Table {
   TextColumn get dueDate => text().nullable()();
   TextColumn get dueTime => text().nullable()();
   TextColumn get dueTz => text().nullable()();
+
+  /// Дедлайн — отдельная от срока дата `YYYY-MM-DD`, без времени.
+  TextColumn get deadlineDate => text().nullable()();
+
+  /// Длительность: число и единица `minute` или `day`, как в Todoist API.
+  IntColumn get durationAmount => integer().nullable()();
+  TextColumn get durationUnit => text().nullable()();
+
+  /// Подзадачи свёрнуты в списке.
+  BoolColumn get isCollapsed => boolean().withDefault(const Constant(false))();
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
 
   /// Моменты времени — UTC ISO-8601.
   TextColumn get completedAt => text().nullable()();
   TextColumn get addedAt => text().nullable()();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Разделы проекта.
+@DataClassName('SectionRow')
+@TableIndex(name: 'sections_by_project', columns: {#projectId, #orderKey})
+class Sections extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+  TextColumn get projectId => text().nullable()();
+  TextColumn get orderKey => text().withDefault(const Constant(''))();
+  BoolColumn get isCollapsed => boolean().withDefault(const Constant(false))();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Метки.
+@DataClassName('LabelRow')
+class Labels extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+
+  /// Имя цвета палитры Todoist.
+  TextColumn get color => text().withDefault(const Constant('charcoal'))();
+  TextColumn get orderKey => text().withDefault(const Constant(''))();
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Метки задач (многие ко многим). Id связи детерминированный: одна и та же
+/// метка, поставленная задаче на двух устройствах, даёт одну строку; снятая
+/// метка — строка с `deleted = true`.
+@DataClassName('TaskLabelRow')
+@TableIndex(name: 'task_labels_by_task', columns: {#taskId})
+@TableIndex(name: 'task_labels_by_label', columns: {#labelId})
+class TaskLabels extends Table {
+  TextColumn get id => text()();
+  TextColumn get taskId => text().nullable()();
+  TextColumn get labelId => text().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override

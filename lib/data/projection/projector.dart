@@ -160,3 +160,6 @@ int intOr(Object? value, int fallback) => switch (value) {
   final double d when d == d.truncateToDouble() => d.toInt(),
   _ => throw ProjectionTypeError('целое', value),
 };
+
+/// Целое или `null`.
+int? intOrNull(Object? value) => value == null ? null : intOr(value, 0);

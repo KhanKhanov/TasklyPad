@@ -1,5 +1,6 @@
 ## Не выпущено
 
+- `uuidV8(parts)` — детерминированный id (SHA-256 → UUID версии 8); на нём `conflictId`, значения прежние.
 - `Op.base` — макс. HLC ops сущности от других узлов, известных автору.
 - Детекция конфликтов: `findConflicts` (попарная чистая функция от набора ops), `Conflict` с
   детерминированным id (`conflictId`, SHA-256 → UUIDv8), виды `edit` и `delete`; `MergeEngine.silentFields`.
