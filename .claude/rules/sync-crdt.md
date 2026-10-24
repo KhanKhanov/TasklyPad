@@ -27,7 +27,7 @@ paths:
   id = sha256(entity_id, kind, field, min(hlc), max(hlc)) (UUIDv8) и полями {entity_type,
   entity_id, field, kind, older_op_id, newer_op_id}. Запись производная (как проекция,
   пересоздаётся rebuild); ops-ами синхронизируется только `resolved`. Одинаковые значения — не
-  конфликт. Пользователь получает уведомление и экран «Конфликты»; его выбор (`resolveConflict`) =
+  конфликт; поля из `silentFields` (порядок `order_key`) — не конфликт, LWW решает молча. Пользователь получает уведомление и экран «Конфликты»; его выбор (`resolveConflict`) =
   обычная op на поле + op `resolved=true`. До выбора действует результат LWW.
 - Связи many-to-many (task_labels) — строки с tombstone. Порядок — fractional index;
   конфликт одинаковых ключей разрешать генерацией нового ключа между соседями.
