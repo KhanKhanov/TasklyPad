@@ -60,6 +60,32 @@ void main() {
         isNot(conflictId('t1', ConflictKind.delete, 'title', x, y)),
       );
     });
+
+    test('эталонное значение — формула не изменилась', () {
+      // Id конфликтов уже лежат в журналах (ops `resolved`): другая формула
+      // переоткрыла бы разрешённые конфликты.
+      expect(
+        conflictId('t1', edit, 'title', x, y),
+        '800c0fb0-5a6b-8f19-aea7-16cd85bdb4dc',
+      );
+    });
+  });
+
+  group('uuidV8', () {
+    test('одни части — один id', () {
+      expect(
+        uuidV8(['task_label', 't1', 'l1']),
+        uuidV8(['task_label', 't1', 'l1']),
+      );
+    });
+
+    test('граница частей важна — ["ab", "c"] и ["a", "bc"] различаются', () {
+      expect(uuidV8(['ab', 'c']), isNot(uuidV8(['a', 'bc'])));
+    });
+
+    test('порядок частей важен', () {
+      expect(uuidV8(['t1', 'l1']), isNot(uuidV8(['l1', 't1'])));
+    });
   });
 
   test('jsonEquals — списки и карты сравниваются по содержимому', () {

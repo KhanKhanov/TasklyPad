@@ -1,8 +1,6 @@
-import 'dart:convert';
-
-import 'package:crypto/crypto.dart';
 import 'package:meta/meta.dart';
 
+import 'deterministic_id.dart';
 import 'hlc.dart';
 import 'op.dart';
 
@@ -114,18 +112,7 @@ String conflictId(
   Hlc b,
 ) {
   final (lo, hi) = a < b ? (a, b) : (b, a);
-  final digest = sha256.convert(
-    utf8.encode('$entityId\u0000${kind.name}\u0000$field\u0000$lo\u0000$hi'),
-  );
-  final bytes = digest.bytes.sublist(0, 16);
-  bytes[6] = 0x80 | (bytes[6] & 0x0F); // версия 8
-  bytes[8] = 0x80 | (bytes[8] & 0x3F); // вариант RFC 4122
-  final hex = StringBuffer();
-  for (var i = 0; i < 16; i++) {
-    if (i == 4 || i == 6 || i == 8 || i == 10) hex.write('-');
-    hex.write(bytes[i].toRadixString(16).padLeft(2, '0'));
-  }
-  return hex.toString();
+  return uuidV8([entityId, kind.name, field, '$lo', '$hi']);
 }
 
 /// Конфликты, в которых участвует [op], среди [entityOps] — всех известных
