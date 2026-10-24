@@ -49,13 +49,23 @@ final class Mutator {
     Map<String, Object?> fields,
   ) {
     _checkWritable(entityType);
-    return _write(
-      () async => _engine.mutate(
-        entityType,
-        entityId,
-        await _mergeObjects(entityType, entityId, fields),
-      ),
-    );
+    return _write(() async {
+      final merged = await _mergeObjects(entityType, entityId, fields);
+      // Только поля, которые действительно меняются: op на поле с прежним
+      // значением спорила бы с параллельной правкой этого поля на другом
+      // устройстве (ложный конфликт) и могла бы откатить её по LWW —
+      // например, перестановка задачи откатила бы перенос её подзадачи.
+      final changed = <String, Object?>{
+        for (final MapEntry(key: field, :value) in merged.entries)
+          if (!jsonEquals(
+            await _store.fieldValue(entityType, entityId, field),
+            value,
+          ))
+            field: value,
+      };
+      if (changed.isEmpty) return const <Op>[];
+      return _engine.mutate(entityType, entityId, changed);
+    });
   }
 
   /// Пометить сущность удалённой (tombstone); [restore] отменяет.
@@ -74,6 +84,27 @@ final class Mutator {
     String conflictId,
     Map<String, Object?> fields,
   ) => _write(() => _engine.resolveConflict(conflictId, fields));
+
+  /// Несколько правок одной транзакцией (задача и её метки, перенос
+  /// поддерева, завершение с подзадачами): ops одного действия пользователя
+  /// атомарны — синхронизация и сбой видят либо все, либо ни одной.
+  Future<T> batch<T>(Future<T> Function() action) => _store.transaction(action);
+
+  /// Запомнить текущие значения полей [targets] перед действием. [Undo]
+  /// записывает их обратно новыми ops: удалять ops из журнала нельзя — они
+  /// могли уже уйти в папку синхронизации. Поля, которых не было, вернутся
+  /// как `null`.
+  Future<Undo> capture(Iterable<UndoTarget> targets) async => Undo._(this, [
+    for (final t in targets)
+      (
+        entityType: t.entityType,
+        entityId: t.entityId,
+        fields: {
+          for (final field in t.fields)
+            field: await _store.fieldValue(t.entityType, t.entityId, field),
+        },
+      ),
+  ]);
 
   /// База оказалась копией и узел получил новый id: переиздать от него
   /// невыгруженные (HLC после [uploadedUpTo]) ops прежнего узла, которые ещё
@@ -126,4 +157,28 @@ final class Mutator {
       );
     }
   }
+}
+
+/// Поля одной сущности, которые меняет действие с «Отменить».
+typedef UndoTarget = ({String entityType, String entityId, Set<String> fields});
+
+/// Отмена действия: прежние значения полей, записанные обратно новыми ops.
+///
+/// Если за время тоста поле изменило другое устройство, отмена — обычная
+/// правка поверх него (последняя по времени).
+final class Undo {
+  Undo._(this._mutator, this._values);
+
+  final Mutator _mutator;
+  final List<
+    ({String entityType, String entityId, Map<String, Object?> fields})
+  >
+  _values;
+
+  /// Вернуть прежние значения одной транзакцией.
+  Future<void> call() => _mutator.batch(() async {
+    for (final v in _values) {
+      await _mutator.update(v.entityType, v.entityId, v.fields);
+    }
+  });
 }

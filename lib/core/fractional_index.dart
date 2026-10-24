@@ -92,3 +92,49 @@ List<String> sequence(int count, {String? after}) {
   }
   return keys;
 }
+
+/// Ключ для вставки в позицию [index] списка [keys], упорядоченного как на
+/// экране (0 — в начало, `keys.length` — в конец). Терпим к данным с других
+/// устройств: пустой ключ (поле порядка ещё не пришло) и неверный (на `0`)
+/// пропускаются. Если у соседей совпали ключи (два устройства вставили элемент
+/// в одно место офлайн), новый ключ встаёт после всех равных левому соседу.
+String keyForInsert(List<String> keys, int index) {
+  String? lo;
+  for (var i = index - 1; i >= 0 && lo == null; i--) {
+    lo = _validKey(keys[i]);
+  }
+  String? hi;
+  for (var i = index; i < keys.length && hi == null; i++) {
+    final key = _validKey(keys[i]);
+    if (key != null && (lo == null || key.compareTo(lo) > 0)) hi = key;
+  }
+  return between(lo, hi);
+}
+
+/// Новые ключи, чтобы [keys] — ключи элементов в желаемом порядке — строго
+/// возрастали: `null` — ключ элемента остаётся. Меняются только ключи, не
+/// большие предыдущего (совпавшие после параллельных вставок, неверные), —
+/// так соседи с одинаковыми ключами можно переставить, а лишних ops нет.
+List<String?> rekeyInOrder(List<String> keys) {
+  final result = List<String?>.filled(keys.length, null);
+  String? prev;
+  for (var i = 0; i < keys.length; i++) {
+    final key = _validKey(keys[i]);
+    if (key != null && (prev == null || key.compareTo(prev) > 0)) {
+      prev = key;
+      continue;
+    }
+    String? hi;
+    for (var j = i + 1; j < keys.length && hi == null; j++) {
+      final next = _validKey(keys[j]);
+      if (next != null && (prev == null || next.compareTo(prev) > 0)) hi = next;
+    }
+    prev = result[i] = between(prev, hi);
+  }
+  return result;
+}
+
+String? _validKey(String key) => key.isEmpty || key.endsWith('0') ? null : key;
+
+/// Ключ для добавления в конец списка [keys].
+String keyAtEnd(List<String> keys) => keyForInsert(keys, keys.length);
