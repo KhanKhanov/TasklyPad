@@ -1,0 +1,21 @@
+# Раз в неделю OSV-Scanner по main: новые известные уязвимости в уже принятых зависимостях
+# (pubspec.lock). Наружу уходят только названия и версии пакетов; результаты — Security → Code scanning.
+# Документация: https://google.github.io/osv-scanner/github-action/
+name: OSV-Scanner еженедельно
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # понедельник, 09:00 по Москве
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  osv:
+    # Действие закреплено по SHA коммита (docs/VERSIONS.md); обновляет Dependabot.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    permissions:
+      actions: read
+      contents: read
+      security-events: write

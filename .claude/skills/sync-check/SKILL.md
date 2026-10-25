@@ -14,8 +14,8 @@ allowed-tools: Bash(flutter test*), Bash(dart *), Bash(git diff *)
 3. `flutter test test/sync test/data test/core` — то же.
 4. `flutter test integration_test/sync_two_nodes_test.dart -d windows` — если файл существует и есть
    Windows-устройство; иначе отметь «пропущено» с причиной.
-5. Сверь diff выше с инвариантами .claude/rules/sync-crdt.md (сводка — docs/SYNC_DESIGN.md
-   «Инварианты реализации»): новое поле → есть в ops, миграции,
+5. Сверь diff выше с docs/SYNC_DESIGN.md «Инварианты реализации» и запретами
+   .claude/rules/sync-crdt.md: новое поле → есть в ops, миграции,
    тесте; формат не менялся без версии; нет прямых update/delete вне Mutator; логика слияния не ушла
    из пакета в адаптеры.
 

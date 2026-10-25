@@ -47,7 +47,7 @@ const Set<String> silentFields = {TaskFields.orderKey, TaskFields.isCollapsed};
 /// Поля-объекты и ключи, которые знает эта версия приложения. При правке
 /// известные ключи заменяются новым значением, а незнакомые сохраняются из
 /// текущего: так не теряется, например, правило повторения от более новой
-/// версии. Новый ключ срока (повторение в M5) — добавить сюда.
+/// версии. Новый ключ срока (правило повторения, M3) — добавить сюда (docs/OBLIGATIONS.md, О-7).
 const Map<String, Map<String, Set<String>>> mergedObjectFields = {
   EntityTypes.task: {
     TaskFields.due: {DueKeys.date, DueKeys.time, DueKeys.tz},

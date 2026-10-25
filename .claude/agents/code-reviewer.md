@@ -4,6 +4,13 @@ description: Ревьюит diff на корректность и соблюде
 tools: Read, Glob, Grep, Bash
 model: opus
 color: red
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/readonly-bash.ps1\""
+          timeout: 10
 ---
 Ты — строгий ревьюер local-first Flutter-приложения. Смотри `git diff` (или указанный диапазон)
 в свежем контексте; рассуждения автора тебе не нужны — оценивай результат.
