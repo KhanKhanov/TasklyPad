@@ -6,15 +6,18 @@ import 'projector.dart';
 
 /// Версия набора полей [defaultRegistry]. Увеличивать при каждом изменении
 /// полей или колонок проекторов: база переложит `field_versions` заново.
-const int projectorVersion = 1;
+const int projectorVersion = 2;
 
-/// Проекторы задач и проектов текущей версии приложения.
+/// Проекторы сущностей текущей версии приложения.
 ProjectorRegistry defaultRegistry(
   AppDatabase db, {
   void Function(String message)? warn,
 }) => ProjectorRegistry(projectorVersion, [
   taskProjector(db, warn: warn),
   projectProjector(db, warn: warn),
+  sectionProjector(db, warn: warn),
+  labelProjector(db, warn: warn),
+  taskLabelProjector(db, warn: warn),
 ]);
 
 /// Задачи: поле op → колонки `tasks`.
@@ -42,6 +45,10 @@ TableProjector<$TasksTable, TaskRow> taskProjector(
     TaskFields.priority: (id, v) =>
         TasksCompanion(id: Value(id), priority: Value(intOr(v, 4))),
     TaskFields.due: _due,
+    TaskFields.deadline: _deadline,
+    TaskFields.duration: _duration,
+    TaskFields.isCollapsed: (id, v) =>
+        TasksCompanion(id: Value(id), isCollapsed: Value(boolOr(v, false))),
     TaskFields.isCompleted: (id, v) =>
         TasksCompanion(id: Value(id), isCompleted: Value(boolOr(v, false))),
     TaskFields.completedAt: (id, v) =>
@@ -70,6 +77,31 @@ TasksCompanion _due(String id, Object? value) => switch (value) {
   _ => throw ProjectionTypeError('объект срока', value),
 };
 
+/// Дедлайн — объект {date}; `null` — дедлайна нет.
+TasksCompanion _deadline(String id, Object? value) => switch (value) {
+  null => TasksCompanion(id: Value(id), deadlineDate: const Value(null)),
+  final Map<String, Object?> deadline => TasksCompanion(
+    id: Value(id),
+    deadlineDate: Value(textOrNull(deadline[DeadlineKeys.date])),
+  ),
+  _ => throw ProjectionTypeError('объект дедлайна', value),
+};
+
+/// Длительность — объект {amount, unit}; `null` — длительности нет.
+TasksCompanion _duration(String id, Object? value) => switch (value) {
+  null => TasksCompanion(
+    id: Value(id),
+    durationAmount: const Value(null),
+    durationUnit: const Value(null),
+  ),
+  final Map<String, Object?> duration => TasksCompanion(
+    id: Value(id),
+    durationAmount: Value(intOrNull(duration[DurationKeys.amount])),
+    durationUnit: Value(textOrNull(duration[DurationKeys.unit])),
+  ),
+  _ => throw ProjectionTypeError('объект длительности', value),
+};
+
 /// Проекты: поле op → колонки `projects`.
 TableProjector<$ProjectsTable, ProjectRow> projectProjector(
   AppDatabase db, {
@@ -96,7 +128,76 @@ TableProjector<$ProjectsTable, ProjectRow> projectProjector(
         ProjectsCompanion(id: Value(id), isInbox: Value(boolOr(v, false))),
     ProjectFields.viewStyle: (id, v) =>
         ProjectsCompanion(id: Value(id), viewStyle: Value(textOr(v, 'list'))),
+    ProjectFields.isCollapsed: (id, v) =>
+        ProjectsCompanion(id: Value(id), isCollapsed: Value(boolOr(v, false))),
     ProjectFields.deleted: (id, v) =>
         ProjectsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
+  },
+);
+
+/// Разделы: поле op → колонки `sections`.
+TableProjector<$SectionsTable, SectionRow> sectionProjector(
+  AppDatabase db, {
+  void Function(String message)? warn,
+}) => TableProjector(
+  db: db,
+  entityType: EntityTypes.section,
+  table: db.sections,
+  warn: warn,
+  writers: {
+    SectionFields.name: (id, v) =>
+        SectionsCompanion(id: Value(id), name: Value(textOr(v, ''))),
+    SectionFields.projectId: (id, v) =>
+        SectionsCompanion(id: Value(id), projectId: Value(textOrNull(v))),
+    SectionFields.orderKey: (id, v) =>
+        SectionsCompanion(id: Value(id), orderKey: Value(textOr(v, ''))),
+    SectionFields.isCollapsed: (id, v) =>
+        SectionsCompanion(id: Value(id), isCollapsed: Value(boolOr(v, false))),
+    SectionFields.isArchived: (id, v) =>
+        SectionsCompanion(id: Value(id), isArchived: Value(boolOr(v, false))),
+    SectionFields.deleted: (id, v) =>
+        SectionsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
+  },
+);
+
+/// Метки: поле op → колонки `labels`.
+TableProjector<$LabelsTable, LabelRow> labelProjector(
+  AppDatabase db, {
+  void Function(String message)? warn,
+}) => TableProjector(
+  db: db,
+  entityType: EntityTypes.label,
+  table: db.labels,
+  warn: warn,
+  writers: {
+    LabelFields.name: (id, v) =>
+        LabelsCompanion(id: Value(id), name: Value(textOr(v, ''))),
+    LabelFields.color: (id, v) =>
+        LabelsCompanion(id: Value(id), color: Value(textOr(v, 'charcoal'))),
+    LabelFields.orderKey: (id, v) =>
+        LabelsCompanion(id: Value(id), orderKey: Value(textOr(v, ''))),
+    LabelFields.isFavorite: (id, v) =>
+        LabelsCompanion(id: Value(id), isFavorite: Value(boolOr(v, false))),
+    LabelFields.deleted: (id, v) =>
+        LabelsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
+  },
+);
+
+/// Метки задач: поле op → колонки `task_labels`.
+TableProjector<$TaskLabelsTable, TaskLabelRow> taskLabelProjector(
+  AppDatabase db, {
+  void Function(String message)? warn,
+}) => TableProjector(
+  db: db,
+  entityType: EntityTypes.taskLabel,
+  table: db.taskLabels,
+  warn: warn,
+  writers: {
+    TaskLabelFields.taskId: (id, v) =>
+        TaskLabelsCompanion(id: Value(id), taskId: Value(textOrNull(v))),
+    TaskLabelFields.labelId: (id, v) =>
+        TaskLabelsCompanion(id: Value(id), labelId: Value(textOrNull(v))),
+    TaskLabelFields.deleted: (id, v) =>
+        TaskLabelsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
   },
 );

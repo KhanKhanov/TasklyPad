@@ -154,4 +154,24 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test(
+    'update — поле с прежним значением op не получает, изменённое — получает',
+    () async {
+      final id = await dev.services.mutator.create(EntityTypes.task, {
+        TaskFields.content: 'Отчёт',
+        TaskFields.due: {DueKeys.date: '2026-10-30'},
+      });
+      final before = (await opsOf(id)).length;
+
+      final ops = await dev.services.mutator.update(EntityTypes.task, id, {
+        TaskFields.content: 'Отчёт',
+        TaskFields.due: {DueKeys.date: '2026-10-30'},
+        TaskFields.priority: 1,
+      });
+
+      expect(ops.map((o) => o.field), [TaskFields.priority]);
+      expect(await opsOf(id), hasLength(before + 1));
+    },
+  );
 }

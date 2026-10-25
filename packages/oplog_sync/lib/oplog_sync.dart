@@ -4,6 +4,7 @@
 library;
 
 export 'src/conflict.dart';
+export 'src/deterministic_id.dart';
 export 'src/folder_transport.dart';
 export 'src/fs.dart';
 export 'src/hlc.dart';

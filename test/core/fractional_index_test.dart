@@ -72,4 +72,55 @@ void main() {
     expect(() => between('a', 'a'), throwsArgumentError);
     expect(() => between('a0', 'b'), throwsArgumentError);
   });
+
+  group('keyForInsert', () {
+    test('в начало, середину и конец — строго между соседями', () {
+      const keys = ['a1', 'a3'];
+      expect(keyForInsert(keys, 0).compareTo('a1'), lessThan(0));
+      final mid = keyForInsert(keys, 1);
+      expect((mid.compareTo('a1') > 0, mid.compareTo('a3') < 0), (true, true));
+      expect(keyForInsert(keys, 2).compareTo('a3'), greaterThan(0));
+      expect(keyAtEnd(const []), between(null, null));
+    });
+
+    test('совпавшие ключи: после всех равных левому соседу, но до следующего '
+        'большего — [a1, a1, a1V], вставка после первого', () {
+      final key = keyForInsert(const ['a1', 'a1', 'a1V'], 1);
+      expect(key.compareTo('a1'), greaterThan(0));
+      expect(key.compareTo('a1V'), lessThan(0));
+    });
+
+    test('пустой и неверный ключи пропускаются', () {
+      final key = keyForInsert(const ['', 'a1', 'b0'], 3);
+      expect(key.compareTo('a1'), greaterThan(0));
+      expect(keyForInsert(const ['', 'b'], 1).compareTo('b'), lessThan(0));
+    });
+  });
+
+  group('rekeyInOrder', () {
+    List<String> apply(List<String> keys) => [
+      for (final (i, k) in rekeyInOrder(keys).indexed) k ?? keys[i],
+    ];
+
+    void expectIncreasing(List<String> keys) {
+      for (var i = 1; i < keys.length; i++) {
+        expect(keys[i].compareTo(keys[i - 1]), greaterThan(0), reason: '$keys');
+      }
+    }
+
+    test('уже строго возрастают — ничего не меняется', () {
+      expect(rekeyInOrder(const ['a', 'b', 'c']), [null, null, null]);
+    });
+
+    test('совпавшие ключи — меняется минимум, порядок строго возрастает', () {
+      final result = rekeyInOrder(const ['a1', 'b', 'a1']);
+      expect(result.where((k) => k != null), hasLength(1));
+      expectIncreasing(apply(const ['a1', 'b', 'a1']));
+      expectIncreasing(apply(const ['x', 'x', 'x', 'y']));
+    });
+
+    test('пустые и неверные ключи получают новые', () {
+      expectIncreasing(apply(const ['', 'a0', 'b']));
+    });
+  });
 }

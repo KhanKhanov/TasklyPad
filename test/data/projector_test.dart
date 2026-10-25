@@ -62,6 +62,9 @@ void main() {
         'time': '09:30',
         'tz': 'Europe/Moscow',
       },
+      TaskFields.deadline: {'date': '2026-10-31'},
+      TaskFields.duration: {'amount': 30, 'unit': 'minute'},
+      TaskFields.isCollapsed: true,
       TaskFields.isCompleted: true,
       TaskFields.completedAt: '2026-10-24T06:31:00Z',
       TaskFields.addedAt: '2026-10-23T10:00:00Z',
@@ -81,6 +84,10 @@ void main() {
     expect(row.dueDate, '2026-10-24');
     expect(row.dueTime, '09:30');
     expect(row.dueTz, 'Europe/Moscow');
+    expect(row.deadlineDate, '2026-10-31');
+    expect(row.durationAmount, 30);
+    expect(row.durationUnit, 'minute');
+    expect(row.isCollapsed, isTrue);
     expect(row.isCompleted, isTrue);
     expect(row.completedAt, '2026-10-24T06:31:00Z');
     expect(row.addedAt, '2026-10-23T10:00:00Z');
@@ -98,6 +105,7 @@ void main() {
       ProjectFields.isArchived: true,
       ProjectFields.isInbox: true,
       ProjectFields.viewStyle: 'board',
+      ProjectFields.isCollapsed: true,
       ProjectFields.deleted: true,
     };
     for (final entry in fields.entries) {
@@ -112,7 +120,89 @@ void main() {
     expect(row.isArchived, isTrue);
     expect(row.isInbox, isTrue);
     expect(row.viewStyle, 'board');
+    expect(row.isCollapsed, isTrue);
     expect(row.deleted, isTrue);
+  });
+
+  test('раздел — каждое поле ложится в свою колонку', () async {
+    const fields = {
+      SectionFields.name: 'Вечер',
+      SectionFields.projectId: 'p1',
+      SectionFields.orderKey: 'c0',
+      SectionFields.isCollapsed: true,
+      SectionFields.isArchived: true,
+      SectionFields.deleted: true,
+    };
+    for (final entry in fields.entries) {
+      await put(EntityTypes.section, 's1', entry.key, entry.value);
+    }
+    final row = await db.select(db.sections).getSingle();
+    expect(row.id, 's1');
+    expect(row.name, 'Вечер');
+    expect(row.projectId, 'p1');
+    expect(row.orderKey, 'c0');
+    expect(row.isCollapsed, isTrue);
+    expect(row.isArchived, isTrue);
+    expect(row.deleted, isTrue);
+    expect(warnings, isEmpty);
+  });
+
+  test('метка — каждое поле ложится в свою колонку', () async {
+    const fields = {
+      LabelFields.name: 'дом',
+      LabelFields.color: 'grape',
+      LabelFields.orderKey: 'd0',
+      LabelFields.isFavorite: true,
+      LabelFields.deleted: true,
+    };
+    for (final entry in fields.entries) {
+      await put(EntityTypes.label, 'l1', entry.key, entry.value);
+    }
+    final row = await db.select(db.labels).getSingle();
+    expect(row.id, 'l1');
+    expect(row.name, 'дом');
+    expect(row.color, 'grape');
+    expect(row.orderKey, 'd0');
+    expect(row.isFavorite, isTrue);
+    expect(row.deleted, isTrue);
+    expect(warnings, isEmpty);
+  });
+
+  test('метка задачи — каждое поле ложится в свою колонку', () async {
+    final id = taskLabelId('t1', 'l1');
+    await put(EntityTypes.taskLabel, id, TaskLabelFields.taskId, 't1');
+    await put(EntityTypes.taskLabel, id, TaskLabelFields.labelId, 'l1');
+    await put(EntityTypes.taskLabel, id, TaskLabelFields.deleted, true);
+    final row = await db.select(db.taskLabels).getSingle();
+    expect(row.id, id);
+    expect(row.taskId, 't1');
+    expect(row.labelId, 'l1');
+    expect(row.deleted, isTrue);
+  });
+
+  test(
+    'taskLabelId — одна пара на всех устройствах, разные пары различаются',
+    () {
+      expect(taskLabelId('t1', 'l1'), taskLabelId('t1', 'l1'));
+      expect(taskLabelId('t1', 'l1'), isNot(taskLabelId('t1', 'l2')));
+      expect(taskLabelId('t1', 'l2'), isNot(taskLabelId('t2', 'l1')));
+    },
+  );
+
+  test('дедлайн и длительность — null очищает колонки', () async {
+    await put(EntityTypes.task, 't1', TaskFields.deadline, {
+      'date': '2026-10-31',
+    });
+    await put(EntityTypes.task, 't1', TaskFields.duration, {
+      'amount': 1,
+      'unit': 'day',
+    });
+    await put(EntityTypes.task, 't1', TaskFields.deadline, null);
+    await put(EntityTypes.task, 't1', TaskFields.duration, null);
+    final row = (await task('t1'))!;
+    expect(row.deadlineDate, isNull);
+    expect(row.durationAmount, isNull);
+    expect(row.durationUnit, isNull);
   });
 
   test('правка одного поля — остальные колонки не сбрасываются', () async {
@@ -202,21 +292,21 @@ void main() {
   test(
     'неизвестное поле — строка не создаётся, значение в field_versions',
     () async {
-      await put(EntityTypes.task, 't1', 'deadline', '2026-11-01');
+      await put(EntityTypes.task, 't1', 'responsible_uid', 'u1');
       expect(await task('t1'), isNull);
       expect(await DriftProbe(db).entity(EntityTypes.task, 't1'), {
-        'deadline': '2026-11-01',
+        'responsible_uid': 'u1',
       });
     },
   );
 
   test('неизвестный тип — таблицы сущностей не трогает', () async {
-    await put('section', 's1', 'name', 'Покупки');
+    await put('collaborator', 'c1', 'name', 'Аня');
     expect(await db.select(db.tasks).get(), isEmpty);
     expect(await db.select(db.projects).get(), isEmpty);
   });
 
-  test('каждая колонка tasks и projects (кроме id) пишется каким-то полем', () {
+  test('каждая колонка таблиц сущностей (кроме id) пишется каким-то полем', () {
     for (final projector in defaultRegistry(db).all) {
       final written = {
         for (final field in projector.fields) ...projector.columnsOf(field),

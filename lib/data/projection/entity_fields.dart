@@ -8,7 +8,18 @@ import 'package:oplog_sync/oplog_sync.dart';
 abstract final class EntityTypes {
   static const String task = 'task';
   static const String project = 'project';
+  static const String section = 'section';
+  static const String label = 'label';
+
+  /// Метка задачи: связь многие ко многим с id [taskLabelId].
+  static const String taskLabel = 'task_label';
 }
+
+/// Id связи «задача — метка»: один и тот же на всех устройствах. Две
+/// установки одной метки офлайн пишут одну сущность одинаковыми значениями —
+/// это не конфликт; снятие метки — tombstone этой сущности.
+String taskLabelId(String taskId, String labelId) =>
+    uuidV8([EntityTypes.taskLabel, taskId, labelId]);
 
 /// Id проекта «Входящие» — один на всех устройствах.
 ///
@@ -28,9 +39,10 @@ const Map<String, Object?> inboxProjectFields = {
   ProjectFields.isInbox: true,
 };
 
-/// Поля, параллельная правка которых не конфликт: порядок пользователю
-/// выбирать незачем, LWW решает сам.
-const Set<String> silentFields = {TaskFields.orderKey};
+/// Поля, параллельная правка которых не конфликт: порядок и свёрнутость
+/// пользователю выбирать незачем, LWW решает сам. Имена полей общие для всех
+/// типов сущностей.
+const Set<String> silentFields = {TaskFields.orderKey, TaskFields.isCollapsed};
 
 /// Поля-объекты и ключи, которые знает эта версия приложения. При правке
 /// известные ключи заменяются новым значением, а незнакомые сохраняются из
@@ -39,6 +51,8 @@ const Set<String> silentFields = {TaskFields.orderKey};
 const Map<String, Map<String, Set<String>>> mergedObjectFields = {
   EntityTypes.task: {
     TaskFields.due: {DueKeys.date, DueKeys.time, DueKeys.tz},
+    TaskFields.deadline: {DeadlineKeys.date},
+    TaskFields.duration: {DurationKeys.amount, DurationKeys.unit},
   },
 };
 
@@ -57,6 +71,13 @@ abstract final class TaskFields {
   /// Объект [DueKeys]: дата, время и таймзона меняются одной правкой, поэтому
   /// параллельная правка срока — один конфликт, а не смесь двух сроков.
   static const String due = 'due';
+
+  /// Объект [DeadlineKeys] — как `deadline` в Todoist API.
+  static const String deadline = 'deadline';
+
+  /// Объект [DurationKeys]: число и единица меняются вместе.
+  static const String duration = 'duration';
+  static const String isCollapsed = 'is_collapsed';
   static const String isCompleted = 'is_completed';
   static const String completedAt = 'completed_at';
   static const String addedAt = 'added_at';
@@ -71,6 +92,19 @@ abstract final class DueKeys {
   static const String tz = 'tz';
 }
 
+/// Ключи объекта дедлайна.
+abstract final class DeadlineKeys {
+  static const String date = 'date';
+}
+
+/// Ключи объекта длительности.
+abstract final class DurationKeys {
+  static const String amount = 'amount';
+
+  /// `minute` или `day`.
+  static const String unit = 'unit';
+}
+
 /// Поля проекта.
 abstract final class ProjectFields {
   static const String name = 'name';
@@ -81,5 +115,32 @@ abstract final class ProjectFields {
   static const String isArchived = 'is_archived';
   static const String isInbox = 'is_inbox';
   static const String viewStyle = 'view_style';
+  static const String isCollapsed = TaskFields.isCollapsed;
+  static const String deleted = Op.deletedField;
+}
+
+/// Поля раздела.
+abstract final class SectionFields {
+  static const String name = 'name';
+  static const String projectId = 'project_id';
+  static const String orderKey = 'order_key';
+  static const String isCollapsed = TaskFields.isCollapsed;
+  static const String isArchived = 'is_archived';
+  static const String deleted = Op.deletedField;
+}
+
+/// Поля метки.
+abstract final class LabelFields {
+  static const String name = 'name';
+  static const String color = 'color';
+  static const String orderKey = 'order_key';
+  static const String isFavorite = 'is_favorite';
+  static const String deleted = Op.deletedField;
+}
+
+/// Поля связи «задача — метка».
+abstract final class TaskLabelFields {
+  static const String taskId = 'task_id';
+  static const String labelId = 'label_id';
   static const String deleted = Op.deletedField;
 }
