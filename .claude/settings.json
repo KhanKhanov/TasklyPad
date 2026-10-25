@@ -21,19 +21,40 @@
       "WebFetch(domain:api.flutter.dev)",
       "WebFetch(domain:dart.dev)",
       "WebFetch(domain:developer.android.com)",
-      "WebFetch(domain:learn.microsoft.com)"
+      "WebFetch(domain:learn.microsoft.com)",
+      "WebFetch(domain:drift.simonbinder.eu)",
+      "WebFetch(domain:riverpod.dev)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:google.github.io)",
+      "WebFetch(domain:storage.googleapis.com)"
     ],
     "deny": [
-      "Read(./android/key.properties)",
+      "Read(./**/key.properties)",
+      "Read(./**/signing.properties)",
       "Read(./**/*.jks)",
       "Read(./**/*.keystore)",
       "Read(./**/*.pfx)",
+      "Read(./**/*.p12)",
+      "Read(./**/*.pem)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
       "Bash(git push --force*)",
       "Bash(git push -f*)"
     ]
   },
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-secrets.ps1"],
+            "timeout": 10
+          }
+        ]
+      },
       {
         "matcher": "Edit|Write",
         "hooks": [
