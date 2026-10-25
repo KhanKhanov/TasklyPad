@@ -16,7 +16,9 @@ Future<void> main() async {
     services = await bootstrap();
   } catch (error, stack) {
     Logger().e('База не открылась', error: error, stackTrace: stack);
-    runApp(StartupErrorApp(error: error));
+    // ProviderScope и здесь: экран ошибки провайдеров не читает, но так у
+    // каждого runApp один корень, и виджеты с ref не упадут, если появятся.
+    runApp(ProviderScope(child: StartupErrorApp(error: error)));
     return;
   }
   // ProviderScope — корень Riverpod: хранит состояние всех провайдеров.
