@@ -1,5 +1,7 @@
 # Dependabot: раз в неделю проверяет зависимости и открывает PR с обновлениями.
 # Документация: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+# cooldown: новая версия предлагается не раньше чем через 7 дней после выхода — первые ошибки релиза
+# обычно находят в эти дни (docs/VERSIONS.md). На обновления безопасности выдержка не действует.
 version: 2
 updates:
   # Зависимости Flutter-приложения (pubspec.yaml в корне)
@@ -13,6 +15,8 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore(deps)"
+    cooldown:
+      default-days: 7
     groups:
       # Пакеты кодогенерации обновляем одним PR: они зависят друг от друга
       codegen:
@@ -38,6 +42,8 @@ updates:
       timezone: "Europe/Moscow"
     commit-message:
       prefix: "chore(deps)"
+    cooldown:
+      default-days: 7
 
   # Сами GitHub Actions в .github/workflows
   - package-ecosystem: "github-actions"
@@ -46,3 +52,5 @@ updates:
       interval: "monthly"
     commit-message:
       prefix: "chore(ci)"
+    cooldown:
+      default-days: 7
