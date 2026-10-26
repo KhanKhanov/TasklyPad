@@ -282,4 +282,129 @@ void main() {
       expect((await dev.read()).task(child), isNull);
     }
   });
+
+  test('подпроект возвращён из архива на ПК, родитель переименован на '
+      'телефоне — одно дерево на обоих, без конфликтов', () async {
+    final parent = await onPc.projects.add(name: 'Работа');
+    final sub = await onPc.projects.add(name: 'Под', parentId: parent);
+    await onPc.projects.archive(parent);
+    await syncBoth();
+
+    await onPc.projects.unarchive(sub);
+    await onPhone.projects.rename(parent, 'Работа 2025');
+    await syncBoth();
+
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      expect([for (final i in ws.projectTree()) i.value.id], [sub]);
+      expect(ws.project(parent)!.name, 'Работа 2025');
+    }
+  });
+
+  test('задача возвращена в работу на ПК, соседи переставлены на телефоне — '
+      'одинаковый порядок на обоих', () async {
+    final a = await onPc.tasks.add(content: 'a');
+    final b = await onPc.tasks.add(content: 'b');
+    await onPc.tasks.add(content: 'c');
+    await onPc.tasks.complete(a);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.moveDown(b);
+    await syncBoth();
+
+    await expectSame(inboxProjectId);
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+  });
+
+  test('одну задачу вернули в работу на обоих устройствах — без конфликтов, '
+      'порядок одинаковый', () async {
+    final a = await onPc.tasks.add(content: 'a');
+    await onPc.tasks.add(content: 'b');
+    await onPc.tasks.complete(a);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(a);
+    await syncBoth();
+
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    await expectSame(inboxProjectId);
+  });
+
+  test('раздел отправлен в архив на ПК, переименован на телефоне — задачи '
+      'завершены на обоих, имя сохранено', () async {
+    final p = await onPc.projects.add(name: 'Работа');
+    final s = await onPc.sections.add(p, name: 'Неделя');
+    final t = await onPc.tasks.add(content: 't', projectId: p, sectionId: s);
+    await syncBoth();
+
+    await onPc.sections.archive(s);
+    await onPhone.sections.rename(s, 'Спринт');
+    await syncBoth();
+
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      expect(ws.task(t)!.isCompleted, isTrue);
+      expect(ws.section(s)!.name, 'Спринт');
+    }
+  });
+
+  test('метку добавили и сняли на телефоне, позже добавили на ПК, где связи '
+      'ещё не было, — метка остаётся на обоих (последнее действие)', () async {
+    final x = await onPc.labels.add(name: 'x');
+    final task = await onPc.tasks.add(content: 't');
+    await syncBoth();
+
+    await onPhone.tasks.setLabels(task, {x});
+    phone.advance(const Duration(minutes: 1));
+    await onPhone.tasks.setLabels(task, {});
+    pc.advance(const Duration(minutes: 5));
+    await onPc.tasks.setLabels(task, {x});
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      expect((await dev.read()).task(task)!.labelIds, [x]);
+    }
+  });
+
+  test(
+    'раздел отправлен в архив на ПК, в него добавлена задача на телефоне — '
+    'задача не завершена, скрыта с разделом и видна после его возврата',
+    () async {
+      final p = await onPc.projects.add(name: 'Работа');
+      final s = await onPc.sections.add(p, name: 'Неделя');
+      await syncBoth();
+
+      await onPc.sections.archive(s);
+      final t = await onPhone.tasks.add(
+        content: 'новая',
+        projectId: p,
+        sectionId: s,
+      );
+      await syncBoth();
+
+      for (final dev in [onPc, onPhone]) {
+        final ws = await dev.read();
+        expect(ws.task(t)!.isCompleted, isFalse);
+        expect(ws.activeTaskCount(p), 0);
+      }
+
+      await onPc.sections.unarchive(s);
+      await syncBoth();
+      for (final dev in [onPc, onPhone]) {
+        final ws = await dev.read();
+        expect(
+          [for (final i in ws.projectView(p).sections.single.tasks) i.value.id],
+          [t],
+        );
+      }
+    },
+  );
 }

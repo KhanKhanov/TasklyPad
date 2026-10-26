@@ -35,6 +35,11 @@ abstract interface class EntityProjector {
 
   /// SQL-имена колонок, которые пишет поле [field].
   Set<String> columnsOf(String field);
+
+  /// Значение [value] поля [field] даёт те же колонки, что и отсутствие поля
+  /// (`null` — значения по умолчанию). Неизвестное поле или значение не того
+  /// типа — `false`.
+  bool isDefault(String field, Object? value);
 }
 
 /// Проектор поверх таблицы drift с белым списком полей.
@@ -102,6 +107,20 @@ final class TableProjector<T extends Table, R> implements EntityProjector {
     final writer = _writers[field];
     if (writer == null) return const {};
     return writer('', null).toColumns(false).keys.toSet()..remove('id');
+  }
+
+  @override
+  bool isDefault(String field, Object? value) {
+    final writer = _writers[field];
+    if (writer == null) return false;
+    try {
+      final given = writer('', value).toColumns(false);
+      final defaults = writer('', null).toColumns(false);
+      return given.length == defaults.length &&
+          given.entries.every((e) => defaults[e.key] == e.value);
+    } on ProjectionTypeError {
+      return false;
+    }
   }
 
   static final Logger _logger = Logger();

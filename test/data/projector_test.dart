@@ -317,4 +317,15 @@ void main() {
       expect(written, columns, reason: projector.entityType);
     }
   });
+
+  test('isDefault — значение, проецируемое как отсутствие поля', () {
+    final projector = projectProjector(db);
+    expect(projector.isDefault(ProjectFields.isFavorite, false), isTrue);
+    expect(projector.isDefault(ProjectFields.viewStyle, 'list'), isTrue);
+    expect(projector.isDefault(ProjectFields.color, 'charcoal'), isTrue);
+    expect(projector.isDefault(ProjectFields.isFavorite, true), isFalse);
+    expect(projector.isDefault(ProjectFields.name, 'Дом'), isFalse);
+    expect(projector.isDefault('unknown_field', null), isFalse);
+    expect(projector.isDefault(ProjectFields.isFavorite, 'не bool'), isFalse);
+  });
 }

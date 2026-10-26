@@ -9,10 +9,12 @@ Matcher _rejected(RejectReason reason) =>
     throwsA(isA<CommandRejected>().having((e) => e.reason, 'reason', reason));
 
 void main() {
+  late TestDevice device;
   late AppCommands app;
 
   setUp(() async {
-    app = AppCommands(await TestDevice.start());
+    device = await TestDevice.start();
+    app = AppCommands(device);
   });
 
   group('проекты', () {
@@ -97,6 +99,31 @@ void main() {
       expect(ws.projectTree().length, 2);
     });
 
+    test('возврат подпроекта при архивном родителе — один, корневым, в конце '
+        '(project_unarchive в Todoist API)', () async {
+      final parent = await app.projects.add(name: 'Работа');
+      final sub = await app.projects.add(name: 'Под', parentId: parent);
+      final other = await app.projects.add(name: 'Дом');
+      await app.projects.archive(parent);
+
+      final subsub = await app.projects.add(name: 'Подпод', parentId: sub);
+      await app.projects.unarchive(sub);
+      final ws = await app.read();
+      expect(ws.project(sub)!.parentId, isNull);
+      expect(
+        [for (final i in ws.projectTree()) i.value.id],
+        [other, sub, subsub],
+      );
+      expect(ws.isProjectArchived(parent), isTrue);
+    });
+
+    test('возврат проекта, который не в архиве, — ни одной op', () async {
+      final p = await app.projects.add(name: 'Работа');
+      final opsBefore = (await device.ownOps()).length;
+      await app.projects.unarchive(p);
+      expect((await device.ownOps()).length, opsBefore);
+    });
+
     test('дубликат — после оригинала, без избранного, с активными разделами '
         'и незавершёнными задачами', () async {
       final p = await app.projects.add(name: 'Работа', isFavorite: true);
@@ -131,6 +158,30 @@ void main() {
   });
 
   group('разделы', () {
+    test(
+      'архив раздела завершает его незавершённые задачи с подзадачами; после '
+      'возврата раздела они остаются завершёнными',
+      () async {
+        final p = await app.projects.add(name: 'Работа');
+        final s = await app.sections.add(p, name: 'Неделя');
+        final t = await app.tasks.add(content: 't', projectId: p, sectionId: s);
+        final sub = await app.tasks.add(content: 'под', parentId: t);
+        await app.sections.archive(s);
+        var ws = await app.read();
+        expect(
+          (ws.task(t)!.isCompleted, ws.task(sub)!.isCompleted),
+          (true, true),
+        );
+        expect(ws.task(t)!.completedAt, isNotNull);
+
+        await app.sections.unarchive(s);
+        ws = await app.read();
+        expect(ws.sectionsOf(p).single.id, s);
+        expect(ws.task(t)!.isCompleted, isTrue);
+        expect(ws.projectView(p).sections.single.tasks, isEmpty);
+      },
+    );
+
     test('не больше 20 в проекте, архивные считаются', () async {
       final p = await app.projects.add(name: 'Работа');
       for (var i = 0; i < 19; i++) {
