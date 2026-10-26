@@ -20,15 +20,311 @@
   "@startupSchemaTooNew": {
     "description": "База создана более новой версией приложения",
     "placeholders": {
-      "found": {"type": "int"},
-      "supported": {"type": "int"}
+      "found": {
+        "type": "int"
+      },
+      "supported": {
+        "type": "int"
+      }
     }
   },
   "startupErrorDetails": "Данные не изменены. Подробности: {error}",
   "@startupErrorDetails": {
     "description": "Прочая ошибка открытия базы при запуске",
     "placeholders": {
-      "error": {"type": "String"}
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "myProjects": "Мои проекты",
+  "@myProjects": {
+    "description": "Группа проектов в сайдбаре и экран проектов, как в Todoist"
+  },
+  "favorites": "Избранное",
+  "@favorites": {
+    "description": "Группа избранного в сайдбаре"
+  },
+  "addProject": "Добавить проект",
+  "@addProject": {
+    "description": "Кнопка и заголовок диалога"
+  },
+  "editProject": "Редактировать проект",
+  "@editProject": {
+    "description": "Заголовок диалога правки проекта"
+  },
+  "fieldName": "Название",
+  "@fieldName": {
+    "description": "Поле названия проекта"
+  },
+  "fieldColor": "Цвет",
+  "@fieldColor": {
+    "description": "Поле цвета проекта"
+  },
+  "fieldParent": "Родительский проект",
+  "@fieldParent": {
+    "description": "Поле родителя проекта"
+  },
+  "noParent": "Без родителя",
+  "@noParent": {
+    "description": "Значение «нет родителя»"
+  },
+  "fieldFavorite": "Добавить в избранное",
+  "@fieldFavorite": {
+    "description": "Переключатель в диалоге проекта"
+  },
+  "addToFavorites": "Добавить в избранное",
+  "@addToFavorites": {
+    "description": "Пункт меню проекта"
+  },
+  "removeFromFavorites": "Удалить из избранного",
+  "@removeFromFavorites": {
+    "description": "Пункт меню проекта"
+  },
+  "actionEdit": "Редактировать",
+  "@actionEdit": {
+    "description": "Пункт меню"
+  },
+  "actionDuplicate": "Дублировать",
+  "@actionDuplicate": {
+    "description": "Пункт меню"
+  },
+  "actionArchive": "Архивировать",
+  "@actionArchive": {
+    "description": "Пункт меню и кнопка подтверждения"
+  },
+  "actionUnarchive": "Вернуть из архива",
+  "@actionUnarchive": {
+    "description": "Пункт меню архивного проекта"
+  },
+  "actionDelete": "Удалить",
+  "@actionDelete": {
+    "description": "Пункт меню и кнопка подтверждения"
+  },
+  "actionMoveTo": "Перенести в…",
+  "@actionMoveTo": {
+    "description": "Пункт меню раздела"
+  },
+  "actionCancel": "Отмена",
+  "@actionCancel": {
+    "description": "Кнопка"
+  },
+  "actionSave": "Сохранить",
+  "@actionSave": {
+    "description": "Кнопка"
+  },
+  "actionAdd": "Добавить",
+  "@actionAdd": {
+    "description": "Кнопка"
+  },
+  "copyOf": "Копия {name}",
+  "@copyOf": {
+    "description": "Имя дубликата проекта или раздела",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "archiveProjectTitle": "Архивировать проект?",
+  "@archiveProjectTitle": {
+    "description": "Заголовок подтверждения"
+  },
+  "archiveProjectBody": "Проект «{name}» и его подпроекты будут перемещены в архив.",
+  "@archiveProjectBody": {
+    "description": "Текст подтверждения",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteProjectTitle": "Удалить проект?",
+  "@deleteProjectTitle": {
+    "description": "Заголовок подтверждения"
+  },
+  "deleteProjectBody": "Проект «{name}» будет удалён вместе со всеми задачами.",
+  "@deleteProjectBody": {
+    "description": "Текст подтверждения",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addSection": "Добавить раздел",
+  "@addSection": {
+    "description": "Кнопка, как в Todoist"
+  },
+  "sectionNameHint": "Название раздела",
+  "@sectionNameHint": {
+    "description": "Подсказка в поле раздела"
+  },
+  "archiveSectionTitle": "Архивировать раздел?",
+  "@archiveSectionTitle": {
+    "description": "Заголовок подтверждения"
+  },
+  "archiveSectionBody": "Раздел «{name}» будет перемещён в архив, а его задачи — отмечены выполненными.",
+  "@archiveSectionBody": {
+    "description": "Текст подтверждения",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSectionTitle": "Удалить раздел?",
+  "@deleteSectionTitle": {
+    "description": "Заголовок подтверждения"
+  },
+  "deleteSectionBody": "Раздел «{name}» будет удалён вместе со всеми задачами.",
+  "@deleteSectionBody": {
+    "description": "Текст подтверждения",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "moveSectionTitle": "Перенести раздел",
+  "@moveSectionTitle": {
+    "description": "Заголовок выбора проекта"
+  },
+  "projectsActive": "Активные",
+  "@projectsActive": {
+    "description": "Вкладка экрана проектов"
+  },
+  "projectsArchived": "В архиве",
+  "@projectsArchived": {
+    "description": "Вкладка экрана проектов"
+  },
+  "noArchivedProjects": "В архиве нет проектов",
+  "@noArchivedProjects": {
+    "description": "Пустой архив"
+  },
+  "toggleSidebar": "Открыть или закрыть боковую панель",
+  "@toggleSidebar": {
+    "description": "Подсказка кнопки"
+  },
+  "moreActions": "Ещё",
+  "@moreActions": {
+    "description": "Подсказка кнопки меню"
+  },
+  "rejectEmptyName": "Введите название",
+  "@rejectEmptyName": {
+    "description": "Действие отклонено"
+  },
+  "rejectInboxProtected": "Это нельзя сделать с «Входящими»",
+  "@rejectInboxProtected": {
+    "description": "Действие отклонено"
+  },
+  "rejectTooDeep": "Слишком глубокая вложенность",
+  "@rejectTooDeep": {
+    "description": "Действие отклонено"
+  },
+  "rejectCycle": "Нельзя вложить в самого себя",
+  "@rejectCycle": {
+    "description": "Действие отклонено"
+  },
+  "rejectTooManySections": "В проекте уже 20 разделов",
+  "@rejectTooManySections": {
+    "description": "Действие отклонено"
+  },
+  "rejectDuplicateName": "Такое имя уже есть",
+  "@rejectDuplicateName": {
+    "description": "Действие отклонено"
+  },
+  "rejectNotFound": "Не найдено — возможно, удалено на другом устройстве",
+  "@rejectNotFound": {
+    "description": "Действие отклонено"
+  },
+  "colorBerryRed": "Ягодный",
+  "@colorBerryRed": {
+    "description": "Цвет палитры (русские названия — наш перевод, О-4)"
+  },
+  "colorRed": "Красный",
+  "@colorRed": {
+    "description": "Цвет палитры"
+  },
+  "colorOrange": "Оранжевый",
+  "@colorOrange": {
+    "description": "Цвет палитры"
+  },
+  "colorYellow": "Жёлтый",
+  "@colorYellow": {
+    "description": "Цвет палитры"
+  },
+  "colorOliveGreen": "Оливковый",
+  "@colorOliveGreen": {
+    "description": "Цвет палитры"
+  },
+  "colorLimeGreen": "Салатовый",
+  "@colorLimeGreen": {
+    "description": "Цвет палитры"
+  },
+  "colorGreen": "Зелёный",
+  "@colorGreen": {
+    "description": "Цвет палитры"
+  },
+  "colorMintGreen": "Мятный",
+  "@colorMintGreen": {
+    "description": "Цвет палитры"
+  },
+  "colorTeal": "Бирюзовый",
+  "@colorTeal": {
+    "description": "Цвет палитры"
+  },
+  "colorSkyBlue": "Небесно-голубой",
+  "@colorSkyBlue": {
+    "description": "Цвет палитры"
+  },
+  "colorLightBlue": "Светло-голубой",
+  "@colorLightBlue": {
+    "description": "Цвет палитры"
+  },
+  "colorBlue": "Синий",
+  "@colorBlue": {
+    "description": "Цвет палитры"
+  },
+  "colorGrape": "Виноградный",
+  "@colorGrape": {
+    "description": "Цвет палитры"
+  },
+  "colorViolet": "Фиолетовый",
+  "@colorViolet": {
+    "description": "Цвет палитры"
+  },
+  "colorLavender": "Лавандовый",
+  "@colorLavender": {
+    "description": "Цвет палитры"
+  },
+  "colorMagenta": "Пурпурный",
+  "@colorMagenta": {
+    "description": "Цвет палитры"
+  },
+  "colorSalmon": "Лососевый",
+  "@colorSalmon": {
+    "description": "Цвет палитры"
+  },
+  "colorCharcoal": "Графитовый",
+  "@colorCharcoal": {
+    "description": "Цвет палитры"
+  },
+  "colorGrey": "Серый",
+  "@colorGrey": {
+    "description": "Цвет палитры"
+  },
+  "colorTaupe": "Серо-коричневый",
+  "@colorTaupe": {
+    "description": "Цвет палитры"
+  },
+  "loadError": "Не удалось загрузить данные. Подробности: {error}",
+  "@loadError": {
+    "description": "Ошибка чтения снимка данных",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
     }
   }
 }
