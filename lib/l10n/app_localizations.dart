@@ -133,6 +133,396 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Данные не изменены. Подробности: {error}'**
   String startupErrorDetails(String error);
+
+  /// Группа проектов в сайдбаре и экран проектов, как в Todoist
+  ///
+  /// In ru, this message translates to:
+  /// **'Мои проекты'**
+  String get myProjects;
+
+  /// Группа избранного в сайдбаре
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранное'**
+  String get favorites;
+
+  /// Кнопка и заголовок диалога
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить проект'**
+  String get addProject;
+
+  /// Заголовок диалога правки проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактировать проект'**
+  String get editProject;
+
+  /// Поле названия проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Название'**
+  String get fieldName;
+
+  /// Поле цвета проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Цвет'**
+  String get fieldColor;
+
+  /// Поле родителя проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Родительский проект'**
+  String get fieldParent;
+
+  /// Значение «нет родителя»
+  ///
+  /// In ru, this message translates to:
+  /// **'Без родителя'**
+  String get noParent;
+
+  /// Переключатель в диалоге проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить в избранное'**
+  String get fieldFavorite;
+
+  /// Пункт меню проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить в избранное'**
+  String get addToFavorites;
+
+  /// Пункт меню проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить из избранного'**
+  String get removeFromFavorites;
+
+  /// Пункт меню
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактировать'**
+  String get actionEdit;
+
+  /// Пункт меню
+  ///
+  /// In ru, this message translates to:
+  /// **'Дублировать'**
+  String get actionDuplicate;
+
+  /// Пункт меню и кнопка подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Архивировать'**
+  String get actionArchive;
+
+  /// Пункт меню архивного проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуть из архива'**
+  String get actionUnarchive;
+
+  /// Пункт меню и кнопка подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get actionDelete;
+
+  /// Пункт меню раздела
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенести в…'**
+  String get actionMoveTo;
+
+  /// Кнопка
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена'**
+  String get actionCancel;
+
+  /// Кнопка
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить'**
+  String get actionSave;
+
+  /// Кнопка
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить'**
+  String get actionAdd;
+
+  /// Имя дубликата проекта или раздела
+  ///
+  /// In ru, this message translates to:
+  /// **'Копия {name}'**
+  String copyOf(String name);
+
+  /// Заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Архивировать проект?'**
+  String get archiveProjectTitle;
+
+  /// Текст подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Проект «{name}» и его подпроекты будут перемещены в архив.'**
+  String archiveProjectBody(String name);
+
+  /// Заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить проект?'**
+  String get deleteProjectTitle;
+
+  /// Текст подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Проект «{name}» будет удалён вместе со всеми задачами.'**
+  String deleteProjectBody(String name);
+
+  /// Кнопка, как в Todoist
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить раздел'**
+  String get addSection;
+
+  /// Подсказка в поле раздела
+  ///
+  /// In ru, this message translates to:
+  /// **'Название раздела'**
+  String get sectionNameHint;
+
+  /// Заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Архивировать раздел?'**
+  String get archiveSectionTitle;
+
+  /// Текст подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел «{name}» будет перемещён в архив, а его задачи — отмечены выполненными.'**
+  String archiveSectionBody(String name);
+
+  /// Заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить раздел?'**
+  String get deleteSectionTitle;
+
+  /// Текст подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел «{name}» будет удалён вместе со всеми задачами.'**
+  String deleteSectionBody(String name);
+
+  /// Заголовок выбора проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенести раздел'**
+  String get moveSectionTitle;
+
+  /// Вкладка экрана проектов
+  ///
+  /// In ru, this message translates to:
+  /// **'Активные'**
+  String get projectsActive;
+
+  /// Вкладка экрана проектов
+  ///
+  /// In ru, this message translates to:
+  /// **'В архиве'**
+  String get projectsArchived;
+
+  /// Пустой архив
+  ///
+  /// In ru, this message translates to:
+  /// **'В архиве нет проектов'**
+  String get noArchivedProjects;
+
+  /// Подсказка кнопки
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть или закрыть боковую панель'**
+  String get toggleSidebar;
+
+  /// Подсказка кнопки меню
+  ///
+  /// In ru, this message translates to:
+  /// **'Ещё'**
+  String get moreActions;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите название'**
+  String get rejectEmptyName;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Это нельзя сделать с «Входящими»'**
+  String get rejectInboxProtected;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком глубокая вложенность'**
+  String get rejectTooDeep;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Нельзя вложить в самого себя'**
+  String get rejectCycle;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'В проекте уже 20 разделов'**
+  String get rejectTooManySections;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Такое имя уже есть'**
+  String get rejectDuplicateName;
+
+  /// Действие отклонено
+  ///
+  /// In ru, this message translates to:
+  /// **'Не найдено — возможно, удалено на другом устройстве'**
+  String get rejectNotFound;
+
+  /// Цвет палитры (русские названия — наш перевод, О-4)
+  ///
+  /// In ru, this message translates to:
+  /// **'Ягодный'**
+  String get colorBerryRed;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Красный'**
+  String get colorRed;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Оранжевый'**
+  String get colorOrange;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Жёлтый'**
+  String get colorYellow;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Оливковый'**
+  String get colorOliveGreen;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Салатовый'**
+  String get colorLimeGreen;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Зелёный'**
+  String get colorGreen;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Мятный'**
+  String get colorMintGreen;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Бирюзовый'**
+  String get colorTeal;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Небесно-голубой'**
+  String get colorSkyBlue;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Светло-голубой'**
+  String get colorLightBlue;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Синий'**
+  String get colorBlue;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Виноградный'**
+  String get colorGrape;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Фиолетовый'**
+  String get colorViolet;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Лавандовый'**
+  String get colorLavender;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Пурпурный'**
+  String get colorMagenta;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Лососевый'**
+  String get colorSalmon;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Графитовый'**
+  String get colorCharcoal;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Серый'**
+  String get colorGrey;
+
+  /// Цвет палитры
+  ///
+  /// In ru, this message translates to:
+  /// **'Серо-коричневый'**
+  String get colorTaupe;
+
+  /// Ошибка чтения снимка данных
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить данные. Подробности: {error}'**
+  String loadError(String error);
 }
 
 class _AppLocalizationsDelegate

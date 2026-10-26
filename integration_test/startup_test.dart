@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -9,7 +10,7 @@ import 'package:planner/app/bootstrap.dart';
 import 'package:planner/app/sync_providers.dart';
 import 'package:planner/data/db_backup.dart';
 import 'package:planner/data/projection/entity_fields.dart';
-import 'package:planner/features/views/inbox/ui/inbox_screen.dart';
+import 'package:planner/features/projects/ui/project_screen.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 // Запуск на настоящей платформе: drift_flutter открывает файл в фоновом
@@ -71,7 +72,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(InboxScreen), findsOneWidget);
+    expect(find.byType(ProjectScreen), findsOneWidget);
+    // Снять дерево до закрытия базы: снимок читает её потоком.
+    await tester.pumpWidget(const SizedBox.shrink());
     await second.close();
   });
 

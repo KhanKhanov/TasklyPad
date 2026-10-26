@@ -227,10 +227,29 @@ final class Workspace {
   /// Проект, в котором задача видна: проект её корневой задачи.
   String rootProjectOf(String taskId) => _rootProject(_tasks[taskId]!);
 
+  /// Число активных задач раздела [sectionId] проекта (`null` — без раздела),
+  /// с подзадачами — счётчик в заголовке раздела.
+  int activeTaskCountIn(String projectId, String? sectionId) => [
+    for (final root in _roots[(projectId, sectionId)] ?? const <Task>[])
+      for (final id in taskSubtree(root.id))
+        if (_isActive(_tasks[id]!)) id,
+  ].length;
+
   /// Число активных задач проекта (с подзадачами) — счётчик в сайдбаре.
-  int activeTaskCount(String projectId) => _tasks.values
-      .where((t) => _rootProject(t) == projectId && _isActive(t))
-      .length;
+  int activeTaskCount(String projectId) => _activeCounts[projectId] ?? 0;
+
+  /// Счётчики всех проектов — одним проходом по задачам на снимок, а не
+  /// проходом на каждый проект в сайдбаре.
+  late final Map<String, int> _activeCounts = () {
+    final counts = <String, int>{};
+    for (final t in _tasks.values) {
+      if (_isActive(t)) {
+        final project = _rootProject(t);
+        counts[project] = (counts[project] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }();
 
   // --- Построение ---
 

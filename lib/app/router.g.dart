@@ -9,16 +9,22 @@ part of 'router.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Маршруты приложения. Deep links из уведомлений и виджетов ведут сюда же.
+/// Все экраны — внутри [AppShell] (`ShellRoute`): сайдбар не пересоздаётся
+/// при переходах.
 
 @ProviderFor(router)
 final routerProvider = RouterProvider._();
 
 /// Маршруты приложения. Deep links из уведомлений и виджетов ведут сюда же.
+/// Все экраны — внутри [AppShell] (`ShellRoute`): сайдбар не пересоздаётся
+/// при переходах.
 
 final class RouterProvider
     extends $FunctionalProvider<GoRouter, GoRouter, GoRouter>
     with $Provider<GoRouter> {
   /// Маршруты приложения. Deep links из уведомлений и виджетов ведут сюда же.
+  /// Все экраны — внутри [AppShell] (`ShellRoute`): сайдбар не пересоздаётся
+  /// при переходах.
   RouterProvider._()
     : super(
         from: null,
@@ -52,4 +58,4 @@ final class RouterProvider
   }
 }
 
-String _$routerHash() => r'1684829049b806ef13cc70135f5f5e87a6db9e37';
+String _$routerHash() => r'1b9a4d7d27d1b427e3c579638caef4f00ed1a863';

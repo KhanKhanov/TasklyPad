@@ -308,4 +308,20 @@ void main() {
     );
     expect(ws.task('t'), isNull);
   });
+
+  test('activeTaskCountIn — активные задачи раздела с подзадачами', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: [_section('s', 'p')],
+      labels: const [],
+      tasks: [
+        _task('a', section: 's'),
+        _task('a1', parent: 'a'),
+        _task('done', section: 's', completed: true),
+        _task('free'),
+      ],
+    );
+    expect(ws.activeTaskCountIn('p', 's'), 2);
+    expect(ws.activeTaskCountIn('p', null), 1);
+  });
 }
