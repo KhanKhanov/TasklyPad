@@ -523,6 +523,246 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось загрузить данные. Подробности: {error}'**
   String loadError(String error);
+
+  /// Кнопка и редактор, как в Todoist
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить задачу'**
+  String get addTask;
+
+  /// Подсказка поля названия
+  ///
+  /// In ru, this message translates to:
+  /// **'Название задачи'**
+  String get taskNameHint;
+
+  /// Подсказка поля описания
+  ///
+  /// In ru, this message translates to:
+  /// **'Описание'**
+  String get descriptionHint;
+
+  /// Тост после завершения
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача выполнена'**
+  String get taskCompleted;
+
+  /// Тост после переноса
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача перенесена'**
+  String get taskMoved;
+
+  /// Тост после смены срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок изменён'**
+  String get dueChanged;
+
+  /// Кнопка в тосте
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить'**
+  String get actionUndo;
+
+  /// Заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить задачу?'**
+  String get deleteTaskTitle;
+
+  /// Текст подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача «{name}» будет удалена вместе с подзадачами.'**
+  String deleteTaskBody(String name);
+
+  /// Кнопка настроек вида, как в Todoist
+  ///
+  /// In ru, this message translates to:
+  /// **'Просмотр'**
+  String get viewOptions;
+
+  /// Переключатель в «Просмотр»
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполненные задачи'**
+  String get completedTasks;
+
+  /// Срок
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get dueToday;
+
+  /// Срок
+  ///
+  /// In ru, this message translates to:
+  /// **'Завтра'**
+  String get dueTomorrow;
+
+  /// Срок
+  ///
+  /// In ru, this message translates to:
+  /// **'Вчера'**
+  String get dueYesterday;
+
+  /// Быстрый вариант срока
+  ///
+  /// In ru, this message translates to:
+  /// **'На выходных'**
+  String get dueWeekend;
+
+  /// Быстрый вариант срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующая неделя'**
+  String get dueNextWeek;
+
+  /// Убрать срок
+  ///
+  /// In ru, this message translates to:
+  /// **'Без срока'**
+  String get noDue;
+
+  /// Пункт выбора даты
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать дату…'**
+  String get pickDate;
+
+  /// Пункт выбора времени
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить время'**
+  String get addTime;
+
+  /// Пункт выбора времени
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать время'**
+  String get removeTime;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Проект'**
+  String get fieldProject;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок'**
+  String get fieldDue;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Дедлайн'**
+  String get fieldDeadline;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Приоритет'**
+  String get fieldPriority;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Метки'**
+  String get fieldLabels;
+
+  /// Поле панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Длительность'**
+  String get fieldDuration;
+
+  /// Убрать дедлайн
+  ///
+  /// In ru, this message translates to:
+  /// **'Без дедлайна'**
+  String get noDeadline;
+
+  /// Убрать длительность
+  ///
+  /// In ru, this message translates to:
+  /// **'Без длительности'**
+  String get noDuration;
+
+  /// Длительность в минутах
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин'**
+  String durationMinutes(int minutes);
+
+  /// Приоритет 1–4
+  ///
+  /// In ru, this message translates to:
+  /// **'Приоритет {n}'**
+  String priorityN(int n);
+
+  /// Раздел панели задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Подзадачи'**
+  String get subtasks;
+
+  /// Кнопка, как в Todoist
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить подзадачу'**
+  String get addSubtask;
+
+  /// Переключатель подзадач
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать выполненные'**
+  String get showCompleted;
+
+  /// Переключатель подзадач
+  ///
+  /// In ru, this message translates to:
+  /// **'Скрыть выполненные'**
+  String get hideCompleted;
+
+  /// Подсказка кружка задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнить'**
+  String get completeTask;
+
+  /// Подсказка кружка выполненной задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуть в работу'**
+  String get reopenTask;
+
+  /// Пункт выбора меток
+  ///
+  /// In ru, this message translates to:
+  /// **'Создать метку «{name}»'**
+  String createLabel(String name);
+
+  /// Подсказка поля поиска метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка'**
+  String get labelSearchHint;
+
+  /// Кнопка закрытия выбора
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get actionDone;
+
+  /// Неожиданная ошибка записи (не отказ правилами)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось выполнить действие. Подробности: {error}'**
+  String actionFailed(String error);
 }
 
 class _AppLocalizationsDelegate

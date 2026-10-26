@@ -324,4 +324,20 @@ void main() {
     expect(ws.activeTaskCountIn('p', 's'), 2);
     expect(ws.activeTaskCountIn('p', null), 1);
   });
+
+  test('subtaskProgress — выполнено и всего среди прямых подзадач', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: const [],
+      labels: const [],
+      tasks: [
+        _task('a'),
+        _task('a1', parent: 'a', completed: true),
+        _task('a2', parent: 'a'),
+        _task('a21', parent: 'a2'),
+      ],
+    );
+    expect(ws.subtaskProgress('a'), (done: 1, total: 2));
+    expect(ws.subtaskProgress('a21'), (done: 0, total: 0));
+  });
 }

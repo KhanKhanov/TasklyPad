@@ -227,6 +227,16 @@ final class Workspace {
   /// Проект, в котором задача видна: проект её корневой задачи.
   String rootProjectOf(String taskId) => _rootProject(_tasks[taskId]!);
 
+  /// Счётчик подзадач в строке задачи: выполнено и всего среди прямых
+  /// подзадач.
+  ({int done, int total}) subtaskProgress(String taskId) {
+    final children = _taskChildren[taskId] ?? const <Task>[];
+    return (
+      done: children.where((t) => t.isCompleted).length,
+      total: children.length,
+    );
+  }
+
   /// Число активных задач раздела [sectionId] проекта (`null` — без раздела),
   /// с подзадачами — счётчик в заголовке раздела.
   int activeTaskCountIn(String projectId, String? sectionId) => [

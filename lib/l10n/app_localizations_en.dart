@@ -238,4 +238,134 @@ class AppLocalizationsEn extends AppLocalizations {
   String loadError(String error) {
     return 'Couldn\'t load your data. Details: $error';
   }
+
+  @override
+  String get addTask => 'Add task';
+
+  @override
+  String get taskNameHint => 'Task name';
+
+  @override
+  String get descriptionHint => 'Description';
+
+  @override
+  String get taskCompleted => 'Task completed';
+
+  @override
+  String get taskMoved => 'Task moved';
+
+  @override
+  String get dueChanged => 'Due date changed';
+
+  @override
+  String get actionUndo => 'Undo';
+
+  @override
+  String get deleteTaskTitle => 'Delete task?';
+
+  @override
+  String deleteTaskBody(String name) {
+    return '\"$name\" and its sub-tasks will be deleted.';
+  }
+
+  @override
+  String get viewOptions => 'View';
+
+  @override
+  String get completedTasks => 'Completed tasks';
+
+  @override
+  String get dueToday => 'Today';
+
+  @override
+  String get dueTomorrow => 'Tomorrow';
+
+  @override
+  String get dueYesterday => 'Yesterday';
+
+  @override
+  String get dueWeekend => 'This weekend';
+
+  @override
+  String get dueNextWeek => 'Next week';
+
+  @override
+  String get noDue => 'No date';
+
+  @override
+  String get pickDate => 'Pick a date…';
+
+  @override
+  String get addTime => 'Add time';
+
+  @override
+  String get removeTime => 'Remove time';
+
+  @override
+  String get fieldProject => 'Project';
+
+  @override
+  String get fieldDue => 'Date';
+
+  @override
+  String get fieldDeadline => 'Deadline';
+
+  @override
+  String get fieldPriority => 'Priority';
+
+  @override
+  String get fieldLabels => 'Labels';
+
+  @override
+  String get fieldDuration => 'Duration';
+
+  @override
+  String get noDeadline => 'No deadline';
+
+  @override
+  String get noDuration => 'No duration';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String priorityN(int n) {
+    return 'Priority $n';
+  }
+
+  @override
+  String get subtasks => 'Sub-tasks';
+
+  @override
+  String get addSubtask => 'Add sub-task';
+
+  @override
+  String get showCompleted => 'Show completed';
+
+  @override
+  String get hideCompleted => 'Hide completed';
+
+  @override
+  String get completeTask => 'Complete';
+
+  @override
+  String get reopenTask => 'Reopen';
+
+  @override
+  String createLabel(String name) {
+    return 'Create label \"$name\"';
+  }
+
+  @override
+  String get labelSearchHint => 'Label';
+
+  @override
+  String get actionDone => 'Done';
+
+  @override
+  String actionFailed(String error) {
+    return 'Couldn\'t complete the action. Details: $error';
+  }
 }

@@ -184,6 +184,10 @@ final class Undo {
   >
   _values;
 
+  /// Отменять нечего: действие ничего не изменило (например, задача уже
+  /// была выполнена).
+  bool get isEmpty => _values.isEmpty;
+
   /// Вернуть прежние значения одной транзакцией.
   Future<void> call() => _mutator.batch(() async {
     for (final v in _values) {

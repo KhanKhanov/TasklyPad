@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../core/clock.dart';
 import '../data/repositories/workspace_repository.dart';
 import '../domain/workspace.dart';
 import '../features/labels/logic/label_commands.dart';
@@ -22,6 +23,11 @@ WorkspaceRepository workspaceRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 Stream<Workspace> workspace(Ref ref) =>
     ref.watch(workspaceRepositoryProvider).watch();
+
+/// Часы приложения — для «сегодня» на экранах (сроки, быстрые даты). В
+/// тестах — часы тестового устройства.
+@Riverpod(keepAlive: true)
+AppClock clock(Ref ref) => ref.watch(syncServicesProvider).clock;
 
 @Riverpod(keepAlive: true)
 TaskCommands taskCommands(Ref ref) {

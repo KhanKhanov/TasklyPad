@@ -15,10 +15,19 @@ enum _SectionAction { edit, move, duplicate, archive, delete }
 /// «⋯» — Редактировать, Перенести в…, Дублировать, Архивировать, Удалить.
 /// Задачи раздела выводит список задач (коммит 2 M2.2).
 class SectionBlock extends ConsumerStatefulWidget {
-  const SectionBlock({super.key, required this.section, required this.count});
+  const SectionBlock({
+    super.key,
+    required this.section,
+    required this.count,
+    this.readOnly = false,
+  });
 
   final Section section;
   final int count;
+
+  /// Проект в архиве: раздел только сворачивается, без правки и меню
+  /// (допущение О-24).
+  final bool readOnly;
 
   @override
   ConsumerState<SectionBlock> createState() => _SectionBlockState();
@@ -68,7 +77,9 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
               children: [
                 Flexible(
                   child: GestureDetector(
-                    onTap: () => setState(() => _editing = true),
+                    onTap: widget.readOnly
+                        ? null
+                        : () => setState(() => _editing = true),
                     child: Text(
                       s.name,
                       overflow: TextOverflow.ellipsis,
@@ -91,34 +102,35 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
               ],
             ),
           ),
-          PopupMenuButton<_SectionAction>(
-            tooltip: l10n.moreActions,
-            iconSize: 20,
-            icon: const Icon(Icons.more_horiz),
-            onSelected: (a) => _run(context, a),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _SectionAction.edit,
-                child: Text(l10n.actionEdit),
-              ),
-              PopupMenuItem(
-                value: _SectionAction.move,
-                child: Text(l10n.actionMoveTo),
-              ),
-              PopupMenuItem(
-                value: _SectionAction.duplicate,
-                child: Text(l10n.actionDuplicate),
-              ),
-              PopupMenuItem(
-                value: _SectionAction.archive,
-                child: Text(l10n.actionArchive),
-              ),
-              PopupMenuItem(
-                value: _SectionAction.delete,
-                child: Text(l10n.actionDelete),
-              ),
-            ],
-          ),
+          if (!widget.readOnly)
+            PopupMenuButton<_SectionAction>(
+              tooltip: l10n.moreActions,
+              iconSize: 20,
+              icon: const Icon(Icons.more_horiz),
+              onSelected: (a) => _run(context, a),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _SectionAction.edit,
+                  child: Text(l10n.actionEdit),
+                ),
+                PopupMenuItem(
+                  value: _SectionAction.move,
+                  child: Text(l10n.actionMoveTo),
+                ),
+                PopupMenuItem(
+                  value: _SectionAction.duplicate,
+                  child: Text(l10n.actionDuplicate),
+                ),
+                PopupMenuItem(
+                  value: _SectionAction.archive,
+                  child: Text(l10n.actionArchive),
+                ),
+                PopupMenuItem(
+                  value: _SectionAction.delete,
+                  child: Text(l10n.actionDelete),
+                ),
+              ],
+            ),
         ],
       ),
     );
