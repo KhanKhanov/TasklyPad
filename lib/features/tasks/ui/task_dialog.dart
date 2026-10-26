@@ -14,22 +14,23 @@ import 'task_fields.dart';
 import 'task_subtasks.dart';
 import 'task_row_parts.dart';
 
-/// Открыть панель задачи. На desktop — окно поверх списка (допущение О-4:
-/// в help не сказано, окно это или боковая панель).
-Future<void> showTaskDialog(BuildContext context, String taskId) =>
-    showDialog<void>(
-      context: context,
-      builder: (_) => TaskDialog(taskId: taskId),
-    );
-
 /// Панель задачи, как в Todoist: слева путь «проект › раздел», название,
 /// описание и подзадачи; справа — поля ([TaskFields]); меню — Дублировать,
 /// Удалить. Задача удалена (в том числе на другом устройстве) — окно
 /// закрывается.
 class TaskDialog extends ConsumerStatefulWidget {
-  const TaskDialog({super.key, required this.taskId});
+  const TaskDialog({
+    super.key,
+    required this.taskId,
+    this.onPrevious,
+    this.onNext,
+  });
 
   final String taskId;
+
+  /// Соседние задачи списка ([TaskPanel]); `null` — соседа нет.
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
 
   @override
   ConsumerState<TaskDialog> createState() => _TaskDialogState();
@@ -69,12 +70,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
 
   Task? _task() => ref.read(workspaceProvider).value?.task(widget.taskId);
 
-  /// Тосты окна — в его собственном [ScaffoldMessenger], пока окно открыто;
-  /// если поле потеряло фокус из-за закрытия окна — на экране под ним.
-  final GlobalKey<ScaffoldMessengerState> _messenger = GlobalKey();
-
+  /// Тосты — в [ScaffoldMessenger] панели (`TaskPanel`): он переживает
+  /// переход к соседней задаче, и сбой сохранения прежней виден в новом окне.
   Future<bool> _write(Future<void> Function() action) => runGuarded(
-    _messenger.currentState ?? ScaffoldMessenger.of(context),
+    ScaffoldMessenger.of(context),
     AppLocalizations.of(context),
     action,
   );
@@ -116,8 +115,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
-  /// Перестроить окно, чтобы [_sync] подставил в поле значение из базы:
-  /// правку с другого устройства, пришедшую, пока курсор был в поле.
+  /// Перестроить окно: [_sync] подставит правку, пришедшую при курсоре в поле.
   void _resync() {
     if (mounted) setState(() {});
   }
@@ -153,16 +151,18 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       _sync(task);
       // Проект в архиве — только просмотр (допущение О-24).
       final readOnly = ws.isProjectArchived(ws.rootProjectOf(task.id));
-      final top = TaskDialogTopBar(task: task, ws: ws, readOnly: readOnly);
-      final fields = TaskFields(task: task, ws: ws, readOnly: readOnly);
-      // Свой ScaffoldMessenger: тосты («Отменить», отказы) — внутри окна,
-      // а не под его затемнением на экране списка.
-      Widget toasts(Widget child) => ScaffoldMessenger(
-        key: _messenger,
-        child: Scaffold(backgroundColor: Colors.transparent, body: child),
+      final top = TaskDialogTopBar(
+        task: task,
+        ws: ws,
+        readOnly: readOnly,
+        onPrevious: widget.onPrevious,
+        onNext: widget.onNext,
       );
-      // Узкий экран (телефон) — на весь экран, поля под подзадачами;
-      // широкий — окно с полями справа.
+      final fields = TaskFields(task: task, ws: ws, readOnly: readOnly);
+      // Свой Scaffold: тосты внутри окна, а не под его затемнением.
+      Widget toasts(Widget child) =>
+          Scaffold(backgroundColor: Colors.transparent, body: child);
+      // Узкий экран — на весь экран, поля под подзадачами; широкий — справа.
       if (MediaQuery.sizeOf(context).width < wideLayoutWidth) {
         return Dialog.fullscreen(
           child: toasts(

@@ -368,4 +368,36 @@ class AppLocalizationsRu extends AppLocalizations {
   String actionFailed(String error) {
     return 'Не удалось выполнить действие. Подробности: $error';
   }
+
+  @override
+  String get filtersAndLabels => 'Фильтры и метки';
+
+  @override
+  String get labelsHeader => 'Метки';
+
+  @override
+  String get addLabel => 'Добавить метку';
+
+  @override
+  String get editLabel => 'Изменить метку';
+
+  @override
+  String get deleteLabel => 'Удалить метку';
+
+  @override
+  String get deleteLabelTitle => 'Удалить метку?';
+
+  @override
+  String deleteLabelBody(String name) {
+    return 'Метка «$name» будет удалена со всех задач.';
+  }
+
+  @override
+  String get noLabels => 'Пока нет меток';
+
+  @override
+  String get previousTask => 'Предыдущая задача';
+
+  @override
+  String get nextTask => 'Следующая задача';
 }

@@ -763,6 +763,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось выполнить действие. Подробности: {error}'**
   String actionFailed(String error);
+
+  /// Пункт сайдбара и страница фильтров и меток
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтры и метки'**
+  String get filtersAndLabels;
+
+  /// Заголовок раздела меток на странице «Фильтры и метки»
+  ///
+  /// In ru, this message translates to:
+  /// **'Метки'**
+  String get labelsHeader;
+
+  /// Кнопка и заголовок диалога новой метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить метку'**
+  String get addLabel;
+
+  /// Пункт меню и заголовок диалога правки метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить метку'**
+  String get editLabel;
+
+  /// Пункт меню метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить метку'**
+  String get deleteLabel;
+
+  /// Заголовок подтверждения удаления метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить метку?'**
+  String get deleteLabelTitle;
+
+  /// Текст подтверждения удаления метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка «{name}» будет удалена со всех задач.'**
+  String deleteLabelBody(String name);
+
+  /// Пустой список меток
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет меток'**
+  String get noLabels;
+
+  /// Кнопка «вверх» в панели задачи (K)
+  ///
+  /// In ru, this message translates to:
+  /// **'Предыдущая задача'**
+  String get previousTask;
+
+  /// Кнопка «вниз» в панели задачи (J)
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующая задача'**
+  String get nextTask;
 }
 
 class _AppLocalizationsDelegate

@@ -270,5 +270,33 @@ void main() {
       expect(ws.labels, isEmpty);
       expect(ws.task(task)!.labelIds, isEmpty);
     });
+
+    test('edit — пишутся только переданные поля, название и цвет одной правкой '
+        'Mutator.update; дубль имени — отказ без записи', () async {
+      final home = await app.labels.add(name: 'дом');
+      await app.labels.add(name: 'работа');
+      final before = (await device.ownOps()).length;
+
+      await app.labels.edit(home, name: 'дача', color: 'green');
+      final ops = (await device.ownOps()).skip(before).toList();
+      expect(ops.map((o) => o.field).toSet(), {
+        LabelFields.name,
+        LabelFields.color,
+      });
+
+      await app.labels.edit(home, color: 'blue');
+      final colorOnly = (await device.ownOps()).skip(before + ops.length);
+      expect(colorOnly.map((o) => o.field), [LabelFields.color]);
+
+      final count = (await device.ownOps()).length;
+      expect(
+        app.labels.edit(home, name: 'Работа', color: 'red'),
+        _rejected(RejectReason.duplicateName),
+      );
+      await pumpEventQueue();
+      expect((await device.ownOps()).length, count);
+      final label = (await app.read()).label(home)!;
+      expect((label.name, label.color), ('дача', 'blue'));
+    });
   });
 }

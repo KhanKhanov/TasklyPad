@@ -5,9 +5,9 @@ import '../../common/ui/ui_kit.dart';
 import '../../tasks/ui/task_actions.dart';
 
 /// Хоткеи оболочки, как в Todoist: `m` — сайдбар; `g`, затем буква —
-/// переход: `i` «Входящие», `p` «Мои проекты». Остальные переходы (`h`, `t`,
-/// `u`, `v`, `l`) появятся вместе с их экранами. Пока печатают в поле —
-/// клавиши уходят в поле.
+/// переход: `i` «Входящие», `p` «Мои проекты», `v` и `l` «Фильтры и метки».
+/// Остальные переходы (`h`, `t`, `u`) появятся вместе с их экранами. Пока
+/// печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
     super.key,
@@ -20,32 +20,44 @@ class ShellKeys extends StatefulWidget {
 
   @override
   State<ShellKeys> createState() => _ShellKeysState();
+
+  /// Нажата `g` и ждётся вторая клавиша: строка задачи в фокусе её не
+  /// забирает (`g v` — экран, а не «Перенести»).
+  static bool sequencePending(BuildContext context) =>
+      context.findAncestorStateOfType<_ShellKeysState>()?._pending ?? false;
 }
 
 class _ShellKeysState extends State<ShellKeys> {
-  /// Когда нажата `g` (время события клавиатуры): следующая клавиша в
-  /// пределах [_goWindow] выбирает экран. Срок в help не указан — допущение.
-  Duration? _goAt;
+  /// Нажата `g`: следующая клавиша в пределах [_goWindow] выбирает экран.
+  /// Срок в help не указан — допущение О-24. Время — свой секундомер, а не
+  /// время события: на Android оно без перерисовки экрана не растёт.
+  final Stopwatch _sinceGo = Stopwatch();
 
   static const Duration _goWindow = Duration(milliseconds: 1500);
 
   static final Map<LogicalKeyboardKey, String> _routes = {
     LogicalKeyboardKey.keyI: '/',
     LogicalKeyboardKey.keyP: '/projects',
+    LogicalKeyboardKey.keyV: '/filters-labels',
+    LogicalKeyboardKey.keyL: '/filters-labels',
   };
 
+  bool get _pending => _sinceGo.isRunning && _sinceGo.elapsed <= _goWindow;
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent || isTypingInTextField()) {
-      return KeyEventResult.ignored;
-    }
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final go = _pending;
+    // Любая клавиша после `g` завершает сочетание, в том числе набранная в поле.
+    _sinceGo
+      ..stop()
+      ..reset();
+    if (isTypingInTextField()) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
-    final goAt = _goAt;
-    _goAt = null; // любая клавиша после `g` завершает сочетание
     if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {
       return KeyEventResult.ignored;
     }
     final key = event.logicalKey;
-    if (goAt != null && event.timeStamp - goAt <= _goWindow) {
+    if (go) {
       final path = _routes[key];
       if (path == null) return KeyEventResult.ignored;
       navigate(context, path);
@@ -54,7 +66,7 @@ class _ShellKeysState extends State<ShellKeys> {
     if (keys.isShiftPressed) return KeyEventResult.ignored;
     switch (key) {
       case LogicalKeyboardKey.keyG:
-        _goAt = event.timeStamp;
+        _sinceGo.start();
       case LogicalKeyboardKey.keyM:
         widget.onToggleSidebar();
       default:

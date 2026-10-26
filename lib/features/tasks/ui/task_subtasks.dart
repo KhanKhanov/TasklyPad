@@ -5,6 +5,7 @@ import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import 'task_list.dart';
+import 'task_order.dart';
 
 /// «Подзадачи» в панели задачи: заголовок, «Показать / скрыть выполненные»
 /// и список с «Добавить подзадачу». Показ выполненных здесь — на время, пока
@@ -35,6 +36,7 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
     final palette = AppPalette.of(context);
     final ws = widget.ws;
     final task = widget.task;
+    final progress = ws.subtaskProgress(task.id);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -47,6 +49,24 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            // Прогресс, как в окне задачи Todoist (блог «New task view»).
+            if (progress.total > 0) ...[
+              const SizedBox(width: 10),
+              SizedBox.square(
+                dimension: 14,
+                child: CircularProgressIndicator(
+                  value: progress.done / progress.total,
+                  strokeWidth: 2.5,
+                  color: palette.accent,
+                  backgroundColor: palette.divider,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${progress.done}/${progress.total}',
+                style: TextStyle(color: palette.textSecondary, fontSize: 12),
+              ),
+            ],
             const Spacer(),
             TextButton(
               onPressed: () => setState(() => _showCompleted = !_showCompleted),
@@ -56,15 +76,24 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
             ),
           ],
         ),
-        TaskList(
-          items: ws.subtasksOf(task.id, showCompleted: _showCompleted),
-          ws: ws,
-          projectId: ws.rootProjectOf(task.id),
-          parentId: task.id,
-          addAt: _addAt,
-          onAddAt: (v) => setState(() => _addAt = v),
-          addLabel: l10n.addSubtask,
-          canAdd: !widget.readOnly,
+        TaskOrderScope(
+          order: (ws) => [
+            for (final item in ws.subtasksOf(
+              task.id,
+              showCompleted: _showCompleted,
+            ))
+              item.value.id,
+          ],
+          child: TaskList(
+            items: ws.subtasksOf(task.id, showCompleted: _showCompleted),
+            ws: ws,
+            projectId: ws.rootProjectOf(task.id),
+            parentId: task.id,
+            addAt: _addAt,
+            onAddAt: (v) => setState(() => _addAt = v),
+            addLabel: l10n.addSubtask,
+            canAdd: !widget.readOnly,
+          ),
         ),
       ],
     );

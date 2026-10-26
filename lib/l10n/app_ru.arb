@@ -511,5 +511,50 @@
         "type": "String"
       }
     }
+  },
+  "filtersAndLabels": "Фильтры и метки",
+  "@filtersAndLabels": {
+    "description": "Пункт сайдбара и страница фильтров и меток"
+  },
+  "labelsHeader": "Метки",
+  "@labelsHeader": {
+    "description": "Заголовок раздела меток на странице «Фильтры и метки»"
+  },
+  "addLabel": "Добавить метку",
+  "@addLabel": {
+    "description": "Кнопка и заголовок диалога новой метки"
+  },
+  "editLabel": "Изменить метку",
+  "@editLabel": {
+    "description": "Пункт меню и заголовок диалога правки метки"
+  },
+  "deleteLabel": "Удалить метку",
+  "@deleteLabel": {
+    "description": "Пункт меню метки"
+  },
+  "deleteLabelTitle": "Удалить метку?",
+  "@deleteLabelTitle": {
+    "description": "Заголовок подтверждения удаления метки"
+  },
+  "deleteLabelBody": "Метка «{name}» будет удалена со всех задач.",
+  "@deleteLabelBody": {
+    "description": "Текст подтверждения удаления метки",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noLabels": "Пока нет меток",
+  "@noLabels": {
+    "description": "Пустой список меток"
+  },
+  "previousTask": "Предыдущая задача",
+  "@previousTask": {
+    "description": "Кнопка «вверх» в панели задачи (K)"
+  },
+  "nextTask": "Следующая задача",
+  "@nextTask": {
+    "description": "Кнопка «вниз» в панели задачи (J)"
   }
 }

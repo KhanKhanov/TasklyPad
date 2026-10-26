@@ -9,8 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/today.dart';
 import 'due_ui.dart';
-import 'task_pickers.dart';
-import 'task_actions.dart';
+import 'task_edits.dart';
 
 /// Правая колонка панели задачи, как в Todoist: Проект, Срок (с длительностью
 /// при времени), Дедлайн, Приоритет, Метки.
@@ -35,7 +34,7 @@ class TaskFields extends ConsumerWidget {
     final commands = ref.read(taskCommandsProvider);
     final today = ref.watch(todayProvider);
     final project = ws.project(ws.rootProjectOf(task.id));
-    final section = ws.section(task.sectionId ?? '');
+    final section = ws.rootSectionOf(task.id);
     final due = task.due;
     final deadline = task.deadline;
     return Padding(
@@ -45,21 +44,7 @@ class TaskFields extends ConsumerWidget {
         children: [
           _Field(
             label: l10n.fieldProject,
-            onTap: readOnly
-                ? null
-                : () async {
-                    final target = await pickPlace(context, ws);
-                    if (target == null || !context.mounted) return;
-                    await runWithUndo(
-                      context,
-                      l10n.taskMoved,
-                      () => commands.move(
-                        task.id,
-                        projectId: target.projectId,
-                        sectionId: target.sectionId,
-                      ),
-                    );
-                  },
+            onTap: readOnly ? null : () => moveTaskTo(context, ref, task),
             child: Row(
               children: [
                 if (project != null && !project.isInbox)
@@ -78,17 +63,7 @@ class TaskFields extends ConsumerWidget {
           ),
           _Field(
             label: l10n.fieldDue,
-            onTap: readOnly
-                ? null
-                : () async {
-                    final picked = await pickDue(context, ref, due);
-                    if (picked == null || !context.mounted) return;
-                    await runWithUndo(
-                      context,
-                      l10n.dueChanged,
-                      () => commands.setDue(task.id, picked.due),
-                    );
-                  },
+            onTap: readOnly ? null : () => editDue(context, ref, task),
             child: due == null
                 ? Text(
                     l10n.noDue,
@@ -147,16 +122,7 @@ class TaskFields extends ConsumerWidget {
           ),
           _Field(
             label: l10n.fieldLabels,
-            onTap: readOnly
-                ? null
-                : () async {
-                    final picked = await pickLabels(context, ws, task.labelIds);
-                    if (picked == null || !context.mounted) return;
-                    await runCommand(
-                      context,
-                      () => commands.setLabels(task.id, picked),
-                    );
-                  },
+            onTap: readOnly ? null : () => editLabels(context, ref, task),
             child: Wrap(
               spacing: 8,
               runSpacing: 4,

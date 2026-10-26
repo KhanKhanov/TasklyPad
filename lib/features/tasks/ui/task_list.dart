@@ -23,6 +23,9 @@ class TaskList extends StatelessWidget {
     required this.onAddAt,
     this.addLabel,
     this.canAdd = true,
+    this.labelIds = const {},
+    this.showProject = false,
+    this.hierarchy = true,
   });
 
   final List<TreeItem<Task>> items;
@@ -37,11 +40,23 @@ class TaskList extends StatelessWidget {
   /// `false` — проект в архиве: задачи только для просмотра.
   final bool canAdd;
 
+  /// Метки новой задачи: на экране метки задача добавляется с ней.
+  final Set<String> labelIds;
+
+  /// Показать у задач проект и раздел (список из разных проектов).
+  final bool showProject;
+
+  /// `false` — плоский список из разных мест (экран метки): строки не
+  /// делаются подзадачами по `Ctrl+]` / `Ctrl+[` — в настоящем списке у
+  /// задачи другие соседи, и правка прошла бы незаметно.
+  final bool hierarchy;
+
   Widget _editor(bool top) => AddTaskEditor(
     projectId: projectId,
     sectionId: sectionId,
     parentId: parentId,
     atTop: top,
+    labelIds: labelIds,
     onClose: () => onAddAt(AddTaskAt.none),
   );
 
@@ -56,6 +71,8 @@ class TaskList extends StatelessWidget {
           item: item,
           ws: ws,
           collapsible: parentId == null,
+          showProject: showProject,
+          hierarchy: hierarchy,
         ),
       if (canAdd && addAt == AddTaskAt.bottom)
         _editor(false)

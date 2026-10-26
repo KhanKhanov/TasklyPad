@@ -227,6 +227,16 @@ final class Workspace {
   /// Проект, в котором задача видна: проект её корневой задачи.
   String rootProjectOf(String taskId) => _rootProject(_tasks[taskId]!);
 
+  /// Раздел, в котором задача видна: раздел её корневой задачи, если он
+  /// жив; `null` — «без раздела». Собственный раздел подзадачи не важен.
+  Section? rootSectionOf(String taskId) {
+    var root = _tasks[taskId]!;
+    for (var p = _taskParent[root.id]; p != null; p = _taskParent[p]) {
+      root = _tasks[p]!;
+    }
+    return _sections[root.sectionId];
+  }
+
   /// Счётчик подзадач в строке задачи: выполнено и всего среди прямых
   /// подзадач.
   ({int done, int total}) subtaskProgress(String taskId) {
@@ -256,6 +266,21 @@ final class Workspace {
       if (_isActive(t)) {
         final project = _rootProject(t);
         counts[project] = (counts[project] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }();
+
+  /// Число активных задач с меткой — счётчик в списке меток и в сайдбаре;
+  /// те же задачи, что в [labelTasks].
+  int labelTaskCount(String labelId) => _labelCounts[labelId] ?? 0;
+
+  late final Map<String, int> _labelCounts = () {
+    final counts = <String, int>{};
+    for (final t in _tasks.values) {
+      if (!_isActive(t)) continue;
+      for (final id in t.labelIds) {
+        counts[id] = (counts[id] ?? 0) + 1;
       }
     }
     return counts;

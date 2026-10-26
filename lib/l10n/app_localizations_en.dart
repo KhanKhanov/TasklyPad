@@ -368,4 +368,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String actionFailed(String error) {
     return 'Couldn\'t complete the action. Details: $error';
   }
+
+  @override
+  String get filtersAndLabels => 'Filters & Labels';
+
+  @override
+  String get labelsHeader => 'Labels';
+
+  @override
+  String get addLabel => 'Add label';
+
+  @override
+  String get editLabel => 'Edit label';
+
+  @override
+  String get deleteLabel => 'Delete label';
+
+  @override
+  String get deleteLabelTitle => 'Delete label?';
+
+  @override
+  String deleteLabelBody(String name) {
+    return 'The label \"$name\" will be removed from all tasks.';
+  }
+
+  @override
+  String get noLabels => 'No labels yet';
+
+  @override
+  String get previousTask => 'Previous task';
+
+  @override
+  String get nextTask => 'Next task';
 }

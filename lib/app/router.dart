@@ -1,6 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../features/labels/ui/filters_labels_screen.dart';
+import '../features/labels/ui/label_screen.dart';
 import '../features/projects/ui/project_screen.dart';
 import '../features/projects/ui/projects_screen.dart';
 import '../features/shell/ui/app_shell.dart';
@@ -33,6 +35,17 @@ GoRouter router(Ref ref) {
             path: '/projects',
             name: 'projects',
             builder: (context, state) => const ProjectsScreen(),
+          ),
+          GoRoute(
+            path: '/filters-labels',
+            name: 'filtersLabels',
+            builder: (context, state) => const FiltersLabelsScreen(),
+          ),
+          GoRoute(
+            path: '/label/:id',
+            name: 'label',
+            builder: (context, state) =>
+                LabelScreen(labelId: state.pathParameters['id']!),
           ),
         ],
       ),
