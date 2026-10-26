@@ -55,14 +55,23 @@ final class Mutator {
       // значением спорила бы с параллельной правкой этого поля на другом
       // устройстве (ложный конфликт) и могла бы откатить её по LWW —
       // например, перестановка задачи откатила бы перенос её подзадачи.
-      final changed = <String, Object?>{
-        for (final MapEntry(key: field, :value) in merged.entries)
-          if (!jsonEquals(
-            await _store.fieldValue(entityType, entityId, field),
-            value,
-          ))
-            field: value,
-      };
+      final changed = <String, Object?>{};
+      // Новая для этого узла сущность (детерминированный id: метка задачи,
+      // «Входящие») пишется целиком: на другом устройстве она может уже быть,
+      // и op со значением по умолчанию (`deleted=false`) должна побеждать там
+      // более раннюю правку по LWW.
+      final known = await _store.hasEntity(entityType, entityId);
+      for (final MapEntry(key: field, :value) in merged.entries) {
+        final current = await _store.fieldValue(entityType, entityId, field);
+        // У известной сущности поля ещё нет, а значение — то же, что колонка
+        // показывает по умолчанию (`false`, `list`): видимого изменения нет.
+        final unchanged =
+            jsonEquals(current, value) ||
+            (known &&
+                current == null &&
+                _store.isProjectionDefault(entityType, field, value));
+        if (!unchanged) changed[field] = value;
+      }
       if (changed.isEmpty) return const <Op>[];
       return _engine.mutate(entityType, entityId, changed);
     });

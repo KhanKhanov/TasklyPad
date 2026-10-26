@@ -140,19 +140,67 @@ final class TaskCommands {
       for (final t in ws.taskSubtree(id))
         if (!ws.task(t)!.isCompleted) t,
     ];
-    return _setCompleted(ids, completed: true);
+    return markCompleted(ids, completed: true);
   }
 
-  /// Вернуть задачу в работу. Незавершёнными становятся и её завершённые
-  /// предки (в Todoist отмена завершения подзадачи возвращает и родителя).
+  /// Вернуть задачу в работу — как `item_uncomplete` в Todoist API: вместе с
+  /// ней возвращаются завершённые предки и архивный раздел корневой задачи,
+  /// а возвращённые встают в конец незавершённых соседей (раздел — в конец
+  /// разделов проекта). «Отменить» в тосте после завершения сюда не ведёт:
+  /// он восстанавливает прежние значения полей, в том числе место.
   Future<Undo> uncomplete(String id) async {
     final ws = await _read();
-    await _alive(id, ws);
-    final ids = [
-      for (String? t = id; t != null; t = ws.taskParent(t))
-        if (ws.task(t)!.isCompleted) t,
-    ];
-    return _setCompleted(ids, completed: false);
+    var root = await _alive(id, ws);
+    final ids = <String>[];
+    for (String? t = id; t != null; t = ws.taskParent(t)) {
+      root = ws.task(t)!;
+      if (root.isCompleted) ids.add(t);
+    }
+    if (ids.isEmpty) return _mutator.capture(const []);
+    final section = ws.section(root.sectionId ?? '');
+    final reinstateSection = section != null && section.isArchived;
+
+    // Ключи считаются до записи: соседи — незавершённые и не возвращаемые.
+    final keys = <String, String>{
+      for (final t in ids)
+        t: keyAtEnd([
+          for (final s in _siblings(ws, ws.task(t)!))
+            if (!s.isCompleted && !ids.contains(s.id)) s.orderKey,
+        ]),
+    };
+    final undo = await _mutator.capture([
+      for (final t in ids)
+        _target(t, {
+          TaskFields.isCompleted,
+          TaskFields.completedAt,
+          TaskFields.orderKey,
+        }),
+      if (reinstateSection)
+        (
+          entityType: EntityTypes.section,
+          entityId: section.id,
+          fields: {SectionFields.isArchived, SectionFields.orderKey},
+        ),
+    ]);
+    await _mutator.batch(() async {
+      for (final t in ids) {
+        await _mutator.update(EntityTypes.task, t, {
+          TaskFields.isCompleted: false,
+          TaskFields.completedAt: null,
+          TaskFields.orderKey: keys[t],
+        });
+      }
+      if (reinstateSection) {
+        final projectId = section.projectId ?? ws.inbox?.id ?? inboxProjectId;
+        await _mutator.update(EntityTypes.section, section.id, {
+          SectionFields.isArchived: false,
+          SectionFields.orderKey: keyAtEnd([
+            for (final s in ws.sectionsOf(projectId)) s.orderKey,
+          ]),
+        });
+      }
+    });
+    return undo;
   }
 
   /// Удалить (tombstone). Подзадачи скрываются вместе с задачей.
@@ -317,7 +365,10 @@ final class TaskCommands {
 
   // --- Внутреннее ---
 
-  Future<Undo> _setCompleted(
+  /// Отметить задачи [ids] завершёнными или нет одной транзакцией, без
+  /// проверок дерева: для действий над группой (завершение с подзадачами,
+  /// архив раздела).
+  Future<Undo> markCompleted(
     List<String> ids, {
     required bool completed,
   }) async {

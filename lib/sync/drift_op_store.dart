@@ -75,6 +75,23 @@ final class DriftOpStore implements OpStore {
     return row == null ? null : jsonDecode(row.valueJson);
   }
 
+  /// У сущности есть хотя бы одно поле в `field_versions` — она уже известна
+  /// этому узлу (создана здесь или пришла синхронизацией).
+  Future<bool> hasEntity(String entityType, String entityId) async =>
+      await (_db.select(_db.fieldVersions)
+            ..where(
+              (t) =>
+                  t.entityType.equals(entityType) & t.entityId.equals(entityId),
+            )
+            ..limit(1))
+          .getSingleOrNull() !=
+      null;
+
+  /// Значение [value] поля [field] сущности типа [entityType] проецируется так
+  /// же, как отсутствие поля (значения колонок по умолчанию).
+  bool isProjectionDefault(String entityType, String field, Object? value) =>
+      registry[entityType]?.isDefault(field, value) ?? false;
+
   /// Наибольшая метка времени в журнале по всем узлам или `null`.
   ///
   /// Сравнение строк в SQL здесь корректно и для разных узлов: время и

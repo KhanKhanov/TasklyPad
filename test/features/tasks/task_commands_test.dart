@@ -116,6 +116,80 @@ void main() {
     },
   );
 
+  test('uncomplete — возвращённая задача встаёт в конец незавершённых '
+      '(item_uncomplete в Todoist API)', () async {
+    final a = await app.tasks.add(content: 'a');
+    await app.tasks.add(content: 'b');
+    await app.tasks.add(content: 'c');
+    await app.tasks.complete(a);
+    await app.tasks.uncomplete(a);
+    expect(await inboxOrder(), ['b', 'c', 'a']);
+  });
+
+  test('uncomplete — архивный раздел корневой задачи возвращается и встаёт '
+      'в конец разделов; отмена возвращает как было', () async {
+    final p = await app.projects.add(name: 'Работа');
+    final s1 = await app.sections.add(p, name: 'Старое');
+    await app.sections.add(p, name: 'Неделя');
+    final t = await app.tasks.add(content: 't', projectId: p, sectionId: s1);
+    final other = await app.tasks.add(
+      content: 'другая',
+      projectId: p,
+      sectionId: s1,
+    );
+    await app.sections.archive(s1);
+    var ws = await app.read();
+    final before = (
+      section: ws.section(s1)!.orderKey,
+      task: ws.task(t)!.orderKey,
+      completedAt: ws.task(t)!.completedAt,
+    );
+
+    final undo = await app.tasks.uncomplete(t);
+    ws = await app.read();
+    expect([for (final s in ws.sectionsOf(p)) s.name], ['Неделя', 'Старое']);
+    expect(ws.task(t)!.isCompleted, isFalse);
+    // Возвращается только эта задача: остальные задачи архивного раздела
+    // остались завершёнными (help «Introduction to sections»).
+    expect(ws.task(other)!.isCompleted, isTrue);
+
+    await undo();
+    ws = await app.read();
+    expect(ws.section(s1)!.isArchived, isTrue);
+    expect(ws.section(s1)!.orderKey, before.section);
+    expect(ws.task(t)!.isCompleted, isTrue);
+    expect(ws.task(t)!.orderKey, before.task);
+    expect(ws.task(t)!.completedAt, before.completedAt);
+  });
+
+  test('uncomplete подзадачи — завершённый родитель встаёт в конец своих '
+      'незавершённых соседей', () async {
+    final parent = await app.tasks.add(content: 'Родитель');
+    final child = await app.tasks.add(content: 'Ребёнок', parentId: parent);
+    await app.tasks.add(content: 'b');
+    await app.tasks.complete(parent);
+    await app.tasks.uncomplete(child);
+    expect(await inboxOrder(), ['b', 'Родитель', 'Ребёнок']);
+  });
+
+  test('uncomplete незавершённой задачи — ни одной op, раздел из архива не '
+      'возвращается', () async {
+    final p = await app.projects.add(name: 'Работа');
+    final s = await app.sections.add(p, name: 'Старое');
+    final t = await app.tasks.add(content: 't', projectId: p, sectionId: s);
+    await app.sections.archive(s);
+    // Задача завершена архивом; вернём её и снова отправим раздел в архив
+    // без задач, чтобы получить незавершённую задачу в архивном разделе.
+    await app.tasks.uncomplete(t);
+    await device.services.mutator.update(EntityTypes.section, s, {
+      SectionFields.isArchived: true,
+    });
+    final opsBefore = (await device.ownOps()).length;
+    await app.tasks.uncomplete(t);
+    expect((await device.ownOps()).length, opsBefore);
+    expect((await app.read()).section(s)!.isArchived, isTrue);
+  });
+
   test(
     'move — поддерево переезжает в другой проект; отмена возвращает',
     () async {

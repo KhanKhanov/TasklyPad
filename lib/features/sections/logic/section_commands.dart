@@ -51,9 +51,32 @@ final class SectionCommands {
   Future<void> setCollapsed(String id, bool collapsed) =>
       _update(id, {SectionFields.isCollapsed: collapsed});
 
-  /// Архивировать: задачи раздела скрываются вместе с ним.
-  Future<void> archive(String id) =>
-      _update(id, {SectionFields.isArchived: true});
+  /// Архивировать — как `section_archive` в Todoist API («Archive a section
+  /// and all its child tasks»): незавершённые задачи раздела с подзадачами
+  /// завершаются и после возврата раздела остаются завершёнными (help
+  /// «Introduction to sections»).
+  ///
+  /// Снимок читается внутри транзакции: задача, пришедшая синхронизацией
+  /// между чтением и записью, тоже будет завершена. Задачу, добавленную в
+  /// раздел на другом устройстве параллельно с архивом, завершить нельзя —
+  /// она скрыта вместе с разделом (SYNC_DESIGN «Специальные случаи»).
+  Future<void> archive(String id) => _mutator.batch(() async {
+    final ws = await _read();
+    final section = _alive(ws, id);
+    final open = [
+      for (final root in ws.children(
+        null,
+        projectId: section.projectId,
+        sectionId: id,
+      ))
+        for (final t in ws.taskSubtree(root.id))
+          if (!ws.task(t)!.isCompleted) t,
+    ];
+    await _tasks.markCompleted(open, completed: true);
+    await _mutator.update(EntityTypes.section, id, {
+      SectionFields.isArchived: true,
+    });
+  });
 
   Future<void> unarchive(String id) =>
       _update(id, {SectionFields.isArchived: false});

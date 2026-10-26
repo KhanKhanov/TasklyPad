@@ -97,8 +97,31 @@ final class ProjectCommands {
   Future<void> archive(String id) =>
       _update(id, {ProjectFields.isArchived: true}, protectInbox: true);
 
-  Future<void> unarchive(String id) =>
-      _update(id, {ProjectFields.isArchived: false}, protectInbox: true);
+  /// Вернуть из архива — как `project_unarchive` в Todoist API: предки не
+  /// возвращаются. Если предок в архиве, проект возвращается один,
+  /// становится корневым и встаёт в конец корневых проектов.
+  Future<void> unarchive(String id) async {
+    final ws = await _read();
+    final project = _alive(ws, id, protectInbox: true);
+    final parent = ws.projectParent(id);
+    final ancestorArchived = parent != null && ws.isProjectArchived(parent);
+    // Не в архиве — не пишем ничего: op `is_archived=false` на поле, которого
+    // ещё не было, спорила бы с параллельным архивом на другом устройстве.
+    if (!project.isArchived && !ancestorArchived) return;
+    if (!ancestorArchived) {
+      await _mutator.update(EntityTypes.project, id, {
+        ProjectFields.isArchived: false,
+      });
+      return;
+    }
+    await _mutator.update(EntityTypes.project, id, {
+      ProjectFields.isArchived: false,
+      ProjectFields.parentId: null,
+      ProjectFields.orderKey: keyAtEnd([
+        for (final p in ws.childProjects(null)) p.orderKey,
+      ]),
+    });
+  }
 
   /// Удалить (tombstone): подпроекты, разделы и задачи скрываются с ним.
   Future<void> delete(String id) async {

@@ -174,4 +174,24 @@ void main() {
       expect(await opsOf(id), hasLength(before + 1));
     },
   );
+
+  test('update — значение по умолчанию в поле, которого ещё нет (false, list), '
+      'op не получает; restore неудалённой — тоже', () async {
+    final id = await dev.services.mutator.create(EntityTypes.project, {
+      ProjectFields.name: 'Работа',
+    });
+    final before = (await opsOf(id)).length;
+    await dev.services.mutator.update(EntityTypes.project, id, {
+      ProjectFields.isFavorite: false,
+      ProjectFields.viewStyle: 'list',
+      ProjectFields.isArchived: false,
+    });
+    await dev.services.mutator.restore(EntityTypes.project, id);
+    expect(await opsOf(id), hasLength(before));
+
+    final ops = await dev.services.mutator.update(EntityTypes.project, id, {
+      ProjectFields.viewStyle: 'board',
+    });
+    expect(ops.map((o) => o.field), [ProjectFields.viewStyle]);
+  });
 }
