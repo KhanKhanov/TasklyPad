@@ -66,6 +66,13 @@ jobs:
       - name: Тесты приложения
         run: flutter test
 
+      # Даты срока считаются по календарю; в UTC (раннер) и в Москве переходов на летнее
+      # время нет, и тест дат там проходит при любой реализации, — поэтому ещё раз в Берлине.
+      - name: Тест дат в поясе с переходом на летнее время
+        run: flutter test test/features/tasks/due_dates_test.dart
+        env:
+          TZ: Europe/Berlin
+
       - name: Тесты ядра синхронизации (packages/oplog_sync)
         working-directory: packages/oplog_sync
         run: dart test

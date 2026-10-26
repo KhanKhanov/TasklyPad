@@ -104,6 +104,14 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
           _busy = false;
         });
       }
+    } on Exception catch (e, stackTrace) {
+      logCommandError(e, stackTrace);
+      if (mounted) {
+        setState(() {
+          _error = l10n.actionFailed('$e');
+          _busy = false;
+        });
+      }
     }
   }
 

@@ -70,21 +70,57 @@ String rejectMessage(AppLocalizations l10n, RejectReason reason) =>
     };
 
 /// Выполнить действие; отказ правилами — короткое сообщение внизу экрана.
-/// Прочие ошибки не глотаются.
-Future<void> runCommand(
-  BuildContext context,
+Future<void> runCommand(BuildContext context, Future<void> Function() action) =>
+    runGuarded(
+      ScaffoldMessenger.of(context),
+      AppLocalizations.of(context),
+      action,
+    );
+
+final Logger _commandLogger = Logger();
+
+/// То же, что [runCommand], но без `context`: для действий, которые
+/// срабатывают, когда виджета уже нет (например, «Отменить» в тосте после
+/// того, как строка выполненной задачи исчезла). Отказ правилами — его текст;
+/// сбой записи ([Exception]) — запись в журнал и тост; ошибка программы
+/// ([Error]) — ещё и в обработчик ошибок Flutter, чтобы её видели тесты и
+/// консоль. `true` — действие выполнено.
+Future<bool> runGuarded(
+  ScaffoldMessengerState messenger,
+  AppLocalizations l10n,
   Future<void> Function() action,
 ) async {
-  final messenger = ScaffoldMessenger.of(context);
-  final l10n = AppLocalizations.of(context);
+  void show(String text) {
+    // Экран (или окно задачи) мог закрыться, пока шла запись.
+    if (messenger.mounted) {
+      messenger.showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
+
   try {
     await action();
+    return true;
   } on CommandRejected catch (e) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(rejectMessage(l10n, e.reason))),
+    show(rejectMessage(l10n, e.reason));
+  } on Exception catch (e, stackTrace) {
+    logCommandError(e, stackTrace);
+    show(l10n.actionFailed('$e'));
+  } on Error catch (e, stackTrace) {
+    logCommandError(e, stackTrace);
+    FlutterError.reportError(
+      FlutterErrorDetails(exception: e, stack: stackTrace),
     );
+    show(l10n.actionFailed('$e'));
   }
+  return false;
 }
+
+/// Записать в журнал сбой действия пользователя.
+void logCommandError(Object error, StackTrace stackTrace) => _commandLogger.e(
+  'Действие не выполнено',
+  error: error,
+  stackTrace: stackTrace,
+);
 
 /// Подтверждение опасного действия. `true` — пользователь согласился.
 Future<bool> confirmAction(

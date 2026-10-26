@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/sidebar_state.dart';
+import 'shell_keys.dart';
 import 'sidebar.dart';
 
 /// Ширина, начиная с которой сайдбар стоит рядом с контентом, а не
@@ -13,43 +14,66 @@ const double _sidebarWidth = 280;
 
 /// Оболочка всех экранов: сайдбар слева и контент справа; на узком экране
 /// сайдбар — выдвижная панель.
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.location, required this.child});
 
   final String location;
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  final GlobalKey<ScaffoldState> _scaffold = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final open = ref.watch(sidebarOpenProvider);
+    final location = widget.location;
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideLayoutWidth;
-        return Scaffold(
-          backgroundColor: palette.background,
-          drawer: wide
-              ? null
-              : Drawer(
-                  width: _sidebarWidth,
-                  child: Sidebar(location: location),
+        return ShellKeys(
+          onToggleSidebar: () {
+            final scaffold = _scaffold.currentState;
+            if (wide) {
+              ref.read(sidebarOpenProvider.notifier).toggle();
+            } else if (scaffold == null) {
+              return;
+            } else if (scaffold.isDrawerOpen) {
+              scaffold.closeDrawer();
+            } else {
+              scaffold.openDrawer();
+            }
+          },
+          child: Scaffold(
+            key: _scaffold,
+            backgroundColor: palette.background,
+            drawer: wide
+                ? null
+                : Drawer(
+                    width: _sidebarWidth,
+                    child: Sidebar(location: location),
+                  ),
+            body: Row(
+              children: [
+                if (wide && open)
+                  SizedBox(
+                    width: _sidebarWidth,
+                    child: Sidebar(location: location),
+                  ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _TopBar(showToggle: !wide || !open),
+                      Expanded(child: widget.child),
+                    ],
+                  ),
                 ),
-          body: Row(
-            children: [
-              if (wide && open)
-                SizedBox(
-                  width: _sidebarWidth,
-                  child: Sidebar(location: location),
-                ),
-              Expanded(
-                child: Column(
-                  children: [
-                    _TopBar(showToggle: !wide || !open),
-                    Expanded(child: child),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

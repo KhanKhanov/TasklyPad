@@ -31,12 +31,23 @@ class _SectionEditorState extends State<SectionEditor> {
   late final TextEditingController _name = TextEditingController(
     text: widget.initial,
   );
+  final FocusNode _focus = FocusNode();
   String? _error;
   bool _busy = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Не `autofocus`: он не срабатывает, если фокус уже у экрана (хоткеи).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
     _name.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -49,6 +60,9 @@ class _SectionEditorState extends State<SectionEditor> {
       await widget.onSubmit(_name.text);
     } on CommandRejected catch (e) {
       if (mounted) setState(() => _error = rejectMessage(l10n, e.reason));
+    } on Exception catch (e, stackTrace) {
+      logCommandError(e, stackTrace);
+      if (mounted) setState(() => _error = l10n.actionFailed('$e'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -69,7 +83,7 @@ class _SectionEditorState extends State<SectionEditor> {
           children: [
             TextField(
               controller: _name,
-              autofocus: true,
+              focusNode: _focus,
               maxLength: 120,
               decoration: InputDecoration(
                 hintText: l10n.sectionNameHint,

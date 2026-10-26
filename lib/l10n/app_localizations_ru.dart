@@ -238,4 +238,134 @@ class AppLocalizationsRu extends AppLocalizations {
   String loadError(String error) {
     return 'Не удалось загрузить данные. Подробности: $error';
   }
+
+  @override
+  String get addTask => 'Добавить задачу';
+
+  @override
+  String get taskNameHint => 'Название задачи';
+
+  @override
+  String get descriptionHint => 'Описание';
+
+  @override
+  String get taskCompleted => 'Задача выполнена';
+
+  @override
+  String get taskMoved => 'Задача перенесена';
+
+  @override
+  String get dueChanged => 'Срок изменён';
+
+  @override
+  String get actionUndo => 'Отменить';
+
+  @override
+  String get deleteTaskTitle => 'Удалить задачу?';
+
+  @override
+  String deleteTaskBody(String name) {
+    return 'Задача «$name» будет удалена вместе с подзадачами.';
+  }
+
+  @override
+  String get viewOptions => 'Просмотр';
+
+  @override
+  String get completedTasks => 'Выполненные задачи';
+
+  @override
+  String get dueToday => 'Сегодня';
+
+  @override
+  String get dueTomorrow => 'Завтра';
+
+  @override
+  String get dueYesterday => 'Вчера';
+
+  @override
+  String get dueWeekend => 'На выходных';
+
+  @override
+  String get dueNextWeek => 'Следующая неделя';
+
+  @override
+  String get noDue => 'Без срока';
+
+  @override
+  String get pickDate => 'Выбрать дату…';
+
+  @override
+  String get addTime => 'Добавить время';
+
+  @override
+  String get removeTime => 'Убрать время';
+
+  @override
+  String get fieldProject => 'Проект';
+
+  @override
+  String get fieldDue => 'Срок';
+
+  @override
+  String get fieldDeadline => 'Дедлайн';
+
+  @override
+  String get fieldPriority => 'Приоритет';
+
+  @override
+  String get fieldLabels => 'Метки';
+
+  @override
+  String get fieldDuration => 'Длительность';
+
+  @override
+  String get noDeadline => 'Без дедлайна';
+
+  @override
+  String get noDuration => 'Без длительности';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String priorityN(int n) {
+    return 'Приоритет $n';
+  }
+
+  @override
+  String get subtasks => 'Подзадачи';
+
+  @override
+  String get addSubtask => 'Добавить подзадачу';
+
+  @override
+  String get showCompleted => 'Показать выполненные';
+
+  @override
+  String get hideCompleted => 'Скрыть выполненные';
+
+  @override
+  String get completeTask => 'Выполнить';
+
+  @override
+  String get reopenTask => 'Вернуть в работу';
+
+  @override
+  String createLabel(String name) {
+    return 'Создать метку «$name»';
+  }
+
+  @override
+  String get labelSearchHint => 'Метка';
+
+  @override
+  String get actionDone => 'Готово';
+
+  @override
+  String actionFailed(String error) {
+    return 'Не удалось выполнить действие. Подробности: $error';
+  }
 }

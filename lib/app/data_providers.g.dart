@@ -99,6 +99,55 @@ final class WorkspaceProvider
 
 String _$workspaceHash() => r'4618a6219ae0cae8cbaa96c4876ee3cde6d6f038';
 
+/// Часы приложения — для «сегодня» на экранах (сроки, быстрые даты). В
+/// тестах — часы тестового устройства.
+
+@ProviderFor(clock)
+final clockProvider = ClockProvider._();
+
+/// Часы приложения — для «сегодня» на экранах (сроки, быстрые даты). В
+/// тестах — часы тестового устройства.
+
+final class ClockProvider
+    extends $FunctionalProvider<AppClock, AppClock, AppClock>
+    with $Provider<AppClock> {
+  /// Часы приложения — для «сегодня» на экранах (сроки, быстрые даты). В
+  /// тестах — часы тестового устройства.
+  ClockProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'clockProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$clockHash();
+
+  @$internal
+  @override
+  $ProviderElement<AppClock> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  AppClock create(Ref ref) {
+    return clock(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AppClock value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AppClock>(value),
+    );
+  }
+}
+
+String _$clockHash() => r'9b073d37c2a85475272a515d9ad9145df3b5d3db';
+
 @ProviderFor(taskCommands)
 final taskCommandsProvider = TaskCommandsProvider._();
 

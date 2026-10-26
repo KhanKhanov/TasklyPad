@@ -326,5 +326,190 @@
         "type": "String"
       }
     }
+  },
+  "addTask": "Добавить задачу",
+  "@addTask": {
+    "description": "Кнопка и редактор, как в Todoist"
+  },
+  "taskNameHint": "Название задачи",
+  "@taskNameHint": {
+    "description": "Подсказка поля названия"
+  },
+  "descriptionHint": "Описание",
+  "@descriptionHint": {
+    "description": "Подсказка поля описания"
+  },
+  "taskCompleted": "Задача выполнена",
+  "@taskCompleted": {
+    "description": "Тост после завершения"
+  },
+  "taskMoved": "Задача перенесена",
+  "@taskMoved": {
+    "description": "Тост после переноса"
+  },
+  "dueChanged": "Срок изменён",
+  "@dueChanged": {
+    "description": "Тост после смены срока"
+  },
+  "actionUndo": "Отменить",
+  "@actionUndo": {
+    "description": "Кнопка в тосте"
+  },
+  "deleteTaskTitle": "Удалить задачу?",
+  "@deleteTaskTitle": {
+    "description": "Заголовок подтверждения"
+  },
+  "deleteTaskBody": "Задача «{name}» будет удалена вместе с подзадачами.",
+  "@deleteTaskBody": {
+    "description": "Текст подтверждения",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "viewOptions": "Просмотр",
+  "@viewOptions": {
+    "description": "Кнопка настроек вида, как в Todoist"
+  },
+  "completedTasks": "Выполненные задачи",
+  "@completedTasks": {
+    "description": "Переключатель в «Просмотр»"
+  },
+  "dueToday": "Сегодня",
+  "@dueToday": {
+    "description": "Срок"
+  },
+  "dueTomorrow": "Завтра",
+  "@dueTomorrow": {
+    "description": "Срок"
+  },
+  "dueYesterday": "Вчера",
+  "@dueYesterday": {
+    "description": "Срок"
+  },
+  "dueWeekend": "На выходных",
+  "@dueWeekend": {
+    "description": "Быстрый вариант срока"
+  },
+  "dueNextWeek": "Следующая неделя",
+  "@dueNextWeek": {
+    "description": "Быстрый вариант срока"
+  },
+  "noDue": "Без срока",
+  "@noDue": {
+    "description": "Убрать срок"
+  },
+  "pickDate": "Выбрать дату…",
+  "@pickDate": {
+    "description": "Пункт выбора даты"
+  },
+  "addTime": "Добавить время",
+  "@addTime": {
+    "description": "Пункт выбора времени"
+  },
+  "removeTime": "Убрать время",
+  "@removeTime": {
+    "description": "Пункт выбора времени"
+  },
+  "fieldProject": "Проект",
+  "@fieldProject": {
+    "description": "Поле панели задачи"
+  },
+  "fieldDue": "Срок",
+  "@fieldDue": {
+    "description": "Поле панели задачи"
+  },
+  "fieldDeadline": "Дедлайн",
+  "@fieldDeadline": {
+    "description": "Поле панели задачи"
+  },
+  "fieldPriority": "Приоритет",
+  "@fieldPriority": {
+    "description": "Поле панели задачи"
+  },
+  "fieldLabels": "Метки",
+  "@fieldLabels": {
+    "description": "Поле панели задачи"
+  },
+  "fieldDuration": "Длительность",
+  "@fieldDuration": {
+    "description": "Поле панели задачи"
+  },
+  "noDeadline": "Без дедлайна",
+  "@noDeadline": {
+    "description": "Убрать дедлайн"
+  },
+  "noDuration": "Без длительности",
+  "@noDuration": {
+    "description": "Убрать длительность"
+  },
+  "durationMinutes": "{minutes} мин",
+  "@durationMinutes": {
+    "description": "Длительность в минутах",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "priorityN": "Приоритет {n}",
+  "@priorityN": {
+    "description": "Приоритет 1–4",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "subtasks": "Подзадачи",
+  "@subtasks": {
+    "description": "Раздел панели задачи"
+  },
+  "addSubtask": "Добавить подзадачу",
+  "@addSubtask": {
+    "description": "Кнопка, как в Todoist"
+  },
+  "showCompleted": "Показать выполненные",
+  "@showCompleted": {
+    "description": "Переключатель подзадач"
+  },
+  "hideCompleted": "Скрыть выполненные",
+  "@hideCompleted": {
+    "description": "Переключатель подзадач"
+  },
+  "completeTask": "Выполнить",
+  "@completeTask": {
+    "description": "Подсказка кружка задачи"
+  },
+  "reopenTask": "Вернуть в работу",
+  "@reopenTask": {
+    "description": "Подсказка кружка выполненной задачи"
+  },
+  "createLabel": "Создать метку «{name}»",
+  "@createLabel": {
+    "description": "Пункт выбора меток",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "labelSearchHint": "Метка",
+  "@labelSearchHint": {
+    "description": "Подсказка поля поиска метки"
+  },
+  "actionDone": "Готово",
+  "@actionDone": {
+    "description": "Кнопка закрытия выбора"
+  },
+  "actionFailed": "Не удалось выполнить действие. Подробности: {error}",
+  "@actionFailed": {
+    "description": "Неожиданная ошибка записи (не отказ правилами)",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }
