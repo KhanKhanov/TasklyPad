@@ -8,7 +8,7 @@ import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../shell/ui/app_shell.dart';
+import 'task_dialog_layout.dart';
 import 'task_dialog_top_bar.dart';
 import 'task_fields.dart';
 import 'task_subtasks.dart';
@@ -43,8 +43,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final FocusNode _descriptionFocus = FocusNode();
   bool _closing = false;
 
-  // Значения из базы, подставленные в поля. Сравниваем с ними, а не с базой:
-  // иначе чужая правка, пришедшая при курсоре в поле, затёрлась бы.
+  // Значения, которые сейчас стоят в полях из базы. Сохраняем, только если
+  // пользователь изменил текст относительно них, — а не относительно базы:
+  // пока курсор в поле, правка с другого устройства в поле не подставляется,
+  // и сравнение с базой затёрло бы её старым текстом.
   String _contentBase = '';
   String _descriptionBase = '';
 
@@ -115,7 +117,8 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     }
   }
 
-  /// Перестроить окно: [_sync] подставит правку, пришедшую при курсоре в поле.
+  /// Перестроить окно, чтобы [_sync] подставил в поле значение из базы:
+  /// правку с другого устройства, пришедшую, пока курсор был в поле.
   void _resync() {
     if (mounted) setState(() {});
   }
@@ -158,66 +161,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         onPrevious: widget.onPrevious,
         onNext: widget.onNext,
       );
-      final fields = TaskFields(task: task, ws: ws, readOnly: readOnly);
-      // Свой Scaffold: тосты внутри окна, а не под его затемнением.
-      Widget toasts(Widget child) =>
-          Scaffold(backgroundColor: Colors.transparent, body: child);
-      // Узкий экран — на весь экран, поля под подзадачами; широкий — справа.
-      if (MediaQuery.sizeOf(context).width < wideLayoutWidth) {
-        return Dialog.fullscreen(
-          child: toasts(
-            SafeArea(
-              child: Column(
-                children: [
-                  top,
-                  const Divider(height: 1),
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      children: [
-                        ..._main(context, ws, task, readOnly),
-                        const Divider(height: 1),
-                        fields,
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-      return Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 880, maxHeight: 640),
-          child: toasts(
-            Column(
-              children: [
-                top,
-                const Divider(height: 1),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          children: _main(context, ws, task, readOnly),
-                        ),
-                      ),
-                      const VerticalDivider(width: 1),
-                      SizedBox(
-                        width: 280,
-                        child: SingleChildScrollView(child: fields),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      return TaskDialogLayout(
+        top: top,
+        main: _main(context, ws, task, readOnly),
+        fields: TaskFields(task: task, ws: ws, readOnly: readOnly),
       );
     },
   );
