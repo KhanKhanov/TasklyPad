@@ -40,7 +40,8 @@ Flutter SDK — `C:\src\flutter`; riverpod_lint — через `plugins:` в ana
 IMPORTANT: терминал пользователя — Windows PowerShell 5.1 (PowerShell 7 не установлен). Любая команда,
 которую показываешь пользователю, пишется в синтаксисе 5.1: без `&&`, `||`, `?:`, `??`; одна команда
 на блок или `A; if ($?) { B }`. Многошаговую команду перед выдачей прогоняй через
-`[System.Management.Automation.Language.Parser]::ParseInput` (проверка без выполнения).
+`[System.Management.Automation.Language.Parser]::ParseInput` (проверка без выполнения) — ровно тот текст,
+который выдаёшь: заготовок вроде `<ветка>` в командах нет (`<` в PowerShell — оператор), имена конкретные.
 
 ## Источники истины и дом факта
 Порядок: поведение Todoist (help на todoist.com) → docs/TODOIST_PARITY.md → docs/SYNC_DESIGN.md →
@@ -111,7 +112,10 @@ OBLIGATIONS, закрытое — с доказательством; новые 
 ## Git
 Conventional Commits (feat/fix/refactor/test/docs/chore), одна фича — один коммит. Коммитит
 пользователь сам (git-команды записи у Claude запрещены пользовательскими настройками): готовь
-сообщение и команды. IMPORTANT: в сообщениях коммитов, коде, README и docs/ упоминаний ИИ-инструментов
+сообщение и команды. IMPORTANT: перед командами сверь факт, а не предполагай — `.git/HEAD`,
+`.git/refs/heads/main`, `.git/refs/remotes/origin/main`, `git status`; зависимые шаги (переключение →
+подтягивание → новая ветка) давай одной цепочкой, которая останавливается на ошибке:
+`git switch main; if ($?) { git pull --ff-only; if ($?) { git switch -c <ветка> } }`. IMPORTANT: в сообщениях коммитов, коде, README и docs/ упоминаний ИИ-инструментов
 нет; всё про них — только в CLAUDE.md и .claude/ (пока отслеживаются git — решение пользователя).
 Памятка пользователю, что делает он на каждом шаге, — .claude/HOW_TO_WORK.md.
 
