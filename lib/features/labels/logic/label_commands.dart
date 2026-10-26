@@ -39,6 +39,19 @@ final class LabelCommands {
     });
   }
 
+  /// Правка из диалога одной записью: название и цвет вместе, и сбой не
+  /// оставит правку наполовину. `null` — поле не менялось.
+  Future<void> edit(String id, {String? name, String? color}) async {
+    final ws = await _read();
+    _alive(ws, id);
+    final fields = {
+      if (name != null) LabelFields.name: _name(ws, name, except: id),
+      LabelFields.color: ?color,
+    };
+    if (fields.isEmpty) return;
+    await _mutator.update(EntityTypes.label, id, fields);
+  }
+
   Future<void> setColor(String id, String color) =>
       _update(id, {LabelFields.color: color});
 

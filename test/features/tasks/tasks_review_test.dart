@@ -298,10 +298,14 @@ void main() {
       await tester.tap(find.text('Parent'));
       await settle(tester);
 
+      // Счётчик в строке подзадачи «Child» (у заголовка «Подзадачи» — свой).
       await tester.tap(
         find.descendant(
           of: find.byType(TaskDialog),
-          matching: find.text('0/1'),
+          matching: find.descendant(
+            of: find.byType(TaskRow),
+            matching: find.text('0/1'),
+          ),
         ),
       );
       await settle(tester);

@@ -5,13 +5,14 @@ import '../../common/ui/ui_kit.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../labels/ui/label_tile.dart';
 import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_tile.dart';
 import '../state/sidebar_state.dart';
 
-/// Боковая панель, как в Todoist: «Входящие», «Избранное», «Мои проекты»
-/// деревом. Пункты «Добавить задачу», «Поиск», «Сегодня», «Предстоящее» и
-/// «Фильтры и метки» появляются вместе со своими экранами (M2.2–M5).
+/// Боковая панель, как в Todoist: «Входящие», «Фильтры и метки», «Избранное»
+/// (проекты и метки), «Мои проекты» деревом. Пункты «Добавить задачу»,
+/// «Поиск», «Сегодня», «Предстоящее» появляются вместе со своими экранами.
 class Sidebar extends ConsumerWidget {
   const Sidebar({super.key, required this.location});
 
@@ -67,6 +68,10 @@ class Sidebar extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final inbox = ws.inbox;
     final favorites = ws.favoriteProjects;
+    final favoriteLabels = [
+      for (final l in ws.labels)
+        if (l.isFavorite) l,
+    ];
     return [
       if (inbox != null)
         _NavItem(
@@ -76,7 +81,18 @@ class Sidebar extends ConsumerWidget {
           selected: location == '/' || location == '/project/${inbox.id}',
           onTap: () => navigate(context, '/'),
         ),
-      if (favorites.isNotEmpty) ...[
+      _NavItem(
+        icon: Icons.grid_view_outlined,
+        label: l10n.filtersAndLabels,
+        count: 0,
+        // Метка из «Избранного» подсвечивается там, а не здесь.
+        selected:
+            location == '/filters-labels' ||
+            (location.startsWith('/label/') &&
+                !favoriteLabels.any((l) => location == '/label/${l.id}')),
+        onTap: () => navigate(context, '/filters-labels'),
+      ),
+      if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
         _GroupHeader(label: l10n.favorites),
         for (final p in favorites)
           ProjectTile(
@@ -84,6 +100,13 @@ class Sidebar extends ConsumerWidget {
             project: p,
             count: ws.activeTaskCount(p.id),
             selected: location == '/project/${p.id}',
+          ),
+        for (final l in favoriteLabels)
+          LabelTile(
+            key: ValueKey('fav-label-${l.id}'),
+            label: l,
+            count: ws.labelTaskCount(l.id),
+            selected: location == '/label/${l.id}',
           ),
       ],
       _GroupHeader(

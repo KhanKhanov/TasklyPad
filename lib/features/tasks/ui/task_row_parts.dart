@@ -5,6 +5,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/ui_kit.dart';
 import '../state/today.dart';
 import 'due_ui.dart';
 import 'task_actions.dart';
@@ -78,10 +79,14 @@ class TaskText extends ConsumerWidget {
     required this.task,
     required this.ws,
     this.onToggleCollapse,
+    this.showProject = false,
   });
 
   final Task task;
   final Workspace ws;
+
+  /// Чип «# Проект / Раздел» — в списках из разных проектов (экран метки).
+  final bool showProject;
 
   /// Клик по счётчику подзадач; `null` — счётчик не нажимается.
   final VoidCallback? onToggleCollapse;
@@ -125,6 +130,18 @@ class TaskText extends ConsumerWidget {
             icon: Icons.sell_outlined,
             text: label.name,
             color: projectColor(label.color),
+          ),
+      if (showProject)
+        if (ws.project(ws.rootProjectOf(task.id)) case final project?)
+          _Chip(
+            icon: Icons.tag,
+            text: [
+              projectTitle(AppLocalizations.of(context), project),
+              ?ws.rootSectionOf(task.id)?.name,
+            ].join(' / '),
+            color: project.isInbox
+                ? palette.textSecondary
+                : projectColor(project.color),
           ),
     ];
     return Padding(

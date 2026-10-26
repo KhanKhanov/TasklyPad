@@ -12,6 +12,7 @@ import '../../sections/ui/section_editor.dart';
 import '../../tasks/state/view_options.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_list.dart';
+import '../../tasks/ui/task_order.dart';
 import '../../tasks/ui/view_options_button.dart';
 import 'project_menu.dart';
 
@@ -46,6 +47,20 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     (:final sectionId, :final at) when sectionId == forSection => at,
     _ => AddTaskAt.none,
   };
+
+  /// Задачи экрана в порядке показа — соседи для `J`/`K` в панели задачи.
+  List<String> _order(Workspace ws, String projectId) {
+    final view = ws.projectView(
+      projectId,
+      showCompleted: ref.read(showCompletedProvider(projectId)),
+    );
+    return [
+      for (final item in view.unsectioned) item.value.id,
+      for (final (:section, :tasks) in view.sections)
+        if (!section.isCollapsed)
+          for (final item in tasks) item.value.id,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) => WorkspaceView(builder: _build);
@@ -86,54 +101,57 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
-                children: [
-                  _Header(project: project, archived: archived),
-                  TaskList(
-                    items: view.unsectioned,
-                    ws: ws,
-                    projectId: project.id,
-                    addAt: _addAt(null),
-                    onAddAt: (at) => _openAdd(null, at),
-                    canAdd: canAdd,
-                  ),
-                  if (view.unsectioned.isEmpty && view.sections.isEmpty)
-                    _Empty(),
-                  for (final (:section, :tasks) in view.sections) ...[
-                    SectionBlock(
-                      key: ValueKey(section.id),
-                      section: section,
-                      count: ws.activeTaskCountIn(project.id, section.id),
-                      readOnly: archived,
+              child: TaskOrderScope(
+                order: (ws) => _order(ws, project.id),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
+                  children: [
+                    _Header(project: project, archived: archived),
+                    TaskList(
+                      items: view.unsectioned,
+                      ws: ws,
+                      projectId: project.id,
+                      addAt: _addAt(null),
+                      onAddAt: (at) => _openAdd(null, at),
+                      canAdd: canAdd,
                     ),
-                    if (!section.isCollapsed)
-                      TaskList(
-                        key: ValueKey('tasks-${section.id}'),
-                        items: tasks,
-                        ws: ws,
+                    if (view.unsectioned.isEmpty && view.sections.isEmpty)
+                      _Empty(),
+                    for (final (:section, :tasks) in view.sections) ...[
+                      SectionBlock(
+                        key: ValueKey(section.id),
+                        section: section,
+                        count: ws.activeTaskCountIn(project.id, section.id),
+                        readOnly: archived,
+                      ),
+                      if (!section.isCollapsed)
+                        TaskList(
+                          key: ValueKey('tasks-${section.id}'),
+                          items: tasks,
+                          ws: ws,
+                          projectId: project.id,
+                          sectionId: section.id,
+                          addAt: _addAt(section.id),
+                          onAddAt: (at) => _openAdd(section.id, at),
+                          canAdd: canAdd,
+                        ),
+                    ],
+                    if (canAdd)
+                      _AddSection(
                         projectId: project.id,
-                        sectionId: section.id,
-                        addAt: _addAt(section.id),
-                        onAddAt: (at) => _openAdd(section.id, at),
-                        canAdd: canAdd,
+                        open: _addingSection,
+                        // Вызывается и после записи раздела — экран к тому
+                        // времени мог уйти (переход по сайдбару).
+                        onOpen: (v) {
+                          if (!mounted) return;
+                          setState(() {
+                            _addingSection = v;
+                            if (v) _adding = null;
+                          });
+                        },
                       ),
                   ],
-                  if (canAdd)
-                    _AddSection(
-                      projectId: project.id,
-                      open: _addingSection,
-                      // Вызывается и после записи раздела — экран к тому
-                      // времени мог уйти (переход по сайдбару).
-                      onOpen: (v) {
-                        if (!mounted) return;
-                        setState(() {
-                          _addingSection = v;
-                          if (v) _adding = null;
-                        });
-                      },
-                    ),
-                ],
+                ),
               ),
             ),
           ),

@@ -18,6 +18,7 @@ class AddTaskEditor extends ConsumerStatefulWidget {
     this.sectionId,
     this.parentId,
     this.atTop = false,
+    this.labelIds = const {},
     required this.onClose,
   });
 
@@ -25,6 +26,7 @@ class AddTaskEditor extends ConsumerStatefulWidget {
   final String? sectionId;
   final String? parentId;
   final bool atTop;
+  final Set<String> labelIds;
   final VoidCallback onClose;
 
   @override
@@ -69,6 +71,7 @@ class _AddTaskEditorState extends ConsumerState<AddTaskEditor> {
             sectionId: widget.parentId == null ? widget.sectionId : null,
             parentId: widget.parentId,
             atTop: widget.atTop,
+            labelIds: widget.labelIds,
           );
       if (!mounted) return;
       _name.clear();

@@ -340,4 +340,36 @@ void main() {
     expect(ws.subtaskProgress('a'), (done: 1, total: 2));
     expect(ws.subtaskProgress('a21'), (done: 0, total: 0));
   });
+
+  test('rootSectionOf — раздел корневой задачи, собственный раздел '
+      'подзадачи не важен', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: [_section('s', 'p')],
+      labels: const [],
+      tasks: [
+        _task('a', section: 's'),
+        _task('a1', parent: 'a'),
+        _task('b'),
+      ],
+    );
+    expect(ws.rootSectionOf('a1')?.id, 's');
+    expect(ws.rootSectionOf('b'), isNull);
+  });
+
+  test('labelTaskCount — столько же задач, сколько в labelTasks', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: const [],
+      labels: [_label('l')],
+      tasks: [
+        _task('a', labels: ['l']),
+        _task('b', labels: ['l'], completed: true),
+        _task('c', parent: 'a', labels: ['l']),
+      ],
+    );
+    expect(ws.labelTaskCount('l'), ws.labelTasks('l').length);
+    expect(ws.labelTaskCount('l'), 2);
+    expect(ws.labelTaskCount('нет'), 0);
+  });
 }

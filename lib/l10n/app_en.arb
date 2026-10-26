@@ -110,5 +110,15 @@
   "createLabel": "Create label \"{name}\"",
   "labelSearchHint": "Label",
   "actionDone": "Done",
-  "actionFailed": "Couldn't complete the action. Details: {error}"
+  "actionFailed": "Couldn't complete the action. Details: {error}",
+  "filtersAndLabels": "Filters & Labels",
+  "labelsHeader": "Labels",
+  "addLabel": "Add label",
+  "editLabel": "Edit label",
+  "deleteLabel": "Delete label",
+  "deleteLabelTitle": "Delete label?",
+  "deleteLabelBody": "The label \"{name}\" will be removed from all tasks.",
+  "noLabels": "No labels yet",
+  "previousTask": "Previous task",
+  "nextTask": "Next task"
 }

@@ -9,8 +9,10 @@ import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../shell/ui/shell_keys.dart';
 import 'task_actions.dart';
-import 'task_dialog.dart';
+import 'task_edits.dart';
+import 'task_panel.dart';
 import 'task_row_parts.dart';
 
 /// Строка задачи, как в Todoist: кружок с обводкой цвета приоритета,
@@ -23,6 +25,8 @@ class TaskRow extends ConsumerStatefulWidget {
     required this.item,
     required this.ws,
     this.collapsible = true,
+    this.showProject = false,
+    this.hierarchy = true,
   });
 
   final TreeItem<Task> item;
@@ -31,6 +35,12 @@ class TaskRow extends ConsumerStatefulWidget {
   /// `false` — подзадачи в панели задачи: там они показаны все, и
   /// сворачивание ничего бы не изменило на экране, но записалось бы в данные.
   final bool collapsible;
+
+  /// Показать проект и раздел задачи (экран метки).
+  final bool showProject;
+
+  /// `false` — `Ctrl+]` / `Ctrl+[` не действуют: плоский список (экран метки).
+  final bool hierarchy;
 
   @override
   ConsumerState<TaskRow> createState() => _TaskRowState();
@@ -79,6 +89,9 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     final keys = HardwareKeyboard.instance;
     final key = event.logicalKey;
     if (keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
+    if (ShellKeys.sequencePending(context)) {
+      return KeyEventResult.ignored;
+    }
     switch (key) {
       case LogicalKeyboardKey.enter
           when !keys.isControlPressed && !keys.isShiftPressed:
@@ -104,15 +117,12 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     void run(Future<void> Function() action) =>
         runCommand(context, () async => action());
     if (keys.isControlPressed) {
+      if (!widget.hierarchy) return KeyEventResult.ignored;
       switch (key) {
         case LogicalKeyboardKey.bracketRight:
           run(() => commands.indent(t.id));
         case LogicalKeyboardKey.bracketLeft:
           run(() => commands.outdent(t.id));
-        case LogicalKeyboardKey.arrowUp:
-          run(() => commands.moveUp(t.id));
-        case LogicalKeyboardKey.arrowDown:
-          run(() => commands.moveDown(t.id));
         default:
           return KeyEventResult.ignored;
       }
@@ -122,6 +132,8 @@ class _TaskRowState extends ConsumerState<TaskRow> {
       switch (key) {
         case LogicalKeyboardKey.delete:
           deleteTask(context, ref, t);
+        case LogicalKeyboardKey.keyT:
+          removeDue(context, ref, t);
         default:
           return KeyEventResult.ignored;
       }
@@ -136,6 +148,14 @@ class _TaskRowState extends ConsumerState<TaskRow> {
           LogicalKeyboardKey.digit4:
         final p = int.parse(key.keyLabel);
         run(() => commands.setPriority(t.id, p));
+      case LogicalKeyboardKey.keyT:
+        editDue(context, ref, t);
+      case LogicalKeyboardKey.keyL:
+        editLabels(context, ref, t);
+      case LogicalKeyboardKey.keyV:
+        moveTaskTo(context, ref, t);
+      case LogicalKeyboardKey.keyY:
+        editPriority(context, ref, t);
       default:
         return KeyEventResult.ignored;
     }
@@ -197,6 +217,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                       task: t,
                       ws: widget.ws,
                       onToggleCollapse: _canCollapse ? _toggleCollapse : null,
+                      showProject: widget.showProject,
                     ),
                   ),
                   Visibility(

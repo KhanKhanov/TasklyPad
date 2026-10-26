@@ -9,13 +9,16 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import 'task_actions.dart';
 
-/// Верх панели: путь «проект › раздел», меню и закрыть.
+/// Верх панели: путь «проект › раздел», стрелки к соседним задачам, меню и
+/// закрыть.
 class TaskDialogTopBar extends ConsumerWidget {
   const TaskDialogTopBar({
     super.key,
     required this.task,
     required this.ws,
     this.readOnly = false,
+    this.onPrevious,
+    this.onNext,
   });
 
   final Task task;
@@ -23,6 +26,10 @@ class TaskDialogTopBar extends ConsumerWidget {
 
   /// Проект в архиве — меню действий не показывается.
   final bool readOnly;
+
+  /// Стрелки «предыдущая / следующая задача» (`K` / `J`); `null` — нет соседа.
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,7 +39,7 @@ class TaskDialogTopBar extends ConsumerWidget {
     final parent = ws.task(ws.taskParent(task.id) ?? '');
     final path = [
       if (project != null) projectTitle(l10n, project),
-      ?ws.section(task.sectionId ?? '')?.name,
+      ?ws.rootSectionOf(task.id)?.name,
       ?parent?.content,
     ].join(' › ');
     return Padding(
@@ -45,6 +52,16 @@ class TaskDialogTopBar extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: palette.textSecondary, fontSize: 13),
             ),
+          ),
+          IconButton(
+            tooltip: l10n.previousTask,
+            icon: const Icon(Icons.keyboard_arrow_up),
+            onPressed: onPrevious,
+          ),
+          IconButton(
+            tooltip: l10n.nextTask,
+            icon: const Icon(Icons.keyboard_arrow_down),
+            onPressed: onNext,
           ),
           if (!readOnly)
             PopupMenuButton<bool>(
