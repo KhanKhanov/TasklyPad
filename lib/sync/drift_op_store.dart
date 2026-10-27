@@ -104,6 +104,19 @@ final class DriftOpStore implements OpStore {
     return text == null ? null : Hlc.parse(text);
   }
 
+  /// Узлы журнала и метка последней op каждого (индекс `ops_by_node_hlc`).
+  /// Внутри одного узла строки HLC сравниваются как время и счётчик.
+  Future<Map<String, Hlc>> lastHlcByNode() async {
+    final max = _db.ops.hlc.max();
+    final query = _db.selectOnly(_db.ops)
+      ..addColumns([_db.ops.nodeId, max])
+      ..groupBy([_db.ops.nodeId]);
+    return {
+      for (final row in await query.get())
+        row.read(_db.ops.nodeId)!: Hlc.parse(row.read(max)!),
+    };
+  }
+
   /// Записать версию поля и, если тип и поле известны реестру, колонку
   /// проекции. HLC не сравнивает — это делает движок.
   ///

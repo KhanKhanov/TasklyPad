@@ -471,6 +471,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get retiredUnreadAction => 'Сменить всё равно';
 
   @override
+  String get syncErrorFolderMissing =>
+      'Папка синхронизации не найдена: её удалили или диск либо облако не подключены. В неё ничего не записано.';
+
+  @override
+  String get syncErrorRootMissing =>
+      'Выбранная папка не найдена: подключите диск или облако либо выберите другую папку. В неё ничего не записано.';
+
+  @override
+  String get recreateFolderAction => 'Создать папку заново';
+
+  @override
+  String get recreateFolderTitle => 'Создать папку синхронизации заново?';
+
+  @override
+  String get recreateFolderBody =>
+      'В выбранной папке будет создана новая папка синхронизации, и это устройство выгрузит в неё все свои данные; остальные устройства подхватят её сами. Если диск или облако просто временно не подключены, подождите и подключите их — иначе появится вторая, отдельная папка.';
+
+  @override
+  String get folderRecreated => 'Папка синхронизации подключена заново';
+
+  @override
   String syncErrorOther(String error) {
     return 'Синхронизация не удалась: $error';
   }
@@ -513,10 +534,35 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get recreateFolderRetiredHint =>
+      'Отметьте устройства, которыми больше не пользуетесь: их правки, известные этому устройству, будут записаны в новую папку. Имён нет — описания устройств пропали вместе с папкой; ориентируйтесь по времени последней правки. «Это устройство до копирования базы» отметьте, если компьютером, с которого база скопирована, больше не пользуетесь. Устройство, которым ещё пользуетесь, не отмечайте — иначе его новые правки покажутся конфликтом.';
+
+  @override
+  String get recreateFolderNoDevices =>
+      'Устройства из журнала не прочитаны: правки других устройств в новую папку не попадут.';
+
+  @override
+  String folderRecreatedAdopted(int count) {
+    return 'Папка синхронизации подключена заново. В неё записаны правки устройств, которыми больше не пользуетесь: $count';
+  }
+
+  @override
+  String deviceLastEdit(String time, String id) {
+    return 'последняя правка $time · …$id';
+  }
+
+  @override
   String get devicesHeader => 'Устройства';
 
   @override
   String get thisDevice => 'это устройство';
+
+  @override
+  String get devicesUnread =>
+      'Устройства не прочитаны: папка синхронизации недоступна';
+
+  @override
+  String get deviceFormerThis => 'Это устройство до копирования базы';
 
   @override
   String get deviceUnnamed => 'Устройство без описания';

@@ -158,6 +158,21 @@ class SyncController extends _$SyncController {
     }
   }
 
+  /// Другие устройства из журнала этого устройства — для «Создать папку
+  /// заново» ([SyncRunner.journalDevices]). `null` — журнал не прочитан.
+  Future<List<SyncDevice>?> journalDevices() async {
+    try {
+      return await _runner.journalDevices();
+    } on Object catch (error, stackTrace) {
+      _log.w(
+        'Устройства из журнала не прочитаны',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   /// Выбрать или сменить папку и синхронизироваться с ней; правки устройств
   /// [retired] переиздаются в новую папку ([SyncRunner.setFolder]). `null` — не
   /// вышло: ошибка в состоянии, на экране — папка, которая действительно
@@ -229,9 +244,13 @@ class SyncController extends _$SyncController {
   Future<void> rebuild() => _runner.rebuild();
 }
 
-/// Устройства в папке синхронизации; перечитываются после каждого прохода.
+/// Устройства в папке синхронизации; перечитываются после каждого удачного
+/// прохода и после каждой ошибки — неудачный проход не меняет время
+/// синхронизации, а папки уже может не быть.
 @riverpod
 Future<List<SyncDevice>> syncDevices(Ref ref) {
-  ref.watch(syncControllerProvider.select((s) => (s.folder, s.lastSync)));
+  ref.watch(
+    syncControllerProvider.select((s) => (s.folder, s.lastSync, s.error)),
+  );
   return ref.read(syncRunnerProvider).devices();
 }

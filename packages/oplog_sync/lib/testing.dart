@@ -1319,6 +1319,18 @@ final List<ContractScenario<SyncStateFactory>> syncStateScenarios = [
     check(await state.chunkCursor('a'), 0, 'курсор a');
     check(await state.uploadedUpTo(), null, 'uploadedUpTo');
   }),
+
+  ContractScenario('состояние: forgetFolder — папка, курсоры и водяной знак '
+      'забыты', (create) async {
+    final state = await create();
+    await state.resetForFolder('f1');
+    await state.setChunkCursor('a', 3);
+    await state.setUploadedUpTo(_hlc(1));
+    await state.forgetFolder();
+    check(await state.folderId(), null, 'folderId');
+    check(await state.chunkCursor('a'), 0, 'курсор a');
+    check(await state.uploadedUpTo(), null, 'uploadedUpTo');
+  }),
 ];
 
 // ---------------------------------------------------------------------------

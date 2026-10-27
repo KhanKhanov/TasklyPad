@@ -302,17 +302,20 @@ final class SyncRunnerProvider
 
 String _$syncRunnerHash() => r'b666830bc5da576b6ede81b0556682a47a5db44d';
 
-/// Системный диалог выбора папки; в тестах — фейк.
+/// Системный диалог выбора папки; в тестах — фейк. Пока только Windows:
+/// Android — через SAF (M6, О-30).
 
 @ProviderFor(folderPicker)
 final folderPickerProvider = FolderPickerProvider._();
 
-/// Системный диалог выбора папки; в тестах — фейк.
+/// Системный диалог выбора папки; в тестах — фейк. Пока только Windows:
+/// Android — через SAF (M6, О-30).
 
 final class FolderPickerProvider
     extends $FunctionalProvider<FolderPicker, FolderPicker, FolderPicker>
     with $Provider<FolderPicker> {
-  /// Системный диалог выбора папки; в тестах — фейк.
+  /// Системный диалог выбора папки; в тестах — фейк. Пока только Windows:
+  /// Android — через SAF (M6, О-30).
   FolderPickerProvider._()
     : super(
         from: null,
@@ -346,4 +349,4 @@ final class FolderPickerProvider
   }
 }
 
-String _$folderPickerHash() => r'0c2cb16072b633b2cb4a8fe1740b8ead9280eed6';
+String _$folderPickerHash() => r'4ac82fe570e8ddbd3b9c68ee1eddca58a6e89d3b';

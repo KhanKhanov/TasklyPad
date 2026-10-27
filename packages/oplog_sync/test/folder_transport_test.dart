@@ -71,12 +71,16 @@ final class FaultyFs implements SyncFs {
   /// клиент докачал файл после чтения списка).
   final Set<String> unlisted = {};
 
-  /// Вызывается перед первой проверкой существования пути — так другое
-  /// устройство «успевает» создать файл между проверкой и записью.
+  /// Вызывается перед первой проверкой существования файла (не корня) — так
+  /// другое устройство «успевает» создать файл между проверкой и записью.
   Future<void> Function(String path)? beforeFirstExists;
+
+  /// Корня (выбранной папки) нет: диск или облако не подключены.
+  bool rootMissing = false;
 
   @override
   Future<bool> exists(String path) async {
+    if (path.isEmpty) return !rootMissing && await inner.exists(path);
     final hook = beforeFirstExists;
     if (hook != null) {
       beforeFirstExists = null;
@@ -111,8 +115,15 @@ final class FaultyFs implements SyncFs {
     return inner.writeString(path, content);
   }
 
+  /// Следующая запись `format.json` бросит исключение (один раз).
+  bool failFormatWrite = false;
+
   @override
   Future<bool> writeStringIfAbsent(String path, String content) {
+    if (failFormatWrite && path.endsWith('format.json')) {
+      failFormatWrite = false;
+      throw Exception('нет доступа на запись');
+    }
     if (path.endsWith('.ndjson') && ++_chunkWrites == failChunkWriteNo) {
       throw Exception('диск переполнен');
     }
@@ -593,7 +604,10 @@ void main() {
       await syncAll([a, b]);
       await a.engine.mutate('task', 't2', {'title': 'вторая'});
 
+      // Пользователь выбрал папку — её забывают; b приходит в папку, уже
+      // созданную a, и сбрасывает курсоры по другому folder_id.
       final newFs = MemorySyncFs();
+      await a.state.forgetFolder();
       await a.transportFor(newFs).sync();
       await b.transportFor(newFs).sync();
       final c = Peer('c', newFs);
@@ -602,6 +616,18 @@ void main() {
       expect(chunkOps(newFs, 'a', 1), hasLength(2));
       expect(b.task('t2'), {'title': 'вторая'});
       expect(c.alive('task').keys, unorderedEquals(['t1', 't2']));
+    });
+
+    test('другая пустая папка без forgetFolder — ошибка, в неё ничего не '
+        'записано', () async {
+      await a.engine.mutate('task', 't1', {'title': 'первая'});
+      await a.sync();
+      final newFs = MemorySyncFs();
+      await expectLater(
+        a.transportFor(newFs).sync(),
+        throwsA(isA<SyncFolderMissingException>()),
+      );
+      expect(newFs.files, isEmpty);
     });
 
     test('часы движка отстают от водяного знака — громкая ошибка', () async {
@@ -620,6 +646,116 @@ void main() {
       final second = a.sync();
       expect(identical(await first, await second), isTrue);
       expect(fs.files.keys.where((k) => k.endsWith('.ndjson')), hasLength(1));
+    });
+  });
+
+  // SYNC_DESIGN «Транспорт A»: известную папку без format.json транспорт не
+  // создаёт заново, корень — никогда.
+  group('пропавшая папка', () {
+    Future<void> syncedA() async {
+      await a.engine.mutate('task', 't1', {'title': 'первая'});
+      await a.sync();
+    }
+
+    test('известная папка опустела — ошибка, ничего не записано, папка '
+        'прежняя', () async {
+      await syncedA();
+      final id = await a.state.folderId();
+      final emptied = MemorySyncFs();
+      await expectLater(
+        a.transportFor(emptied).sync(),
+        throwsA(isA<SyncFolderMissingException>()),
+      );
+      expect(emptied.files, isEmpty);
+      expect(await a.state.folderId(), id);
+    });
+
+    test('nodes/ на месте, format.json пропал — ошибка, файлы не '
+        'тронуты', () async {
+      await syncedA();
+      final partial = MemorySyncFs();
+      for (final MapEntry(key: path, :value) in fs.files.entries) {
+        if (!path.endsWith('format.json')) {
+          await partial.writeString(path, value);
+        }
+      }
+      final before = Map.of(partial.files);
+      await a.engine.mutate('task', 't2', {'title': 'вторая'});
+      await expectLater(
+        a.transportFor(partial).sync(),
+        throwsA(isA<SyncFolderMissingException>()),
+      );
+      expect(partial.files, before);
+    });
+
+    test('forgetFolder — проход создаёт папку с новым id и выгружает весь '
+        'журнал', () async {
+      await syncedA();
+      final id = await a.state.folderId();
+      final emptied = MemorySyncFs();
+      await a.state.forgetFolder();
+      await a.engine.mutate('task', 't2', {'title': 'вторая'});
+      await a.transportFor(emptied).sync();
+      expect(await a.state.folderId(), isNot(id));
+      expect(chunkOps(emptied, 'a', 1), hasLength(2));
+    });
+
+    test('forgetFolder при том же folder_id — курсоры и водяной знак '
+        'сброшены, журнал выгружен заново', () async {
+      await syncedA();
+      await a.engine.mutate('task', 't2', {'title': 'вторая'});
+      await a.sync();
+      final id = await a.state.folderId();
+      await a.state.forgetFolder();
+      await a.sync();
+      expect(await a.state.folderId(), id);
+      expect(chunkOps(fs, 'a', 3), hasLength(2));
+    });
+
+    test('первый проход не записал format.json — следующий создаёт '
+        'папку', () async {
+      final faulty = FaultyFs(fs)..failFormatWrite = true;
+      final c = Peer('c', faulty);
+      await c.engine.mutate('task', 't1', {'title': 'первая'});
+      await expectLater(c.sync(), throwsException);
+      expect(await c.state.folderId(), isNull);
+      await c.sync();
+      expect(fs.files.keys, contains('$root/format.json'));
+      expect(chunkOps(fs, 'c', 1), hasLength(1));
+    });
+
+    test('выбранной папки нет (диск, облако не подключены) — ошибка и у '
+        'незнакомой папки, ничего не записано', () async {
+      final faulty = FaultyFs(fs)..rootMissing = true;
+      final c = Peer('c', faulty);
+      await c.engine.mutate('task', 't1', {'title': 'первая'});
+      await expectLater(c.sync(), throwsA(isA<SyncFolderMissingException>()));
+      expect(fs.files, isEmpty);
+    });
+
+    test('два узла: папка пропала — ошибка у обоих; a создаёт её заново, b '
+        'подхватывает сам, новый c сходится без конфликтов', () async {
+      await a.engine.mutate('task', 't1', {'title': 'от a'});
+      await b.engine.mutate('task', 't2', {'title': 'от b'});
+      await syncAll([a, b]);
+      final emptied = MemorySyncFs();
+      await expectLater(
+        a.transportFor(emptied).sync(),
+        throwsA(isA<SyncFolderMissingException>()),
+      );
+      await expectLater(
+        b.transportFor(emptied).sync(),
+        throwsA(isA<SyncFolderMissingException>()),
+      );
+
+      await a.state.forgetFolder();
+      await a.transportFor(emptied).sync();
+      await b.transportFor(emptied).sync();
+      final c = Peer('c', emptied);
+      await c.sync();
+
+      expect(c.alive('task').keys, unorderedEquals(['t1', 't2']));
+      expect(await c.engine.store.conflicts(), isEmpty);
     });
   });
 }

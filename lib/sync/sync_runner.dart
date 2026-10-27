@@ -57,8 +57,12 @@ class SyncRunner {
     return report;
   }
 
-  /// Выбрать папку (первый раз или смена — docs/plans/m2-core-app.md,
-  /// решение 12) и сразу синхронизироваться с ней.
+  /// Выбрать папку (первый раз, смена — docs/plans/m2-core-app.md, решение
+  /// 12 — или та же заново, когда она пропала) и сразу синхронизироваться с
+  /// ней. Папка забывается (`SyncStateStore.forgetFolder`): пока с ней не
+  /// было прохода, он может создать в ней папку синхронизации (SYNC_DESIGN
+  /// «Транспорт A»), а курсоры и водяной знак сбрасываются, даже если это та
+  /// же физическая папка под другим путём.
   ///
   /// Правки узлов [retired] — устройств, которые пользователь отметил как
   /// больше не используемые, — переиздаются от этого узла с исходным временем
@@ -70,7 +74,7 @@ class SyncRunner {
   /// проход с прежней папкой: иначе правки, которые выбывшее устройство
   /// выгрузило после нашего прошлого прохода, остались бы только в ней.
   /// Чанк отмеченного узла не прочитан или прежняя папка недоступна целиком
-  /// (нет `format.json`, сбой чтения, папка новее приложения) —
+  /// (`SyncFolderMissingException`, сбой чтения, папка новее приложения) —
   /// [RetiredUnreadException], папка не меняется. По виду ошибки нельзя понять, пройдёт ли она сама: обрезанный
   /// файл одинаков при докачке и при порче, а часы узла, ушедшие вперёд,
   /// догоняются. Поэтому решает пользователь: подождать или сменить с
@@ -106,6 +110,7 @@ class SyncRunner {
     // приложение, сбой записи) не оставит новую папку без части копий —
     // повторный выбор той же папки иначе был бы уже невозможен.
     await _services.mutator.batch(() async {
+      await _services.syncState.forgetFolder();
       for (final node in retired) {
         if (await _services.mutator.adoptUnsyncedOps(node, null) > 0) {
           adopted.add(node);
@@ -142,15 +147,11 @@ class SyncRunner {
 
   /// Последний проход с прежней папкой: отмеченные узлы [retired], чьи правки
   /// прочитаны не все, и причина, если папка недоступна целиком — тогда не
-  /// прочитан никто из них.
+  /// прочитан никто из них. Пропавшую прежнюю папку транспорт не создаёт
+  /// заново (`SyncFolderMissingException`).
   Future<(Set<String>, Object?)> _lastPass(Set<String> retired) async {
-    final old = await folderPath();
-    // Удалённую прежнюю папку проход создал бы заново и выгрузил бы в неё
-    // журнал, а она должна остаться как есть.
-    if (old == null ||
-        !await _openFs(old).exists('$syncFolderName/format.json')) {
-      return (retired, null);
-    }
+    // Прежней папки нет — прочитать отмеченных негде.
+    if (await folderPath() == null) return (retired, null);
     final FolderSyncReport? report;
     try {
       report = await syncNow();
@@ -177,7 +178,7 @@ class SyncRunner {
     if (path == null) return const [];
     final fs = _openFs(path);
     if (!await fs.exists('$syncFolderName/format.json')) {
-      throw SyncFolderMissingException(path);
+      throw const SyncFolderMissingException('$syncFolderName/format.json');
     }
     final devices = <SyncDevice>[];
     for (final node in await fs.list('$syncFolderName/nodes')) {
@@ -211,6 +212,28 @@ class SyncRunner {
       );
     }
     return devices;
+  }
+
+  /// Другие узлы из журнала этого устройства — для «Создать папку заново»:
+  /// папки нет, и выбывшие устройства видны только по их правкам (решение
+  /// пользователя 5А к коммиту 2а M2.3). Имени нет — `info.json` пропал вместе
+  /// с папкой; [SyncDevice.lastEdit] — время последней правки. Новые первыми.
+  Future<List<SyncDevice>> journalDevices() async {
+    final nodes = await _services.store.lastHlcByNode();
+    final previous = await _services.meta.previousNodeIds();
+    return [
+      for (final MapEntry(key: node, value: hlc) in nodes.entries)
+        if (node != _services.nodeId)
+          SyncDevice(
+            nodeId: node,
+            isThisDevice: false,
+            isFormerThisDevice: previous.contains(node),
+            lastEdit: DateTime.fromMillisecondsSinceEpoch(
+              hlc.wallMs,
+              isUtc: true,
+            ),
+          ),
+    ]..sort((x, y) => y.lastEdit!.compareTo(x.lastEdit!));
   }
 
   /// Пересобрать проекции и конфликты из журнала («Пересобрать базу из
@@ -248,6 +271,8 @@ final class SyncDevice {
     this.platform,
     this.profile,
     this.updated,
+    this.lastEdit,
+    this.isFormerThisDevice = false,
   });
 
   final String nodeId;
@@ -260,8 +285,16 @@ final class SyncDevice {
   /// Профиль данных (`--profile`): на одном ПК их может быть несколько.
   final String? profile;
 
-  /// Когда устройство последний раз выгружало свои правки.
+  /// Когда устройство последний раз выгружало свои правки (`info.json`).
   final DateTime? updated;
+
+  /// Время его последней правки в журнале этого устройства — у устройств
+  /// из журнала ([SyncRunner.journalDevices]), у которых нет `info.json`.
+  final DateTime? lastEdit;
+
+  /// Прежний id этого устройства: база скопирована (перенос, резервная
+  /// копия). Отмечать, если копией-источником больше не пользуются.
+  final bool isFormerThisDevice;
 }
 
 /// Смена папки не начата: последний проход с прежней папкой не прочитал часть
@@ -278,16 +311,6 @@ final class RetiredUnreadException implements Exception {
 
   @override
   String toString() => 'RetiredUnreadException($nodes, $cause)';
-}
-
-/// В выбранной папке нет папки синхронизации: удалена или диск отключён.
-final class SyncFolderMissingException implements Exception {
-  const SyncFolderMissingException(this.path);
-
-  final String path;
-
-  @override
-  String toString() => 'SyncFolderMissingException($path)';
 }
 
 /// Проход не состоялся: синхронизацию этой базы уже ведёт другой проход.

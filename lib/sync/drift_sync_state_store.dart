@@ -25,6 +25,13 @@ final class DriftSyncStateStore implements SyncStateStore {
   });
 
   @override
+  Future<void> forgetFolder() => _db.transaction(() async {
+    await _db.delete(_db.syncCursors).go();
+    await _meta.removeUploadedUpTo();
+    await _meta.removeFolderId();
+  });
+
+  @override
   Future<int> chunkCursor(String nodeId) async {
     final row = await (_db.select(
       _db.syncCursors,

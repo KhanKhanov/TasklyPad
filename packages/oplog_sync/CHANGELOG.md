@@ -1,5 +1,9 @@
 ## Не выпущено
 
+- `FolderTransport` создаёт `format.json`, только пока папка не известна узлу (`SyncStateStore.folderId`
+  — `null`), и никогда не создаёт корень `SyncFs`; иначе — `SyncFolderMissingException`, ничего не
+  записано. `SyncStateStore.forgetFolder` — забыть папку при её выборе (ломает внешние реализации
+  интерфейса).
 - `uuidV8(parts)` — детерминированный id (SHA-256 → UUID версии 8); на нём `conflictId`, значения прежние.
 - `Op.base` — макс. HLC ops сущности от других узлов, известных автору.
 - Детекция конфликтов: `findConflicts` (попарная чистая функция от набора ops), `Conflict` с

@@ -67,7 +67,8 @@ final class FolderTransport {
   ///
   /// Повторный вызов во время синхронизации возвращает тот же результат, а
   /// не запускает вторую параллельно. Бросает [SyncFormatException], если
-  /// папка записана неизвестной версией формата, — тогда ничего не пишется.
+  /// папка записана неизвестной версией формата, и [SyncFolderMissingException],
+  /// если папки нет, — тогда ничего не пишется.
   /// Нечитаемый чужой файл не останавливает синхронизацию — он попадает в
   /// [FolderSyncReport.issues]; ошибка записи своего чанка пробрасывается.
   Future<FolderSyncReport> sync() =>
@@ -75,8 +76,9 @@ final class FolderTransport {
 
   Future<FolderSyncReport> _sync() async {
     final report = FolderSyncReport();
-    final folderId = await _ensureFormat();
-    if (await state.folderId() != folderId) {
+    final known = await state.folderId();
+    final folderId = await _ensureFormat(known);
+    if (known != folderId) {
       // Другая папка (или её пересоздали): старые курсоры и «выгружено до»
       // к ней не относятся — читаем всё и выгружаем весь свой журнал заново.
       await state.resetForFolder(folderId);
@@ -102,10 +104,18 @@ final class FolderTransport {
   static String _chunkFile(int seq) =>
       '${seq.toString().padLeft(6, '0')}.ndjson';
 
-  /// Проверить `format.json` (создать, если папка новая) и вернуть id папки.
-  Future<String> _ensureFormat() async {
+  /// Проверить `format.json` и вернуть id папки. Создаётся он, только пока
+  /// папка не известна этому узлу ([known] — `null`, SYNC_DESIGN «Транспорт
+  /// A»): пропавшую известную папку (удалили, отключили диск или облако,
+  /// облако не докачало файл) молча создать заново нельзя — узел выгрузил бы
+  /// в пустую копию весь журнал, а прежние узлы в ней пропали бы. Корень
+  /// [fs] (выбранную пользователем папку) транспорт не создаёт никогда:
+  /// на месте отключённого облака появилась бы локальная папка.
+  Future<String> _ensureFormat(String? known) async {
     final path = _path('format.json');
+    if (!await fs.exists('')) throw const SyncFolderMissingException('');
     if (!await fs.exists(path)) {
+      if (known != null) throw SyncFolderMissingException(path);
       // Уникальный id папки берём у генератора op_id (в приложении — UUIDv7).
       final folderId = engine.newOpId();
       final created = await fs.writeStringIfAbsent(
@@ -437,6 +447,19 @@ final class ChunkIssue {
   String toString() =>
       'ChunkIssue($nodeId/${seq.toString().padLeft(6, '0')}: ${kind.name}'
       '${detail.isEmpty ? '' : ', $detail'})';
+}
+
+/// Папки синхронизации нет: выбранная папка не найдена или в известной папке
+/// нет `format.json`. Ничего не записано; создать папку заново можно, только
+/// забыв её (`SyncStateStore.forgetFolder`).
+final class SyncFolderMissingException implements Exception {
+  const SyncFolderMissingException(this.path);
+
+  /// Чего нет, относительно корня папки: `''` — самой выбранной папки.
+  final String path;
+
+  @override
+  String toString() => 'SyncFolderMissingException: "$path"';
 }
 
 /// Папка синхронизации записана форматом, которого это приложение не знает.

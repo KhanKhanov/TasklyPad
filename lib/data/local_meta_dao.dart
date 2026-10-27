@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:logger/logger.dart';
 import 'package:oplog_sync/oplog_sync.dart';
 
 import 'app_database.dart';
@@ -11,6 +14,8 @@ final class LocalMetaDao {
 
   final AppDatabase _db;
 
+  static final Logger _log = Logger();
+
   static const String nodeIdKey = 'node_id';
   static const String hlcKey = 'hlc';
   static const String projectorVersionKey = 'projector_version';
@@ -19,6 +24,7 @@ final class LocalMetaDao {
   static const String syncLeaseKey = 'sync.lease';
   static const String folderPathKey = 'sync.folder_path';
   static const String lastSyncKey = 'sync.last_ok_ms';
+  static const String previousNodeIdsKey = 'node.previous_ids';
 
   Future<String?> read(String key) async {
     final row = await (_db.select(
@@ -41,6 +47,26 @@ final class LocalMetaDao {
 
   Future<void> setNodeId(String value) => write(nodeIdKey, value);
 
+  /// Прежние id этого устройства: база была скопирована, и узел получал новый
+  /// id (`startSync`). Копия копии хранит и id всех предков.
+  ///
+  /// Битое значение — пустое множество и предупреждение в журнале: ключ нужен
+  /// только для подписи в списке устройств, и из-за него не должен падать
+  /// запуск приложения; [addPreviousNodeId] перезапишет его заново.
+  Future<Set<String>> previousNodeIds() async {
+    final json = await read(previousNodeIdsKey);
+    if (json == null) return const {};
+    try {
+      return {...(jsonDecode(json) as List<Object?>).cast<String>()};
+    } on Object catch (error) {
+      _log.w('Прежние id узла не разобраны: $json', error: error);
+      return const {};
+    }
+  }
+
+  Future<void> addPreviousNodeId(String id) async =>
+      write(previousNodeIdsKey, jsonEncode([...await previousNodeIds(), id]));
+
   /// Сохранённое состояние часов движка.
   Future<Hlc?> hlc() async => _parseHlc(await read(hlcKey));
 
@@ -56,6 +82,8 @@ final class LocalMetaDao {
   Future<String?> folderId() => read(folderIdKey);
 
   Future<void> setFolderId(String value) => write(folderIdKey, value);
+
+  Future<void> removeFolderId() => remove(folderIdKey);
 
   /// Путь к выбранной пользователем общей папке (внутри неё — `planner-sync`).
   /// Локальный: на каждом устройстве своя папка облака (SYNC_DESIGN «Специальные
