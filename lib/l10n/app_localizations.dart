@@ -829,6 +829,240 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Следующая задача'**
   String get nextTask;
+
+  /// Пункт меню и заголовок экрана настроек
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройки'**
+  String get settings;
+
+  /// Раздел настроек
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизация'**
+  String get syncSection;
+
+  /// Подпись выбранной папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка синхронизации'**
+  String get syncFolder;
+
+  /// Синхронизация не настроена
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка не выбрана — данные есть только на этом устройстве.'**
+  String get syncFolderNone;
+
+  /// Пояснение к выбору папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите общую папку OneDrive, Google Drive или Syncthing: приложение создаст в ней папку planner-sync. На других устройствах выберите ту же папку.'**
+  String get syncFolderHint;
+
+  /// Кнопка выбора папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать папку…'**
+  String get chooseFolder;
+
+  /// Кнопка смены папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить папку…'**
+  String get changeFolder;
+
+  /// Кнопка синхронизации
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизировать'**
+  String get syncNow;
+
+  /// Идёт проход
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизация…'**
+  String get syncRunning;
+
+  /// Время последней удачной синхронизации
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизировано: {time}'**
+  String syncLast(String time);
+
+  /// Синхронизаций ещё не было
+  ///
+  /// In ru, this message translates to:
+  /// **'Ещё не синхронизировалось'**
+  String get syncNever;
+
+  /// Файлы, не прочитанные в последнем проходе
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока не прочитано файлов других устройств: {count}. Облако могло ещё не докачать их — повторю при следующей синхронизации.'**
+  String syncIssues(int count);
+
+  /// SyncFormatException
+  ///
+  /// In ru, this message translates to:
+  /// **'Папку записала более новая версия приложения. Обновите приложение на этом устройстве — в папку ничего не записано.'**
+  String get syncErrorFormat;
+
+  /// Аренда занята
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизация этих данных уже идёт — повторю позже.'**
+  String get syncErrorBusy;
+
+  /// Смена папки не начата: чанки отмеченных устройств не прочитаны, пользователь отказался менять всё равно
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка не сменена: часть правок отмеченных устройств в прежней папке не прочитана. Попробуйте позже.'**
+  String get syncErrorRetiredUnread;
+
+  /// Смена папки: чанки отмеченных устройств не прочитаны
+  ///
+  /// In ru, this message translates to:
+  /// **'Не все правки прочитаны'**
+  String get retiredUnreadTitle;
+
+  /// Пояснение: подождать или сменить папку всё равно
+  ///
+  /// In ru, this message translates to:
+  /// **'Часть правок отмеченных устройств в прежней папке не прочитана: облако ещё докачивает файлы, файл повреждён, часы устройства спешат или прежняя папка недоступна. Можно подождать и повторить смену. Если сменить всё равно, непрочитанное в новую папку не попадёт; прежняя папка останется как есть.'**
+  String get retiredUnreadBody;
+
+  /// Сменить папку, не дочитав правки отмеченных устройств
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить всё равно'**
+  String get retiredUnreadAction;
+
+  /// Прочие ошибки прохода
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизация не удалась: {error}'**
+  String syncErrorOther(String error);
+
+  /// Подтверждение смены папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить папку синхронизации?'**
+  String get changeFolderTitle;
+
+  /// Пояснение к смене папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая папка: {path}. Прежняя папка не изменится. Переключите на новую папку и остальные устройства, которыми пользуетесь, — свои правки они перенесут сами.'**
+  String changeFolderBody(String path);
+
+  /// Пояснение к списку устройств в диалоге смены папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Отметьте устройства, которыми больше не пользуетесь: их правки это устройство запишет в новую папку. Устройство, которое ещё переключите, не отмечайте — иначе его новые правки покажутся конфликтом.'**
+  String get changeFolderRetiredHint;
+
+  /// Диалог смены папки: прежняя папка недоступна
+  ///
+  /// In ru, this message translates to:
+  /// **'Устройства прежней папки прочитать не удалось: правки других устройств в новую папку не перенесутся.'**
+  String get changeFolderNoDevices;
+
+  /// Кнопка подтверждения смены папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Сменить'**
+  String get changeFolderAction;
+
+  /// Тост после выбора папки
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка подключена'**
+  String get folderConnected;
+
+  /// Тост после смены папки с переизданием
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка подключена. В неё записаны правки устройств, которыми больше не пользуетесь: {count}'**
+  String folderAdopted(int count);
+
+  /// Тост после смены папки «всё равно»: у отмеченных устройств есть непрочитанные чанки
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка подключена. В неё записаны правки устройств, которыми больше не пользуетесь: {adopted}. Прочитаны не все правки устройств: {unreadable} — непрочитанное осталось в прежней папке'**
+  String folderAdoptedPartial(int adopted, int unreadable);
+
+  /// Тост после смены папки «всё равно»: переиздавать нечего, но у отмеченных устройств есть непрочитанные чанки
+  ///
+  /// In ru, this message translates to:
+  /// **'Папка подключена. Прочитаны не все правки устройств, которыми больше не пользуетесь: {count} — непрочитанное осталось в прежней папке'**
+  String folderUnreadable(int count);
+
+  /// Список узлов в папке
+  ///
+  /// In ru, this message translates to:
+  /// **'Устройства'**
+  String get devicesHeader;
+
+  /// Пометка своего узла
+  ///
+  /// In ru, this message translates to:
+  /// **'это устройство'**
+  String get thisDevice;
+
+  /// Узел без info.json
+  ///
+  /// In ru, this message translates to:
+  /// **'Устройство без описания'**
+  String get deviceUnnamed;
+
+  /// Время из info.json
+  ///
+  /// In ru, this message translates to:
+  /// **'выгружало правки {time}'**
+  String deviceUpdated(String time);
+
+  /// Пункт и заголовок подтверждения
+  ///
+  /// In ru, this message translates to:
+  /// **'Пересобрать базу из журнала'**
+  String get rebuildTitle;
+
+  /// Пояснение к пересборке
+  ///
+  /// In ru, this message translates to:
+  /// **'Данные будут заново собраны из журнала изменений. Журнал не меняется, правки не теряются. Нужно, если данные выглядят неправильно.'**
+  String get rebuildBody;
+
+  /// Кнопка подтверждения пересборки
+  ///
+  /// In ru, this message translates to:
+  /// **'Пересобрать'**
+  String get rebuildAction;
+
+  /// Тост после пересборки
+  ///
+  /// In ru, this message translates to:
+  /// **'База пересобрана'**
+  String get rebuildDone;
+
+  /// Платформа без выбора папки (Android до SAF)
+  ///
+  /// In ru, this message translates to:
+  /// **'На этом устройстве выбор папки синхронизации появится позже.'**
+  String get syncUnsupported;
+
+  /// Устройство с профилем данных
+  ///
+  /// In ru, this message translates to:
+  /// **'{name} ({profile})'**
+  String deviceWithProfile(String name, String profile);
+
+  /// Своё устройство в списке
+  ///
+  /// In ru, this message translates to:
+  /// **'{name} — это устройство'**
+  String deviceThis(String name);
 }
 
 class _AppLocalizationsDelegate

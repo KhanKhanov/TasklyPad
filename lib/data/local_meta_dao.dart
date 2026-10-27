@@ -17,6 +17,8 @@ final class LocalMetaDao {
   static const String folderIdKey = 'sync.folder_id';
   static const String uploadedUpToKey = 'sync.uploaded_up_to';
   static const String syncLeaseKey = 'sync.lease';
+  static const String folderPathKey = 'sync.folder_path';
+  static const String lastSyncKey = 'sync.last_ok_ms';
 
   Future<String?> read(String key) async {
     final row = await (_db.select(
@@ -54,6 +56,19 @@ final class LocalMetaDao {
   Future<String?> folderId() => read(folderIdKey);
 
   Future<void> setFolderId(String value) => write(folderIdKey, value);
+
+  /// Путь к выбранной пользователем общей папке (внутри неё — `planner-sync`).
+  /// Локальный: на каждом устройстве своя папка облака (SYNC_DESIGN «Специальные
+  /// случаи»).
+  Future<String?> folderPath() => read(folderPathKey);
+
+  Future<void> setFolderPath(String value) => write(folderPathKey, value);
+
+  /// Время последней удачной синхронизации (мс UTC) — статус в настройках.
+  Future<int?> lastSyncMs() async =>
+      int.tryParse(await read(lastSyncKey) ?? '');
+
+  Future<void> setLastSyncMs(int value) => write(lastSyncKey, value.toString());
 
   Future<Hlc?> uploadedUpTo() async => _parseHlc(await read(uploadedUpToKey));
 

@@ -32,12 +32,39 @@ class Sidebar extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 8, 10, 4),
               child: Row(
                 children: [
+                  // Меню под названием — как меню аккаунта в Todoist:
+                  // «Настройки» (`o s`).
                   Expanded(
-                    child: Text(
-                      l10n.appTitle,
-                      style: TextStyle(
-                        color: palette.textPrimary,
-                        fontWeight: FontWeight.w600,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: PopupMenuButton<void>(
+                        tooltip: l10n.settings,
+                        itemBuilder: (context) => [
+                          PopupMenuItem<void>(
+                            onTap: () => navigate(context, '/settings'),
+                            child: Text(l10n.settings),
+                          ),
+                        ],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                l10n.appTitle,
+                                style: TextStyle(
+                                  color: palette.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Icon(
+                                Icons.keyboard_arrow_down,
+                                size: 18,
+                                color: palette.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

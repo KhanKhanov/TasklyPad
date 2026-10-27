@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../settings/state/sync_controller.dart';
 import '../state/sidebar_state.dart';
 import 'shell_keys.dart';
 import 'sidebar.dart';
@@ -31,6 +32,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final open = ref.watch(sidebarOpenProvider);
+    // Синхронизация работает, пока открыто приложение, а не только экран
+    // настроек: подписка держит её состояние и таймеры.
+    ref.listen(syncControllerProvider, (_, _) {});
     final location = widget.location;
     return LayoutBuilder(
       builder: (context, constraints) {

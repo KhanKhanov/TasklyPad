@@ -405,4 +405,151 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get nextTask => 'Следующая задача';
+
+  @override
+  String get settings => 'Настройки';
+
+  @override
+  String get syncSection => 'Синхронизация';
+
+  @override
+  String get syncFolder => 'Папка синхронизации';
+
+  @override
+  String get syncFolderNone =>
+      'Папка не выбрана — данные есть только на этом устройстве.';
+
+  @override
+  String get syncFolderHint =>
+      'Выберите общую папку OneDrive, Google Drive или Syncthing: приложение создаст в ней папку planner-sync. На других устройствах выберите ту же папку.';
+
+  @override
+  String get chooseFolder => 'Выбрать папку…';
+
+  @override
+  String get changeFolder => 'Сменить папку…';
+
+  @override
+  String get syncNow => 'Синхронизировать';
+
+  @override
+  String get syncRunning => 'Синхронизация…';
+
+  @override
+  String syncLast(String time) {
+    return 'Синхронизировано: $time';
+  }
+
+  @override
+  String get syncNever => 'Ещё не синхронизировалось';
+
+  @override
+  String syncIssues(int count) {
+    return 'Пока не прочитано файлов других устройств: $count. Облако могло ещё не докачать их — повторю при следующей синхронизации.';
+  }
+
+  @override
+  String get syncErrorFormat =>
+      'Папку записала более новая версия приложения. Обновите приложение на этом устройстве — в папку ничего не записано.';
+
+  @override
+  String get syncErrorBusy =>
+      'Синхронизация этих данных уже идёт — повторю позже.';
+
+  @override
+  String get syncErrorRetiredUnread =>
+      'Папка не сменена: часть правок отмеченных устройств в прежней папке не прочитана. Попробуйте позже.';
+
+  @override
+  String get retiredUnreadTitle => 'Не все правки прочитаны';
+
+  @override
+  String get retiredUnreadBody =>
+      'Часть правок отмеченных устройств в прежней папке не прочитана: облако ещё докачивает файлы, файл повреждён, часы устройства спешат или прежняя папка недоступна. Можно подождать и повторить смену. Если сменить всё равно, непрочитанное в новую папку не попадёт; прежняя папка останется как есть.';
+
+  @override
+  String get retiredUnreadAction => 'Сменить всё равно';
+
+  @override
+  String syncErrorOther(String error) {
+    return 'Синхронизация не удалась: $error';
+  }
+
+  @override
+  String get changeFolderTitle => 'Сменить папку синхронизации?';
+
+  @override
+  String changeFolderBody(String path) {
+    return 'Новая папка: $path. Прежняя папка не изменится. Переключите на новую папку и остальные устройства, которыми пользуетесь, — свои правки они перенесут сами.';
+  }
+
+  @override
+  String get changeFolderRetiredHint =>
+      'Отметьте устройства, которыми больше не пользуетесь: их правки это устройство запишет в новую папку. Устройство, которое ещё переключите, не отмечайте — иначе его новые правки покажутся конфликтом.';
+
+  @override
+  String get changeFolderNoDevices =>
+      'Устройства прежней папки прочитать не удалось: правки других устройств в новую папку не перенесутся.';
+
+  @override
+  String get changeFolderAction => 'Сменить';
+
+  @override
+  String get folderConnected => 'Папка подключена';
+
+  @override
+  String folderAdopted(int count) {
+    return 'Папка подключена. В неё записаны правки устройств, которыми больше не пользуетесь: $count';
+  }
+
+  @override
+  String folderAdoptedPartial(int adopted, int unreadable) {
+    return 'Папка подключена. В неё записаны правки устройств, которыми больше не пользуетесь: $adopted. Прочитаны не все правки устройств: $unreadable — непрочитанное осталось в прежней папке';
+  }
+
+  @override
+  String folderUnreadable(int count) {
+    return 'Папка подключена. Прочитаны не все правки устройств, которыми больше не пользуетесь: $count — непрочитанное осталось в прежней папке';
+  }
+
+  @override
+  String get devicesHeader => 'Устройства';
+
+  @override
+  String get thisDevice => 'это устройство';
+
+  @override
+  String get deviceUnnamed => 'Устройство без описания';
+
+  @override
+  String deviceUpdated(String time) {
+    return 'выгружало правки $time';
+  }
+
+  @override
+  String get rebuildTitle => 'Пересобрать базу из журнала';
+
+  @override
+  String get rebuildBody =>
+      'Данные будут заново собраны из журнала изменений. Журнал не меняется, правки не теряются. Нужно, если данные выглядят неправильно.';
+
+  @override
+  String get rebuildAction => 'Пересобрать';
+
+  @override
+  String get rebuildDone => 'База пересобрана';
+
+  @override
+  String get syncUnsupported =>
+      'На этом устройстве выбор папки синхронизации появится позже.';
+
+  @override
+  String deviceWithProfile(String name, String profile) {
+    return '$name ($profile)';
+  }
+
+  @override
+  String deviceThis(String name) {
+    return '$name — это устройство';
+  }
 }

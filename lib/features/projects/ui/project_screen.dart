@@ -10,6 +10,7 @@ import '../../common/ui/ui_kit.dart';
 import '../../sections/ui/section_block.dart';
 import '../../sections/ui/section_editor.dart';
 import '../../tasks/state/view_options.dart';
+import '../../shell/ui/shell_keys.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
@@ -83,12 +84,15 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       child: Actions(
         actions: {
           AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
+            blocked: () => ShellKeys.sequencePending(context),
             () => _openAdd(null, AddTaskAt.bottom),
           ),
           AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
+            blocked: () => ShellKeys.sequencePending(context),
             () => _openAdd(null, AddTaskAt.top),
           ),
           AddSectionIntent: HotkeyAction<AddSectionIntent>(
+            blocked: () => ShellKeys.sequencePending(context),
             () => setState(() {
               _addingSection = true;
               _adding = null;

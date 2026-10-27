@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/app/app.dart';
 import 'package:planner/app/sync_providers.dart';
@@ -10,7 +11,8 @@ import '../../sync/support/devices.dart';
 
 /// Запустить приложение на устройстве с базой в памяти — тем же ядром
 /// данных (`startSync`), что и настоящий запуск — выполнить [body] и
-/// закрыть всё внутри теста.
+/// закрыть всё внутри теста. [overrides] — фейки поверх (выбор папки,
+/// синхронизация).
 ///
 /// Закрытие — здесь, а не в `addTearDown`: поток запроса drift при отписке
 /// ставит таймер, и он должен сработать до проверки «таймеров не осталось»,
@@ -19,6 +21,7 @@ Future<void> withApp(
   WidgetTester tester,
   Future<void> Function(TestDevice device) body, {
   Size size = const Size(1100, 800),
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -26,7 +29,10 @@ Future<void> withApp(
   final device = (await tester.runAsync(TestDevice.start))!;
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [syncServicesProvider.overrideWithValue(device.services)],
+      overrides: [
+        syncServicesProvider.overrideWithValue(device.services),
+        ...overrides,
+      ],
       child: const PlannerApp(),
     ),
   );
