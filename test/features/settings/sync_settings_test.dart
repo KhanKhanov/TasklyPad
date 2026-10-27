@@ -423,6 +423,126 @@ void main() {
     );
   });
 
+  testWidgets('папка синхронизации пропала — понятный текст, вместо прежнего '
+      'списка устройств «не прочитаны»; «Create folder again» — после '
+      'подтверждения та же папка выбирается заново', (tester) async {
+    final runner = FakeSyncRunner(folder: 'C:/OneDrive')
+      ..deviceList = const [
+        SyncDevice(nodeId: 'a', name: 'DESKTOP', isThisDevice: true),
+        SyncDevice(nodeId: 'b', name: 'LAPTOP', isThisDevice: false),
+      ];
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await openSettings(tester);
+        expect(find.text('LAPTOP'), findsOneWidget);
+
+        const missing = SyncFolderMissingException('planner-sync/format.json');
+        runner
+          ..failNext = missing
+          ..failDevices = missing;
+        await tester.tap(find.text('Sync now'));
+        await settle(tester);
+        expect(find.textContaining('Sync folder not found'), findsOneWidget);
+        expect(find.text('LAPTOP'), findsNothing);
+        expect(find.textContaining("Devices couldn't be read"), findsOne);
+
+        await tester.tap(find.text('Create folder again'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await settle(tester);
+        expect(runner.folders, isEmpty);
+
+        runner.failDevices = null;
+        await tester.tap(find.text('Create folder again'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Create folder again'),
+        );
+        await settle(tester);
+        expect(runner.folders, ['C:/OneDrive']);
+        expect(find.text('Sync folder reconnected'), findsOneWidget);
+        expect(find.textContaining('Sync folder not found'), findsNothing);
+        expect(find.text('LAPTOP'), findsOneWidget);
+      },
+    );
+  });
+
+  testWidgets('«Create folder again»: устройства из журнала без имён, по '
+      'умолчанию не отмечены; отмеченное переиздаётся, смена «всё равно»', (
+    tester,
+  ) async {
+    final runner = FakeSyncRunner(folder: 'C:/OneDrive')
+      ..journalDeviceList = [
+        SyncDevice(
+          nodeId: '0190aaaa-bbbb-7ccc-8ddd-eeeeee123456',
+          isThisDevice: false,
+          lastEdit: DateTime.utc(2026, 3, 1, 9),
+        ),
+      ];
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await openSettings(tester);
+        runner.failNext = const SyncFolderMissingException(
+          'planner-sync/format.json',
+        );
+        await tester.tap(find.text('Sync now'));
+        await settle(tester);
+        await tester.tap(find.text('Create folder again'));
+        await tester.pumpAndSettle();
+        final dialog = find.byType(AlertDialog);
+        expect(
+          find.descendant(of: dialog, matching: find.text('Unnamed device')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: dialog, matching: find.textContaining('…123456')),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+          isFalse,
+        );
+        await tester.tap(
+          find.descendant(of: dialog, matching: find.text('Unnamed device')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Create folder again'),
+        );
+        await settle(tester);
+        expect(runner.retiredSets, [
+          {'0190aaaa-bbbb-7ccc-8ddd-eeeeee123456'},
+        ]);
+        expect(runner.forces, [true]);
+        expect(find.textContaining('written to it: 1'), findsOneWidget);
+      },
+    );
+  });
+
+  testWidgets('нет самой выбранной папки (диск, облако не подключены) — свой '
+      'текст и без «Create folder again»', (tester) async {
+    final runner = FakeSyncRunner(folder: 'D:/OneDrive');
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await openSettings(tester);
+        runner.failNext = const SyncFolderMissingException('');
+        await tester.tap(find.text('Sync now'));
+        await settle(tester);
+        expect(
+          find.textContaining("The chosen folder wasn't found"),
+          findsOneWidget,
+        );
+        expect(find.text('Create folder again'), findsNothing);
+      },
+    );
+  });
+
   testWidgets('первый выбор папки не удался — причина видна и без папки', (
     tester,
   ) async {

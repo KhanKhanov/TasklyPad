@@ -27,6 +27,10 @@ class SyncSection extends ConsumerWidget {
     final folder = status.folder;
     final supported = ref.watch(folderPickerProvider).isSupported;
     final secondary = TextStyle(color: palette.textSecondary, fontSize: 13);
+    final recreatable = switch (status.error) {
+      SyncFolderMissingException(:final path) => path.isNotEmpty,
+      _ => false,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -88,6 +92,21 @@ class SyncSection extends ConsumerWidget {
               style: TextStyle(color: palette.danger, fontSize: 13),
             ),
           ),
+        // Папку удалили намеренно — начать заново в том же месте (решение
+        // пользователя 1А к коммиту 2а M2.3).
+        // Только когда сама выбранная папка на месте: без неё пересоздать
+        // нельзя, а «забыть папку» сняло бы защиту — вернувшееся облако без
+        // докачанного format.json получило бы вторую папку.
+        if (folder != null && recreatable)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: status.running
+                  ? null
+                  : () => _recreateFolder(context, ref, folder),
+              child: Text(l10n.recreateFolderAction),
+            ),
+          ),
         if (folder != null) ...[
           if (status.error == null && status.issues > 0)
             Padding(
@@ -121,6 +140,8 @@ class SyncSection extends ConsumerWidget {
   static String _errorText(AppLocalizations l10n, Object error) =>
       switch (error) {
         SyncFormatException() => l10n.syncErrorFormat,
+        SyncFolderMissingException(path: '') => l10n.syncErrorRootMissing,
+        SyncFolderMissingException() => l10n.syncErrorFolderMissing,
         SyncBusyException() => l10n.syncErrorBusy,
         RetiredUnreadException() => l10n.syncErrorRetiredUnread,
         _ => l10n.syncErrorOther('$error'),
@@ -184,6 +205,42 @@ class SyncSection extends ConsumerWidget {
         duration: unreadable.isNotEmpty
             ? const Duration(seconds: 10)
             : const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Создать пропавшую папку синхронизации заново в той же папке: после
+  /// подтверждения — тот же выбор папки ([SyncController.setFolder]), который
+  /// разрешает проходу её создать; правки отмеченных выбывших устройств из
+  /// журнала переиздаются. Остальные устройства подхватят папку сами.
+  Future<void> _recreateFolder(
+    BuildContext context,
+    WidgetRef ref,
+    String folder,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(syncControllerProvider.notifier);
+    final devices = await controller.journalDevices();
+    if (!context.mounted) return;
+    final retired = await confirmFolderRecreate(context, devices: devices);
+    if (retired == null || !context.mounted) return;
+    // «Всё равно»: прежней папки нет, прочитать отмеченных негде — их правки
+    // берутся из журнала этого устройства.
+    final change = await controller.setFolder(
+      folder,
+      retired: retired,
+      force: true,
+    );
+    if (change == null || change.error != null || !messenger.mounted) return;
+    final adopted = change.adopted.length;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          adopted == 0
+              ? l10n.folderRecreated
+              : l10n.folderRecreatedAdopted(adopted),
+        ),
       ),
     );
   }

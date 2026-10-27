@@ -471,6 +471,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retiredUnreadAction => 'Change anyway';
 
   @override
+  String get syncErrorFolderMissing =>
+      'Sync folder not found: it was deleted or the drive or cloud isn\'t connected. Nothing was written to it.';
+
+  @override
+  String get syncErrorRootMissing =>
+      'The chosen folder wasn\'t found: connect the drive or cloud, or choose another folder. Nothing was written to it.';
+
+  @override
+  String get recreateFolderAction => 'Create folder again';
+
+  @override
+  String get recreateFolderTitle => 'Create the sync folder again?';
+
+  @override
+  String get recreateFolderBody =>
+      'A new sync folder will be created in the chosen folder, and this device will upload all its data to it; other devices will pick it up by themselves. If the drive or cloud is just temporarily disconnected, wait and reconnect it — otherwise a second, separate folder will appear.';
+
+  @override
+  String get folderRecreated => 'Sync folder reconnected';
+
+  @override
   String syncErrorOther(String error) {
     return 'Sync failed: $error';
   }
@@ -513,10 +534,35 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get recreateFolderRetiredHint =>
+      'Tick the devices you no longer use: their changes known to this device will be written to the new folder. There are no names — device descriptions were lost with the folder; go by the time of the last change. Tick “This device before the database was copied” if you no longer use the computer the database was copied from. Don\'t tick a device you still use, or its new changes will look like a conflict.';
+
+  @override
+  String get recreateFolderNoDevices =>
+      'Couldn\'t read the devices from the log: changes from other devices won\'t reach the new folder.';
+
+  @override
+  String folderRecreatedAdopted(int count) {
+    return 'Sync folder reconnected. Changes from devices no longer in use were written to it: $count';
+  }
+
+  @override
+  String deviceLastEdit(String time, String id) {
+    return 'last change $time · …$id';
+  }
+
+  @override
   String get devicesHeader => 'Devices';
 
   @override
   String get thisDevice => 'this device';
+
+  @override
+  String get devicesUnread =>
+      'Devices couldn\'t be read: the sync folder is unavailable';
+
+  @override
+  String get deviceFormerThis => 'This device before the database was copied';
 
   @override
   String get deviceUnnamed => 'Unnamed device';

@@ -47,6 +47,9 @@ final class SyncServices {
   /// завершения).
   AppClock get clock => _clock;
 
+  /// Состояние транспорта через папку: курсоры, водяной знак, известная папка.
+  SyncStateStore get syncState => DriftSyncStateStore(db);
+
   /// Синхронизация с общей папкой [fs] (корень — выбранная пользователем
   /// папка, внутри неё [syncFolderName]). У каждого экземпляра своя аренда,
   /// поэтому два экземпляра не синхронизируют одновременно.
@@ -57,7 +60,7 @@ final class SyncServices {
     transport: FolderTransport(
       fs: fs,
       engine: engine,
-      state: DriftSyncStateStore(db),
+      state: syncState,
       root: syncFolderName,
       deviceInfo: deviceInfo,
     ),
@@ -114,6 +117,9 @@ Future<SyncServices> startSync(
         // Водяной знак относится к прежнему узлу: новый ещё ничего не выгружал.
         await meta.removeUploadedUpTo();
         await mutator.adoptUnsyncedOps(previous, uploadedUpTo);
+        // Выгруженные ops прежнего id остаются под ним: при «Создать папку
+        // заново» его нужно узнать в списке устройств из журнала.
+        await meta.addPreviousNodeId(previous);
       }
     });
     await marker.write(identity.nodeId);

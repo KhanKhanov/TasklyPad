@@ -8,8 +8,9 @@ import 'hlc.dart';
 /// приложение упадёт между этими шагами, чанк перечитается, и дубликаты ops
 /// отбросит идемпотентность движка.
 ///
-/// Всё состояние относится к одной папке синхронизации ([folderId]): при смене
-/// папки оно сбрасывается через [resetForFolder].
+/// Всё состояние относится к одной папке синхронизации ([folderId]): когда
+/// пользователь выбирает папку, его забывают ([forgetFolder]); другой
+/// `folder_id` в папке сбрасывает его через [resetForFolder].
 abstract interface class SyncStateStore {
   /// Id папки (`folder_id` из `format.json`), к которой относятся курсоры,
   /// или `null`, если синхронизации ещё не было.
@@ -17,6 +18,12 @@ abstract interface class SyncStateStore {
 
   /// Забыть курсоры и [uploadedUpTo] и запомнить новую папку [folderId].
   Future<void> resetForFolder(String folderId);
+
+  /// Забыть папку, курсоры и [uploadedUpTo]: пользователь выбрал папку
+  /// (другую или ту же заново). Пока папка не известна, транспорт может
+  /// создать в ней `format.json`; известная папка без него — ошибка
+  /// (`SyncFolderMissingException`), а не новая папка.
+  Future<void> forgetFolder();
 
   /// Номер последнего полностью применённого чанка узла [nodeId] (0 — ничего).
   Future<int> chunkCursor(String nodeId);
@@ -47,6 +54,13 @@ final class MemorySyncStateStore implements SyncStateStore {
     _cursors.clear();
     _uploaded = null;
     _folderId = folderId;
+  }
+
+  @override
+  Future<void> forgetFolder() async {
+    _cursors.clear();
+    _uploaded = null;
+    _folderId = null;
   }
 
   @override

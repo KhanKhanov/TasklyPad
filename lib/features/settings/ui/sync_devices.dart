@@ -16,7 +16,11 @@ class SyncDevices extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
-    final devices = ref.watch(syncDevicesProvider).value ?? const [];
+    final async = ref.watch(syncDevicesProvider);
+    // При ошибке AsyncValue хранит и прежний список — показывать его нельзя:
+    // папки, из которой он прочитан, уже может не быть.
+    final unread = async.hasError;
+    final devices = unread ? const <SyncDevice>[] : async.value ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -27,6 +31,14 @@ class SyncDevices extends ConsumerWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (unread)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l10n.devicesUnread,
+              style: TextStyle(color: palette.textSecondary, fontSize: 13),
+            ),
+          ),
         for (final device in devices)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -53,7 +65,9 @@ class SyncDevices extends ConsumerWidget {
 
 /// Название устройства в списках: имя компьютера, профиль, «это устройство».
 String deviceTitle(AppLocalizations l10n, SyncDevice device) {
-  final name = device.name ?? l10n.deviceUnnamed;
+  final name =
+      device.name ??
+      (device.isFormerThisDevice ? l10n.deviceFormerThis : l10n.deviceUnnamed);
   final profile = device.profile;
   final title = profile == null ? name : l10n.deviceWithProfile(name, profile);
   return device.isThisDevice ? l10n.deviceThis(title) : title;

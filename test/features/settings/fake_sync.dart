@@ -92,6 +92,12 @@ final class FakeSyncRunner implements SyncRunner {
     return folder == null ? const [] : deviceList;
   }
 
+  /// Другие устройства из журнала — для «Создать папку заново».
+  List<SyncDevice> journalDeviceList = const [];
+
+  @override
+  Future<List<SyncDevice>> journalDevices() async => journalDeviceList;
+
   @override
   Future<void> rebuild() async => rebuilds++;
 }

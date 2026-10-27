@@ -50,7 +50,7 @@ final class SyncControllerProvider
   }
 }
 
-String _$syncControllerHash() => r'96fbf1d231bdc8c40f864625d8ab96fac534bbf1';
+String _$syncControllerHash() => r'ce481bbdcde22f6b9a286f229ef404ff18a9f0d6';
 
 /// Когда синхронизироваться (docs/plans/m2-core-app.md, решение 10): при
 /// запуске, раз в [period], через [debounce] после своей правки, при
@@ -74,12 +74,16 @@ abstract class _$SyncController extends $Notifier<SyncStatus> {
   }
 }
 
-/// Устройства в папке синхронизации; перечитываются после каждого прохода.
+/// Устройства в папке синхронизации; перечитываются после каждого удачного
+/// прохода и после каждой ошибки — неудачный проход не меняет время
+/// синхронизации, а папки уже может не быть.
 
 @ProviderFor(syncDevices)
 final syncDevicesProvider = SyncDevicesProvider._();
 
-/// Устройства в папке синхронизации; перечитываются после каждого прохода.
+/// Устройства в папке синхронизации; перечитываются после каждого удачного
+/// прохода и после каждой ошибки — неудачный проход не меняет время
+/// синхронизации, а папки уже может не быть.
 
 final class SyncDevicesProvider
     extends
@@ -89,7 +93,9 @@ final class SyncDevicesProvider
           FutureOr<List<SyncDevice>>
         >
     with $FutureModifier<List<SyncDevice>>, $FutureProvider<List<SyncDevice>> {
-  /// Устройства в папке синхронизации; перечитываются после каждого прохода.
+  /// Устройства в папке синхронизации; перечитываются после каждого удачного
+  /// прохода и после каждой ошибки — неудачный проход не меняет время
+  /// синхронизации, а папки уже может не быть.
   SyncDevicesProvider._()
     : super(
         from: null,
@@ -116,4 +122,4 @@ final class SyncDevicesProvider
   }
 }
 
-String _$syncDevicesHash() => r'6b41792ef52a14a8d7f4ad9ed55687d99370204d';
+String _$syncDevicesHash() => r'df0da91dcb6060c56353a164a8634907755c58cc';
