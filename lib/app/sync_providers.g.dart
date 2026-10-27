@@ -200,3 +200,150 @@ final class MutatorProvider
 }
 
 String _$mutatorHash() => r'3fa06b631a804d86d5be607675f1677d2a24e009';
+
+/// Профиль данных этого запуска (`--profile`, lib/app/profile.dart);
+/// `null` — основной. Задаётся в `main` через `ProviderScope.overrides`.
+
+@ProviderFor(appProfile)
+final appProfileProvider = AppProfileProvider._();
+
+/// Профиль данных этого запуска (`--profile`, lib/app/profile.dart);
+/// `null` — основной. Задаётся в `main` через `ProviderScope.overrides`.
+
+final class AppProfileProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// Профиль данных этого запуска (`--profile`, lib/app/profile.dart);
+  /// `null` — основной. Задаётся в `main` через `ProviderScope.overrides`.
+  AppProfileProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'appProfileProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$appProfileHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return appProfile(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$appProfileHash() => r'd1ba7d9ae80b44fbf3d9c9270d86e072f6309c47';
+
+/// Синхронизация с общей папкой. В `info.json` уходят имя компьютера,
+/// платформа и профиль — чтобы в списке устройств различать два профиля
+/// одного ПК. Это остаётся в папке синхронизации пользователя.
+
+@ProviderFor(syncRunner)
+final syncRunnerProvider = SyncRunnerProvider._();
+
+/// Синхронизация с общей папкой. В `info.json` уходят имя компьютера,
+/// платформа и профиль — чтобы в списке устройств различать два профиля
+/// одного ПК. Это остаётся в папке синхронизации пользователя.
+
+final class SyncRunnerProvider
+    extends $FunctionalProvider<SyncRunner, SyncRunner, SyncRunner>
+    with $Provider<SyncRunner> {
+  /// Синхронизация с общей папкой. В `info.json` уходят имя компьютера,
+  /// платформа и профиль — чтобы в списке устройств различать два профиля
+  /// одного ПК. Это остаётся в папке синхронизации пользователя.
+  SyncRunnerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncRunnerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncRunnerHash();
+
+  @$internal
+  @override
+  $ProviderElement<SyncRunner> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  SyncRunner create(Ref ref) {
+    return syncRunner(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncRunner value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncRunner>(value),
+    );
+  }
+}
+
+String _$syncRunnerHash() => r'b666830bc5da576b6ede81b0556682a47a5db44d';
+
+/// Системный диалог выбора папки; в тестах — фейк.
+
+@ProviderFor(folderPicker)
+final folderPickerProvider = FolderPickerProvider._();
+
+/// Системный диалог выбора папки; в тестах — фейк.
+
+final class FolderPickerProvider
+    extends $FunctionalProvider<FolderPicker, FolderPicker, FolderPicker>
+    with $Provider<FolderPicker> {
+  /// Системный диалог выбора папки; в тестах — фейк.
+  FolderPickerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'folderPickerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$folderPickerHash();
+
+  @$internal
+  @override
+  $ProviderElement<FolderPicker> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FolderPicker create(Ref ref) {
+    return folderPicker(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FolderPicker value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FolderPicker>(value),
+    );
+  }
+}
+
+String _$folderPickerHash() => r'0c2cb16072b633b2cb4a8fe1740b8ead9280eed6';

@@ -13,8 +13,10 @@ Future<void> main(List<String> args) async {
   // Плагины (пути, база) доступны только после инициализации движка Flutter.
   WidgetsFlutterBinding.ensureInitialized();
   final SyncServices services;
+  final String? profile;
   try {
-    services = await bootstrap(profile: profileFromArgs(args));
+    profile = profileFromArgs(args);
+    services = await bootstrap(profile: profile);
   } catch (error, stack) {
     Logger().e('База не открылась', error: error, stackTrace: stack);
     // ProviderScope и здесь: экран ошибки провайдеров не читает, но так у
@@ -26,7 +28,10 @@ Future<void> main(List<String> args) async {
   // Готовое ядро данных подставляется сюда, остальные провайдеры — от него.
   runApp(
     ProviderScope(
-      overrides: [syncServicesProvider.overrideWithValue(services)],
+      overrides: [
+        syncServicesProvider.overrideWithValue(services),
+        appProfileProvider.overrideWithValue(profile),
+      ],
       child: const PlannerApp(),
     ),
   );

@@ -6,6 +6,7 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../projects/ui/project_screen.dart';
+import '../../shell/ui/shell_keys.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
@@ -43,9 +44,11 @@ class _LabelScreenState extends State<LabelScreen> {
       child: Actions(
         actions: {
           AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
+            blocked: () => ShellKeys.sequencePending(context),
             () => setState(() => _addAt = AddTaskAt.bottom),
           ),
           AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
+            blocked: () => ShellKeys.sequencePending(context),
             () => setState(() => _addAt = AddTaskAt.top),
           ),
         },

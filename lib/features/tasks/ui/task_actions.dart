@@ -96,14 +96,18 @@ bool isTypingInTextField() {
 }
 
 /// Действие хоткея, которое не срабатывает (и не съедает клавишу), пока
-/// пользователь печатает: буква уходит в поле ввода.
+/// пользователь печатает: буква уходит в поле ввода. [blocked] — ещё одно
+/// условие пропустить клавишу: после `g` или `o` она нужна оболочке
+/// (`o s` — «Настройки», а не «Добавить раздел»).
 class HotkeyAction<T extends Intent> extends Action<T> {
-  HotkeyAction(this.onInvoke);
+  HotkeyAction(this.onInvoke, {this.blocked});
 
   final void Function() onInvoke;
+  final bool Function()? blocked;
 
   @override
-  bool isEnabled(T intent) => !isTypingInTextField();
+  bool isEnabled(T intent) =>
+      !isTypingInTextField() && !(blocked?.call() ?? false);
 
   @override
   Object? invoke(T intent) {

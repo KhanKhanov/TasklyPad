@@ -5,6 +5,7 @@ import '../features/labels/ui/filters_labels_screen.dart';
 import '../features/labels/ui/label_screen.dart';
 import '../features/projects/ui/project_screen.dart';
 import '../features/projects/ui/projects_screen.dart';
+import '../features/settings/ui/settings_screen.dart';
 import '../features/shell/ui/app_shell.dart';
 
 part 'router.g.dart';
@@ -35,6 +36,11 @@ GoRouter router(Ref ref) {
             path: '/projects',
             name: 'projects',
             builder: (context, state) => const ProjectsScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            name: 'settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
             path: '/filters-labels',

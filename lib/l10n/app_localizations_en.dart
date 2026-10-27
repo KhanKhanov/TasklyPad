@@ -405,4 +405,151 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nextTask => 'Next task';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get syncSection => 'Sync';
+
+  @override
+  String get syncFolder => 'Sync folder';
+
+  @override
+  String get syncFolderNone =>
+      'No folder chosen — your data is on this device only.';
+
+  @override
+  String get syncFolderHint =>
+      'Choose a shared OneDrive, Google Drive or Syncthing folder: the app creates a planner-sync folder in it. Choose the same folder on your other devices.';
+
+  @override
+  String get chooseFolder => 'Choose folder…';
+
+  @override
+  String get changeFolder => 'Change folder…';
+
+  @override
+  String get syncNow => 'Sync now';
+
+  @override
+  String get syncRunning => 'Syncing…';
+
+  @override
+  String syncLast(String time) {
+    return 'Last synced: $time';
+  }
+
+  @override
+  String get syncNever => 'Not synced yet';
+
+  @override
+  String syncIssues(int count) {
+    return 'Files from other devices not read yet: $count. The cloud may still be downloading them — I\'ll retry on the next sync.';
+  }
+
+  @override
+  String get syncErrorFormat =>
+      'The folder was written by a newer version of the app. Update the app on this device — nothing was written to the folder.';
+
+  @override
+  String get syncErrorBusy =>
+      'These data are already syncing — I\'ll retry later.';
+
+  @override
+  String get syncErrorRetiredUnread =>
+      'Folder not changed: some changes of the ticked devices in the previous folder couldn\'t be read. Try again later.';
+
+  @override
+  String get retiredUnreadTitle => 'Not all changes were read';
+
+  @override
+  String get retiredUnreadBody =>
+      'Some changes of the ticked devices in the previous folder couldn\'t be read: the cloud is still downloading files, a file is damaged, the device\'s clock is ahead or the previous folder is unavailable. You can wait and change the folder again. If you change it anyway, the unread changes won\'t reach the new folder; the previous folder stays as it is.';
+
+  @override
+  String get retiredUnreadAction => 'Change anyway';
+
+  @override
+  String syncErrorOther(String error) {
+    return 'Sync failed: $error';
+  }
+
+  @override
+  String get changeFolderTitle => 'Change sync folder?';
+
+  @override
+  String changeFolderBody(String path) {
+    return 'New folder: $path. The previous folder stays unchanged. Switch your other devices in use to the new folder too — they will move their own changes.';
+  }
+
+  @override
+  String get changeFolderRetiredHint =>
+      'Tick the devices you no longer use: this device will write their changes to the new folder. Don\'t tick a device you will switch later, or its new changes will look like a conflict.';
+
+  @override
+  String get changeFolderNoDevices =>
+      'Couldn\'t read the devices of the previous folder: changes from other devices won\'t be moved to the new folder.';
+
+  @override
+  String get changeFolderAction => 'Change';
+
+  @override
+  String get folderConnected => 'Folder connected';
+
+  @override
+  String folderAdopted(int count) {
+    return 'Folder connected. Changes from devices no longer in use were written to it: $count';
+  }
+
+  @override
+  String folderAdoptedPartial(int adopted, int unreadable) {
+    return 'Folder connected. Changes from devices no longer in use were written to it: $adopted. Not all changes were read from devices: $unreadable — the rest stays in the previous folder';
+  }
+
+  @override
+  String folderUnreadable(int count) {
+    return 'Folder connected. Not all changes were read from devices no longer in use: $count — the rest stays in the previous folder';
+  }
+
+  @override
+  String get devicesHeader => 'Devices';
+
+  @override
+  String get thisDevice => 'this device';
+
+  @override
+  String get deviceUnnamed => 'Unnamed device';
+
+  @override
+  String deviceUpdated(String time) {
+    return 'uploaded changes $time';
+  }
+
+  @override
+  String get rebuildTitle => 'Rebuild database from the log';
+
+  @override
+  String get rebuildBody =>
+      'Your data will be rebuilt from the change log. The log is not changed and no changes are lost. Use this if your data looks wrong.';
+
+  @override
+  String get rebuildAction => 'Rebuild';
+
+  @override
+  String get rebuildDone => 'Database rebuilt';
+
+  @override
+  String get syncUnsupported =>
+      'Choosing a sync folder on this device is coming later.';
+
+  @override
+  String deviceWithProfile(String name, String profile) {
+    return '$name ($profile)';
+  }
+
+  @override
+  String deviceThis(String name) {
+    return '$name — this device';
+  }
 }

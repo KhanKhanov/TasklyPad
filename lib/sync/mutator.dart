@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:oplog_sync/oplog_sync.dart';
 
 import '../core/ids.dart';
@@ -27,6 +29,17 @@ final class Mutator {
 
   /// Тип сущности → поле-объект → ключи, которые это приложение знает.
   final Map<String, Map<String, Set<String>>> _objectFields;
+
+  final StreamController<void> _localChanges = StreamController.broadcast();
+
+  /// Событие после каждой правки этого устройства: синхронизация запускается
+  /// через несколько секунд после правки. Данные, пришедшие из папки, и
+  /// переиздание ([adoptUnsyncedOps]) его не вызывают — иначе каждая
+  /// синхронизация запускала бы следующую, а смена папки — лишний проход.
+  Stream<void> get localChanges => _localChanges.stream;
+
+  /// Закрыть поток [localChanges] — вместе с базой.
+  Future<void> dispose() => _localChanges.close();
 
   /// Создать сущность с полями [fields]; возвращает её новый id (UUIDv7).
   Future<String> create(String entityType, Map<String, Object?> fields) async {
@@ -122,14 +135,21 @@ final class Mutator {
   Future<int> adoptUnsyncedOps(String previousNodeId, Hlc? uploadedUpTo) =>
       _write(
         () async => (await _engine.adopt(previousNodeId, uploadedUpTo)).length,
+        userEdit: false,
       );
 
-  Future<T> _write<T>(Future<T> Function() action) =>
-      _store.transaction(() async {
-        final result = await action();
-        await _meta.setHlc(_engine.clock);
-        return result;
-      });
+  Future<T> _write<T>(
+    Future<T> Function() action, {
+    bool userEdit = true,
+  }) async {
+    final result = await _store.transaction(() async {
+      final result = await action();
+      await _meta.setHlc(_engine.clock);
+      return result;
+    });
+    if (userEdit) _localChanges.add(null);
+    return result;
+  }
 
   /// Поле-объект: известные приложению ключи берутся из нового значения
   /// целиком (нет в нём — ключ убран), незнакомые — из текущего значения.

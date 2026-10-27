@@ -65,7 +65,10 @@ final class SyncServices {
     meta: meta,
   );
 
-  Future<void> close() => db.close();
+  Future<void> close() async {
+    await mutator.dispose();
+    await db.close();
+  }
 }
 
 /// Запустить ядро данных над открытой базой [db].
