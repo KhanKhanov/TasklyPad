@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/db_backup.dart';
 import '../l10n/app_localizations.dart';
+import 'profile.dart';
 
 /// Приложение вместо основного, если данные не открылись при запуске.
 ///
@@ -25,6 +26,9 @@ class StartupErrorApp extends StatelessWidget {
           final message = switch (error) {
             SchemaTooNewException(:final found, :final supported) =>
               l10n.startupSchemaTooNew(found, supported),
+            InvalidProfileException(:final name) => l10n.startupBadProfile(
+              name,
+            ),
             _ => l10n.startupErrorDetails('$error'),
           };
           return Scaffold(

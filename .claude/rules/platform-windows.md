@@ -8,7 +8,7 @@ paths:
 - Минимум Windows 10 x64. Сборка: Visual Studio, workload «Desktop development with C++».
   Дистрибуция: MSIX (пакет msix) с self-signed сертификатом для личного использования.
 - Трей (tray_manager): закрытие окна = свернуть в трей (настройка); пункты «Быстрое добавление», «Открыть», «Выход».
-- Глобальный хоткей quick add (hotkey_manager), по умолчанию Ctrl+Alt+A, настраиваемый.
+- Глобальный хоткей quick add (hotkey_manager), по умолчанию `Ctrl+Space`, как в Todoist (docs/TODOIST_PARITY.md §9, §10), настраиваемый.
 - Уведомления: toast через flutter_local_notifications; повторяющихся нет (`periodicallyShow`
   бросает `UnsupportedError`) — планировщик напоминаний в lib/features/reminders сам ставит следующее
   одноразовое. Действия: «Завершить», «Отложить 10 мин». Без package identity (не-MSIX сборка,

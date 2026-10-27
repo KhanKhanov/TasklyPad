@@ -14,11 +14,14 @@ import '../data/db_backup.dart';
 import '../data/db_open.dart';
 import '../sync/node_identity.dart';
 import '../sync/sync_services.dart';
+import 'profile.dart';
 
 /// Открыть базу и запустить ядро данных — до первого кадра приложения.
 ///
 /// [dataDirectory] и [markerDirectory] — другие папки для теста на настоящей
-/// платформе, чтобы не трогать базу пользователя.
+/// платформе, чтобы не трогать базу пользователя. [profile] — профиль данных
+/// (`--profile`, lib/app/profile.dart): его база и метка узла лежат в
+/// подпапках основных; `null` — основной профиль, папки прежние.
 ///
 /// Бросает [SchemaTooNewException], если база создана более новой версией
 /// приложения: drift проверяет версию в фоновом изоляте и присылает ошибку
@@ -27,10 +30,17 @@ Future<SyncServices> bootstrap({
   AppClock clock = const SystemClock(),
   String? dataDirectory,
   String? markerDirectory,
+  String? profile,
 }) async {
-  final dataDir =
+  final baseData =
       dataDirectory ?? (await getApplicationSupportDirectory()).path;
-  final markerDir = markerDirectory ?? await nodeMarkerDirectory(dataDir);
+  final dirs = profileDirectories(
+    data: baseData,
+    marker: markerDirectory ?? await nodeMarkerDirectory(baseData),
+    profile: profile,
+  );
+  final dataDir = dirs.data;
+  final markerDir = dirs.marker;
   final db = await openAppDatabase(clock: clock, directory: dataDir);
   try {
     return await startSync(

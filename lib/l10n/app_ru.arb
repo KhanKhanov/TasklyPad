@@ -28,6 +28,15 @@
       }
     }
   },
+  "startupBadProfile": "Имя профиля «{name}» не подходит: нужны латинские строчные буквы, цифры и дефис, до 32 символов. Данные не тронуты.",
+  "@startupBadProfile": {
+    "description": "Неверное имя профиля в аргументе --profile",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "startupErrorDetails": "Данные не изменены. Подробности: {error}",
   "@startupErrorDetails": {
     "description": "Прочая ошибка открытия базы при запуске",

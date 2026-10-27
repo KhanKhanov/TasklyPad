@@ -27,6 +27,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String startupBadProfile(String name) {
+    return 'Имя профиля «$name» не подходит: нужны латинские строчные буквы, цифры и дефис, до 32 символов. Данные не тронуты.';
+  }
+
+  @override
   String startupErrorDetails(String error) {
     return 'Данные не изменены. Подробности: $error';
   }
