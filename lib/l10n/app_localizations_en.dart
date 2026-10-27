@@ -27,6 +27,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String startupBadProfile(String name) {
+    return 'Profile name \"$name\" is not valid: use lowercase Latin letters, digits and hyphens, up to 32 characters. Your data was not changed.';
+  }
+
+  @override
   String startupErrorDetails(String error) {
     return 'Your data was not changed. Details: $error';
   }

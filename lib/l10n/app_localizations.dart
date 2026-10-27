@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'Данные сохранены более новой версией приложения (схема {found}, эта версия знает до {supported}). Обновите приложение — данные не тронуты.'**
   String startupSchemaTooNew(int found, int supported);
 
+  /// Неверное имя профиля в аргументе --profile
+  ///
+  /// In ru, this message translates to:
+  /// **'Имя профиля «{name}» не подходит: нужны латинские строчные буквы, цифры и дефис, до 32 символов. Данные не тронуты.'**
+  String startupBadProfile(String name);
+
   /// Прочая ошибка открытия базы при запуске
   ///
   /// In ru, this message translates to:

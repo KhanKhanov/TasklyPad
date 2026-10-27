@@ -99,4 +99,38 @@ void main() {
     expect(Directory(p.join(dir.path, 'backups')).existsSync(), isFalse);
     expect(File(p.join(markers, 'node_id.txt')).existsSync(), isFalse);
   });
+
+  testWidgets('профили: у каждого своя база и свой узел в подпапках, '
+      'основной профиль не тронут', (tester) async {
+    final a = await bootstrap(
+      dataDirectory: dir.path,
+      markerDirectory: markers,
+      profile: 'a',
+    );
+    final aNode = a.nodeId;
+    await a.close();
+    final b = await bootstrap(
+      dataDirectory: dir.path,
+      markerDirectory: markers,
+      profile: 'b',
+    );
+    final bNode = b.nodeId;
+    await b.close();
+
+    expect(aNode, isNot(bNode));
+    for (final (name, node) in [('a', aNode), ('b', bNode)]) {
+      expect(
+        File(p.join(dir.path, 'profiles', name, 'planner.sqlite')).existsSync(),
+        isTrue,
+      );
+      expect(
+        File(p.join(markers, 'profiles', name, 'node_id.txt'))
+            .readAsStringSync()
+            .trim(),
+        node,
+      );
+    }
+    expect(File(p.join(dir.path, 'planner.sqlite')).existsSync(), isFalse);
+    expect(File(p.join(markers, 'node_id.txt')).existsSync(), isFalse);
+  });
 }

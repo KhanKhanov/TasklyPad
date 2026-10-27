@@ -4,16 +4,17 @@ import 'package:logger/logger.dart';
 
 import 'app/app.dart';
 import 'app/bootstrap.dart';
+import 'app/profile.dart';
 import 'app/startup_error_app.dart';
 import 'app/sync_providers.dart';
 import 'sync/sync_services.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   // Плагины (пути, база) доступны только после инициализации движка Flutter.
   WidgetsFlutterBinding.ensureInitialized();
   final SyncServices services;
   try {
-    services = await bootstrap();
+    services = await bootstrap(profile: profileFromArgs(args));
   } catch (error, stack) {
     Logger().e('База не открылась', error: error, stackTrace: stack);
     // ProviderScope и здесь: экран ошибки провайдеров не читает, но так у

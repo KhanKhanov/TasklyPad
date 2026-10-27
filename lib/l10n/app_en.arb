@@ -5,6 +5,7 @@
   "inboxEmpty": "No tasks yet",
   "startupErrorTitle": "Couldn't open your data",
   "startupSchemaTooNew": "Your data was saved by a newer version of the app (schema {found}, this version supports up to {supported}). Update the app — your data is untouched.",
+  "startupBadProfile": "Profile name \"{name}\" is not valid: use lowercase Latin letters, digits and hyphens, up to 32 characters. Your data was not changed.",
   "startupErrorDetails": "Your data was not changed. Details: {error}",
   "myProjects": "My Projects",
   "favorites": "Favorites",
