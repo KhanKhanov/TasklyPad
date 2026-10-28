@@ -262,14 +262,173 @@ void main() {
       );
     });
 
-    test('удалённая метка пропадает с задач', () async {
+    test('удаление — метка пропадает со списка и активных задач, на '
+        'выполненных остаётся; одна op', () async {
       final label = await app.labels.add(name: 'дом');
-      final task = await app.tasks.add(content: 't', labelIds: {label});
+      final open = await app.tasks.add(content: 'open', labelIds: {label});
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      final before = (await device.ownOps()).length;
       await app.labels.delete(label);
+      expect((await device.ownOps()).length, before + 1);
       final ws = await app.read();
       expect(ws.labels, isEmpty);
-      expect(ws.task(task)!.labelIds, isEmpty);
+      expect(ws.task(open)!.labelIds, isEmpty);
+      expect(ws.task(done)!.labelIds, [label]);
+      expect(ws.taskLabel(label)?.name, 'дом');
     });
+
+    test('возврат в работу задачи с удалённой меткой — метка создаётся '
+        'заново: то же имя, цвет и избранное по умолчанию, в конце '
+        'списка', () async {
+      final label = await app.labels.add(
+        name: 'дом',
+        color: 'red',
+        isFavorite: true,
+      );
+      final other = await app.labels.add(name: 'работа');
+      final open = await app.tasks.add(content: 'open', labelIds: {label});
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.delete(label);
+
+      await app.tasks.uncomplete(done);
+      final ws = await app.read();
+      expect([for (final l in ws.labels) l.name], ['работа', 'дом']);
+      final revived = ws.labels.last;
+      expect(revived.id, isNot(label));
+      expect(revived.id, isNot(other));
+      expect(revived.color, 'charcoal');
+      expect(revived.isFavorite, isFalse);
+      expect(ws.task(done)!.labelIds, [revived.id]);
+      expect(
+        ws.task(open)!.labelIds,
+        isEmpty,
+        reason:
+            'метка не вернулась '
+            'на задачи, с которых её сняло удаление',
+      );
+
+      // Снова завершённая задача несёт только новую метку.
+      await app.tasks.complete(done);
+      expect((await app.read()).task(done)!.labelIds, [revived.id]);
+    });
+
+    test('возврат в работу — живая метка с тем же именем (без учёта '
+        'регистра) уже есть: задача получает её, новой нет', () async {
+      final label = await app.labels.add(name: 'дом');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.delete(label);
+      final same = await app.labels.add(name: 'Дом');
+
+      await app.tasks.uncomplete(done);
+      final ws = await app.read();
+      expect([for (final l in ws.labels) l.id], [same]);
+      expect(ws.task(done)!.labelIds, [same]);
+    });
+
+    test('возврат подзадачи возвращает и родителя: одна удалённая метка у '
+        'обоих — одна новая метка на обоих', () async {
+      final label = await app.labels.add(name: 'дом');
+      final parent = await app.tasks.add(content: 'p', labelIds: {label});
+      final child = await app.tasks.add(
+        content: 'c',
+        parentId: parent,
+        labelIds: {label},
+      );
+      await app.tasks.complete(parent);
+      await app.labels.delete(label);
+
+      await app.tasks.uncomplete(child);
+      final ws = await app.read();
+      expect(ws.labels, hasLength(1));
+      final revived = ws.labels.single.id;
+      expect(ws.task(parent)!.labelIds, [revived]);
+      expect(ws.task(child)!.labelIds, [revived]);
+    });
+
+    test('созданную заново метку тоже удалили — следующий возврат создаёт '
+        'ещё одну, с другим id', () async {
+      final label = await app.labels.add(name: 'дом');
+      final first = await app.tasks.add(content: '1', labelIds: {label});
+      final second = await app.tasks.add(content: '2', labelIds: {label});
+      await app.tasks.complete(first);
+      await app.tasks.complete(second);
+      await app.labels.delete(label);
+
+      await app.tasks.uncomplete(first);
+      final revived = (await app.read()).labels.single.id;
+      await app.labels.delete(revived);
+      await app.tasks.uncomplete(second);
+
+      final ws = await app.read();
+      final again = ws.labels.single;
+      expect(again.name, 'дом');
+      expect({again.id, revived, label}, hasLength(3));
+      expect(ws.task(second)!.labelIds, [again.id]);
+      expect(ws.task(first)!.labelIds, isEmpty);
+    });
+
+    test('задача, активная при удалении метки, после завершения её не '
+        'показывает, а возврат в работу метку не создаёт', () async {
+      final label = await app.labels.add(name: 'дом');
+      final open = await app.tasks.add(content: 'open', labelIds: {label});
+      await app.labels.delete(label);
+
+      await app.tasks.complete(open);
+      expect((await app.read()).task(open)!.labelIds, isEmpty);
+      await app.tasks.uncomplete(open);
+      final ws = await app.read();
+      expect(ws.labels, isEmpty);
+      expect(ws.task(open)!.labelIds, isEmpty);
+    });
+
+    test('удалённую метку восстановили после возврата задачи (выбор на '
+        'экране «Конфликты») — на задаче только новая метка', () async {
+      final label = await app.labels.add(name: 'дом');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.delete(label);
+      await app.tasks.uncomplete(done);
+      final revived = (await app.read()).labels.single.id;
+
+      await device.services.mutator.restore(EntityTypes.label, label);
+      final ws = await app.read();
+      expect(ws.labels, hasLength(2));
+      expect(ws.task(done)!.labelIds, [revived]);
+    });
+
+    test('дубликат выполненной задачи не получает связь с удалённой '
+        'меткой', () async {
+      final gone = await app.labels.add(name: 'дом');
+      final work = await app.labels.add(name: 'работа');
+      final done = await app.tasks.add(content: 'done', labelIds: {gone, work});
+      await app.tasks.complete(done);
+      await app.labels.delete(gone);
+
+      final copy = await app.tasks.duplicate(done);
+      final links = await (device.db.select(
+        device.db.taskLabels,
+      )..where((l) => l.taskId.equals(copy))).get();
+      expect([for (final l in links) l.labelId], [work]);
+    });
+
+    test(
+      'setLabels на выполненной задаче не снимает удалённую метку',
+      () async {
+        final gone = await app.labels.add(name: 'дом');
+        final work = await app.labels.add(name: 'работа');
+        final done = await app.tasks.add(content: 'done', labelIds: {gone});
+        await app.tasks.complete(done);
+        await app.labels.delete(gone);
+
+        await app.tasks.setLabels(done, {work});
+        expect((await app.read()).task(done)!.labelIds, [gone, work]);
+        await app.tasks.setLabels(done, {});
+        expect((await app.read()).task(done)!.labelIds, [gone]);
+      },
+    );
 
     test('edit — пишутся только переданные поля, название и цвет одной правкой '
         'Mutator.update; дубль имени — отказ без записи', () async {

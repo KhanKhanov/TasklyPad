@@ -125,7 +125,7 @@ class TaskText extends ConsumerWidget {
           ),
       ],
       for (final id in task.labelIds)
-        if (ws.label(id) case final label?)
+        if (ws.taskLabel(id) case final label?)
           _Chip(
             icon: Icons.sell_outlined,
             text: label.name,

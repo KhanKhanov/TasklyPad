@@ -476,4 +476,157 @@ void main() {
       }
     },
   );
+
+  test('задачи с одной удалённой меткой возвращены в работу на двух '
+      'устройствах офлайн — одна новая метка, без конфликтов', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.tasks.complete(b);
+    await onPc.labels.delete(label);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      final revived = ws.labels.single;
+      expect(revived.name, 'дом');
+      expect(ws.task(a)!.labelIds, [revived.id]);
+      expect(ws.task(b)!.labelIds, [revived.id]);
+    }
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+  });
+
+  /// Метка `дом` на выполненных задачах [a] и [b], удалена на ПК, оба
+  /// устройства это получили.
+  Future<(String, String, String)> deletedOnCompleted() async {
+    final label = await onPc.labels.add(name: 'дом');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.tasks.complete(b);
+    await onPc.labels.delete(label);
+    await syncBoth();
+    return (label, a, b);
+  }
+
+  test('созданную заново метку переименовали на ПК, телефон офлайн вернул '
+      'другую задачу — сходятся, спор об имени виден конфликтом', () async {
+    final (_, a, b) = await deletedOnCompleted();
+    await onPc.tasks.uncomplete(a);
+    final revived = (await onPc.read()).labels.single.id;
+    await onPc.labels.rename(revived, 'дача');
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    final (onA, onB) = (await onPc.read(), await onPhone.read());
+    expect(
+      [for (final l in onB.labels) (l.id, l.name)],
+      [for (final l in onA.labels) (l.id, l.name)],
+    );
+    expect(onA.labels.single.id, revived);
+    expect(onA.task(b)!.labelIds, [revived]);
+    final conflict = (await pc.conflicts()).single;
+    expect(conflict.field, LabelFields.name);
+    expect((await phone.conflicts()).single.id, conflict.id);
+  });
+
+  test(
+    'созданную заново метку удалили на ПК, телефон офлайн вернул другую '
+    'задачу — метка остаётся удалённой на обоих, спор виден конфликтом',
+    () async {
+      final (_, a, b) = await deletedOnCompleted();
+      await onPc.tasks.uncomplete(a);
+      final revived = (await onPc.read()).labels.single.id;
+      await onPc.labels.delete(revived);
+      await onPhone.tasks.uncomplete(b);
+      await syncBoth();
+
+      for (final dev in [onPc, onPhone]) {
+        final ws = await dev.read();
+        expect(ws.labels, isEmpty);
+        expect(ws.task(a)!.labelIds, isEmpty);
+        expect(ws.task(b)!.labelIds, isEmpty);
+      }
+      final kinds = {for (final c in await pc.conflicts()) c.kind};
+      expect(kinds, {ConflictKind.delete});
+      expect(
+        {for (final c in await phone.conflicts()) c.id},
+        {for (final c in await pc.conflicts()) c.id},
+      );
+    },
+  );
+
+  test(
+    'метку удалили на ПК, телефон офлайн завершил задачу, активную до '
+    'удаления, — одинаковый результат на обоих, после rebuild тоже',
+    () async {
+      final label = await onPc.labels.add(name: 'дом');
+      final task = await onPc.tasks.add(content: 't', labelIds: {label});
+      await syncBoth();
+
+      await onPc.labels.delete(label);
+      await onPhone.tasks.complete(task);
+      await syncBoth();
+
+      final labelsOnPc = (await onPc.read()).task(task)!.labelIds;
+      expect((await onPhone.read()).task(task)!.labelIds, labelsOnPc);
+      await pc.services.engine.rebuild();
+      expect((await onPc.read()).task(task)!.labelIds, labelsOnPc);
+
+      // Завершение после получения удаления — метки нет.
+      await onPhone.tasks.uncomplete(task);
+      await onPhone.tasks.complete(task);
+      await syncBoth();
+      for (final dev in [onPc, onPhone]) {
+        expect((await dev.read()).task(task)!.labelIds, isEmpty);
+      }
+    },
+  );
+
+  test(
+    'возврат задачи с удалённой меткой — после rebuild та же картина',
+    () async {
+      final (_, a, b) = await deletedOnCompleted();
+      await onPc.tasks.uncomplete(a);
+      final before = await onPc.read();
+      await pc.services.engine.rebuild();
+      final after = await onPc.read();
+      expect(
+        [for (final l in after.labels) (l.id, l.name, l.color)],
+        [for (final l in before.labels) (l.id, l.name, l.color)],
+      );
+      expect(after.task(a)!.labelIds, before.task(a)!.labelIds);
+      expect(after.task(b)!.labelIds, before.task(b)!.labelIds);
+      expect(after.task(b)!.labelIds, hasLength(1));
+    },
+  );
+
+  test('метку удалили на одном, задачу вернули в работу на другом офлайн — '
+      'одинаковый результат на обоих', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final task = await onPc.tasks.add(content: 't', labelIds: {label});
+    final done = await onPc.tasks.add(content: 'done', labelIds: {label});
+    await onPc.tasks.complete(task);
+    await onPc.tasks.complete(done);
+    await syncBoth();
+
+    await onPc.labels.delete(label);
+    await onPhone.tasks.uncomplete(task);
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      expect(ws.labels, isEmpty);
+      expect(ws.task(task)!.labelIds, isEmpty);
+      expect(ws.task(done)!.labelIds, [label]);
+    }
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+  });
 }

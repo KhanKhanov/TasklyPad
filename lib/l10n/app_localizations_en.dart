@@ -394,7 +394,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteLabelBody(String name) {
-    return 'The label \"$name\" will be removed from all tasks.';
+    return 'The label \"$name\" will be deleted.';
   }
 
   @override

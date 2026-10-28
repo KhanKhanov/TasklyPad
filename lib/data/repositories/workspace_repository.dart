@@ -1,6 +1,9 @@
+import 'package:drift/drift.dart';
+
 import '../../domain/models.dart';
 import '../../domain/workspace.dart';
 import '../app_database.dart';
+import '../projection/entity_fields.dart';
 
 /// Чтение данных пользователя одним снимком [Workspace].
 ///
@@ -39,6 +42,28 @@ final class WorkspaceRepository {
     final links = await (_db.select(
       _db.taskLabels,
     )..where((t) => t.deleted.equals(false))).get();
+    // Время (HLC) удаления меток и завершения задач с ними — для правила
+    // «удалённая метка видна на задаче, выполненной до удаления» (Workspace).
+    // Читаются только нужные строки: по первичному ключу, а не все поля всех
+    // задач на каждый снимок.
+    final deletedLabelIds = {
+      for (final l in labels)
+        if (l.deleted) l.id,
+    };
+    final taskIds = {
+      for (final link in links)
+        if (deletedLabelIds.contains(link.labelId)) ?link.taskId,
+    };
+    final labelDeletedAt = await _versions(
+      EntityTypes.label,
+      deletedLabelIds,
+      LabelFields.deleted,
+    );
+    final completedAt = await _versions(
+      EntityTypes.task,
+      taskIds,
+      TaskFields.isCompleted,
+    );
 
     final labelsOf = <String, List<String>>{};
     for (final link in links) {
@@ -58,6 +83,12 @@ final class WorkspaceRepository {
         for (final l in labels)
           if (!l.deleted) _label(l),
       ],
+      deletedLabels: [
+        for (final l in labels)
+          if (l.deleted) _label(l),
+      ],
+      completionVersions: completedAt,
+      labelDeletionVersions: labelDeletedAt,
       tasks: [
         for (final t in tasks)
           if (!t.deleted) _task(t, labelsOf[t.id] ?? const []),
@@ -76,6 +107,24 @@ final class WorkspaceRepository {
       },
     );
   });
+
+  /// HLC поля [field] сущностей [ids] типа [entityType]: id → HLC.
+  Future<Map<String, String>> _versions(
+    String entityType,
+    Set<String> ids,
+    String field,
+  ) async {
+    if (ids.isEmpty) return const {};
+    final rows =
+        await (_db.select(_db.fieldVersions)..where(
+              (v) =>
+                  v.entityType.equals(entityType) &
+                  v.entityId.isIn(ids) &
+                  v.field.equals(field),
+            ))
+            .get();
+    return {for (final v in rows) v.entityId: v.hlc};
+  }
 
   static Project _project(ProjectRow r) => Project(
     id: r.id,

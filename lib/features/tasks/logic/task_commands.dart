@@ -119,14 +119,23 @@ final class TaskCommands {
       _update(id, {TaskFields.isCollapsed: collapsed});
 
   /// Метки задачи ровно [labelIds]: недостающие ставятся, лишние снимаются.
+  /// Удалённая метка выполненной задачи в выборе не участвует и остаётся.
   Future<void> setLabels(String id, Set<String> labelIds) async {
-    final task = await _alive(id);
-    final current = task.labelIds.toSet();
+    final ws = await _read();
+    final task = await _alive(id, ws);
+    final current = {
+      for (final l in task.labelIds)
+        if (ws.label(l) != null) l,
+    };
+    final wanted = {
+      for (final l in labelIds)
+        if (ws.label(l) != null) l,
+    };
     await _mutator.batch(() async {
-      for (final label in labelIds.difference(current)) {
+      for (final label in wanted.difference(current)) {
         await _link(id, label, linked: true);
       }
-      for (final label in current.difference(labelIds)) {
+      for (final label in current.difference(wanted)) {
         await _link(id, label, linked: false);
       }
     });
@@ -148,6 +157,10 @@ final class TaskCommands {
   /// а возвращённые встают в конец незавершённых соседей (раздел — в конец
   /// разделов проекта). «Отменить» в тосте после завершения сюда не ведёт:
   /// он восстанавливает прежние значения полей, в том числе место.
+  ///
+  /// Удалённые метки возвращённых задач возвращаются, как в Todoist
+  /// ([_reviveLabels]). [Undo] (в интерфейсе его нет) возвращает только поля
+  /// задач и раздела, метки остаются.
   Future<Undo> uncomplete(String id) async {
     final ws = await _read();
     var root = await _alive(id, ws);
@@ -199,8 +212,50 @@ final class TaskCommands {
           ]),
         });
       }
+      await _reviveLabels(ws, ids);
     });
     return undo;
+  }
+
+  /// Удалённые метки задач [ids], которые возвращаются в работу, — как в
+  /// Todoist (help «Introduction to labels»): задача получает живую метку с
+  /// тем же именем (без учёта регистра), а если её нет — метку, созданную
+  /// заново с этим именем, цветом и избранным по умолчанию, в конце списка.
+  /// Связь с удалённой меткой снимается: если ту восстановят (выбор на экране
+  /// «Конфликты»), задача не понесёт две одноимённые метки. Id новой метки —
+  /// [revivedLabelId]: два устройства, вернувшие такие задачи офлайн,
+  /// создают одну метку.
+  Future<void> _reviveLabels(Workspace ws, List<String> ids) async {
+    final byName = <String, String>{};
+    for (final l in ws.labels) {
+      byName.putIfAbsent(l.name.toLowerCase(), () => l.id);
+    }
+    final keys = [for (final l in ws.labels) l.orderKey];
+    for (final t in ids) {
+      for (final old in ws.task(t)!.labelIds) {
+        final deleted = ws.deletedLabel(old);
+        // Пустое имя — строка известна только по tombstone, поля создателя
+        // ещё не пришли: создавать нечего.
+        if (deleted == null || deleted.name.trim().isEmpty) continue;
+        final target = byName[deleted.name.toLowerCase()] ??= await () async {
+          var id = old;
+          do {
+            id = revivedLabelId(id);
+          } while (ws.label(id) != null || ws.deletedLabel(id) != null);
+          final key = keyAtEnd(keys);
+          keys.add(key);
+          await _mutator.update(EntityTypes.label, id, {
+            LabelFields.name: deleted.name,
+            LabelFields.color: 'charcoal',
+            LabelFields.orderKey: key,
+            LabelFields.isFavorite: false,
+          });
+          return id;
+        }();
+        await _link(t, old, linked: false);
+        await _link(t, target, linked: true);
+      }
+    }
   }
 
   /// Удалить (tombstone). Подзадачи скрываются вместе с задачей.
@@ -346,8 +401,9 @@ final class TaskCommands {
       TaskFields.duration: ?_durationValue(source.duration),
       TaskFields.addedAt: _now(),
     });
+    // Удалённая метка выполненного оригинала на активную копию не идёт.
     for (final label in source.labelIds) {
-      await _link(id, label, linked: true);
+      if (ws.label(label) != null) await _link(id, label, linked: true);
     }
     for (final child in ws.children(source.id)) {
       if (child.isCompleted) continue;

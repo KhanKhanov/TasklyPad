@@ -545,7 +545,7 @@
   "@deleteLabelTitle": {
     "description": "Заголовок подтверждения удаления метки"
   },
-  "deleteLabelBody": "Метка «{name}» будет удалена со всех задач.",
+  "deleteLabelBody": "Метка «{name}» будет удалена.",
   "@deleteLabelBody": {
     "description": "Текст подтверждения удаления метки",
     "placeholders": {

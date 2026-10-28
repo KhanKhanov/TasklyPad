@@ -128,7 +128,7 @@ class TaskFields extends ConsumerWidget {
               runSpacing: 4,
               children: [
                 for (final id in task.labelIds)
-                  if (ws.label(id) case final label?)
+                  if (ws.taskLabel(id) case final label?)
                     Text(
                       label.name,
                       style: TextStyle(color: projectColor(label.color)),

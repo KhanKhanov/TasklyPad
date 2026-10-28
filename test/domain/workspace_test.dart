@@ -357,6 +357,39 @@ void main() {
     expect(ws.rootSectionOf('b'), isNull);
   });
 
+  test('удалённая метка — видна на задаче, выполненной до удаления (по HLC); '
+      'на активной и выполненной после удаления скрыта; в списке меток и '
+      'счётчиках её нет', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: const [],
+      labels: [_label('x', order: 'b')],
+      deletedLabels: [_label('gone', order: 'a')],
+      tasks: [
+        _task('open', labels: ['gone', 'x']),
+        _task('done', labels: ['x', 'gone', 'unknown'], completed: true),
+        _task('late', labels: ['gone'], completed: true),
+        _task('no_version', labels: ['gone'], completed: true),
+      ],
+      completionVersions: {
+        'done': '000000000000000100:0000:a',
+        'late': '000000000000000300:0000:b',
+      },
+      labelDeletionVersions: {'gone': '000000000000000200:0000:c'},
+    );
+    expect(ws.task('open')!.labelIds, ['x']);
+    expect(ws.task('done')!.labelIds, ['gone', 'x']);
+    expect(ws.task('late')!.labelIds, isEmpty);
+    expect(ws.task('no_version')!.labelIds, isEmpty);
+    expect(ws.label('gone'), isNull);
+    expect(ws.deletedLabel('gone')?.name, 'gone');
+    expect(ws.deletedLabel('x'), isNull);
+    expect(ws.taskLabel('gone')?.name, 'gone');
+    expect(ws.taskLabel('x')?.name, 'x');
+    expect([for (final l in ws.labels) l.id], ['x']);
+    expect(ws.labelTaskCount('gone'), 0);
+  });
+
   test('labelTaskCount — столько же задач, сколько в labelTasks', () {
     final ws = Workspace(
       projects: [inbox, _project('p')],
