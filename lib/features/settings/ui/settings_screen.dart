@@ -4,9 +4,10 @@ import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../projects/ui/project_screen.dart';
 import 'sync_section.dart';
+import 'theme_section.dart';
 
-/// Экран «Настройки». Разделы появляются по этапам: «Синхронизация» — M2.3,
-/// «Тема» — следующим коммитом.
+/// Экран «Настройки». Разделы Todoist — в его порядке (первая — «Тема»), наша
+/// «Синхронизация» — после них; окно с разделами слева, как в Todoist, — M10.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -30,6 +31,8 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
+            const ThemeSection(),
+            const SizedBox(height: 32),
             const SyncSection(),
           ],
         ),

@@ -78,6 +78,12 @@ void main() {
         text(ConflictField.deleted, true, entity: ConflictEntity.taskLabel),
         'Метка снята',
       ),
+      (text(ConflictField.theme, 'taskly'), 'Taskly'),
+      (text(ConflictField.theme, 'kale'), 'kale'),
+      (text(ConflictField.appearance, 'light'), 'Светлый'),
+      (text(ConflictField.appearance, 'dark'), 'Тёмный'),
+      (text(ConflictField.appearance, 'system'), 'Системный'),
+      (text(ConflictField.appearance, 'sepia'), '"sepia"'),
       (text(ConflictField.other, {'a': 1}), '{"a":1}'),
       (text(ConflictField.priority, 'странно'), '"странно"'),
     ];
@@ -134,6 +140,27 @@ void main() {
     expect(
       conflictEntityTitle(l10n, card(ConflictEntity.task)),
       'Задача «без названия»',
+    );
+    expect(
+      conflictEntityTitle(l10n, card(ConflictEntity.settings)),
+      'Настройки',
+    );
+    expect(
+      conflictFieldTitle(
+        l10n,
+        const ConflictValue(field: ConflictField.theme, key: 'theme_id'),
+      ),
+      'Тема',
+    );
+    expect(
+      conflictFieldTitle(
+        l10n,
+        const ConflictValue(
+          field: ConflictField.appearance,
+          key: 'theme_appearance',
+        ),
+      ),
+      'Внешний вид',
     );
     expect(
       conflictNoticeText(l10n, [card(ConflictEntity.label, title: 'дом')]),

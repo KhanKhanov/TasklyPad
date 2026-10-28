@@ -13,7 +13,15 @@ abstract final class EntityTypes {
 
   /// Метка задачи: связь многие ко многим с id [taskLabelId].
   static const String taskLabel = 'task_label';
+
+  /// Настройки пользователя — одна сущность [settingsEntityId] без таблицы:
+  /// поля читаются из `field_versions` (SYNC_DESIGN «Специальные случаи»).
+  static const String settings = 'settings';
 }
+
+/// Id сущности настроек — один на всех устройствах, как [inboxProjectId]:
+/// иначе каждое устройство завело бы свои настройки, и они бы не сошлись.
+const String settingsEntityId = '00000000-0000-8000-8000-000000000002';
 
 /// Id связи «задача — метка»: один и тот же на всех устройствах. Две
 /// установки одной метки офлайн пишут одну сущность одинаковыми значениями —
@@ -141,6 +149,16 @@ abstract final class LabelFields {
   static const String orderKey = 'order_key';
   static const String isFavorite = 'is_favorite';
   static const String deleted = Op.deletedField;
+}
+
+/// Поля настроек.
+abstract final class SettingsFields {
+  /// Id темы (`taskly`) — строкой, а не числом `user.theme_id` Todoist API:
+  /// темы Taskly в Todoist нет.
+  static const String themeId = 'theme_id';
+
+  /// Внешний вид: `light`, `dark` или `system`.
+  static const String themeAppearance = 'theme_appearance';
 }
 
 /// Поля связи «задача — метка».

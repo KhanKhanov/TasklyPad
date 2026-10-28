@@ -274,7 +274,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get viewOptions => 'Просмотр';
+  String get viewOptions => 'Отображение';
 
   @override
   String get completedTasks => 'Выполненные задачи';
@@ -411,6 +411,30 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get syncSection => 'Синхронизация';
+
+  @override
+  String get themeSection => 'Тема';
+
+  @override
+  String get themeAppearance => 'Внешний вид';
+
+  @override
+  String get appearanceLight => 'Светлый';
+
+  @override
+  String get appearanceDark => 'Тёмный';
+
+  @override
+  String get appearanceSystem => 'Системный';
+
+  @override
+  String get themeTaskly => 'Taskly';
+
+  @override
+  String get syncTheme => 'Синхронизировать тему';
+
+  @override
+  String get themeUpdate => 'Обновить';
 
   @override
   String get syncFolder => 'Папка синхронизации';
@@ -656,6 +680,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String conflictEntityTaskLabel(String label, String task) {
     return 'Метка «$label» у задачи «$task»';
   }
+
+  @override
+  String get conflictEntitySettings => 'Настройки';
 
   @override
   String conflictEntityOther(String title) {

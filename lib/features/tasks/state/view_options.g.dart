@@ -8,7 +8,7 @@ part of 'view_options.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+/// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
 ///
 /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
 /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).
@@ -16,13 +16,13 @@ part of 'view_options.dart';
 @ProviderFor(ShowCompleted)
 final showCompletedProvider = ShowCompletedFamily._();
 
-/// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+/// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
 ///
 /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
 /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).
 final class ShowCompletedProvider
     extends $NotifierProvider<ShowCompleted, bool> {
-  /// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+  /// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
   ///
   /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
   /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).
@@ -72,7 +72,7 @@ final class ShowCompletedProvider
 
 String _$showCompletedHash() => r'd219cb6936a189f77e0339fcc11e2e486936f7bf';
 
-/// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+/// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
 ///
 /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
 /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).
@@ -88,7 +88,7 @@ final class ShowCompletedFamily extends $Family
         isAutoDispose: false,
       );
 
-  /// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+  /// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
   ///
   /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
   /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).
@@ -100,7 +100,7 @@ final class ShowCompletedFamily extends $Family
   String toString() => r'showCompletedProvider';
 }
 
-/// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+/// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
 ///
 /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
 /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).

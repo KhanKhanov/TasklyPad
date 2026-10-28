@@ -377,13 +377,13 @@
       }
     }
   },
-  "viewOptions": "Просмотр",
+  "viewOptions": "Отображение",
   "@viewOptions": {
     "description": "Кнопка настроек вида, как в Todoist"
   },
   "completedTasks": "Выполненные задачи",
   "@completedTasks": {
-    "description": "Переключатель в «Просмотр»"
+    "description": "Переключатель в «Отображение»"
   },
   "dueToday": "Сегодня",
   "@dueToday": {
@@ -570,6 +570,22 @@
   "@settings": {"description": "Пункт меню и заголовок экрана настроек"},
   "syncSection": "Синхронизация",
   "@syncSection": {"description": "Раздел настроек"},
+  "themeSection": "Тема",
+  "@themeSection": {"description": "Раздел настроек и подпись поля в конфликте"},
+  "themeAppearance": "Внешний вид",
+  "@themeAppearance": {"description": "Светлый, тёмный или как в системе (Todoist: Appearance)"},
+  "appearanceLight": "Светлый",
+  "@appearanceLight": {"description": "Внешний вид"},
+  "appearanceDark": "Тёмный",
+  "@appearanceDark": {"description": "Внешний вид"},
+  "appearanceSystem": "Системный",
+  "@appearanceSystem": {"description": "Внешний вид как в системе (Todoist: System)"},
+  "themeTaskly": "Taskly",
+  "@themeTaskly": {"description": "Название темы"},
+  "syncTheme": "Синхронизировать тему",
+  "@syncTheme": {"description": "Переключатель, как в Todoist (Sync theme)"},
+  "themeUpdate": "Обновить",
+  "@themeUpdate": {"description": "Кнопка сохранения темы на компьютере (Todoist: Update)"},
   "syncFolder": "Папка синхронизации",
   "@syncFolder": {"description": "Подпись выбранной папки"},
   "syncFolderNone": "Папка не выбрана — данные есть только на этом устройстве.",
@@ -698,6 +714,8 @@
   "@conflictEntityLabel": {"description": "Заголовок карточки", "placeholders": {"title": {"type": "String"}}},
   "conflictEntityTaskLabel": "Метка «{label}» у задачи «{task}»",
   "@conflictEntityTaskLabel": {"description": "Заголовок карточки метки задачи", "placeholders": {"label": {"type": "String"}, "task": {"type": "String"}}},
+  "conflictEntitySettings": "Настройки",
+  "@conflictEntitySettings": {"description": "Заголовок карточки конфликта настроек"},
   "conflictEntityOther": "Запись «{title}»",
   "@conflictEntityOther": {"description": "Заголовок карточки незнакомой сущности", "placeholders": {"title": {"type": "String"}}},
   "conflictUntitled": "без названия",

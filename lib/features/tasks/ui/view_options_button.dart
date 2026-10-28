@@ -5,7 +5,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/view_options.dart';
 
-/// Кнопка «Просмотр» в заголовке вида. В M2.2 в ней один переключатель —
+/// Кнопка «Отображение» в заголовке вида. В M2.2 в ней один переключатель —
 /// «Выполненные задачи»; сортировка и группировка — M4.
 class ViewOptionsButton extends ConsumerWidget {
   const ViewOptionsButton({super.key, required this.viewId});

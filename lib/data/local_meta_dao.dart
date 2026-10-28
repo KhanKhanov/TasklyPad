@@ -26,6 +26,9 @@ final class LocalMetaDao {
   static const String lastSyncKey = 'sync.last_ok_ms';
   static const String previousNodeIdsKey = 'node.previous_ids';
   static const String notifiedConflictsKey = 'conflicts.notified';
+  static const String themeSyncKey = 'theme.sync';
+  static const String themeIdKey = 'theme.id';
+  static const String themeAppearanceKey = 'theme.appearance';
 
   Future<String?> read(String key) async {
     final row = await (_db.select(
@@ -84,6 +87,18 @@ final class LocalMetaDao {
 
   Future<void> setNotifiedConflicts(Set<String> ids) =>
       write(notifiedConflictsKey, jsonEncode([...ids]..sort()));
+
+  /// «Синхронизировать тему» на этом устройстве; ключа нет — включена.
+  /// Тема устройства — [themeIdKey] и [themeAppearanceKey] (сырые строки,
+  /// разбирает `ThemeSettingsRepository`).
+  Future<bool> themeSync() async => await read(themeSyncKey) != 'false';
+
+  Future<void> setThemeSync(bool value) => write(themeSyncKey, '$value');
+
+  Future<void> setLocalTheme(String themeId, String appearance) async {
+    await write(themeIdKey, themeId);
+    await write(themeAppearanceKey, appearance);
+  }
 
   /// Сохранённое состояние часов движка.
   Future<Hlc?> hlc() async => _parseHlc(await read(hlcKey));

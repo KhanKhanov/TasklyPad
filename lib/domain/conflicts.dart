@@ -9,7 +9,15 @@ part 'conflicts.freezed.dart';
 // (lib/sync) из журнала; здесь — только смысл, без имён полей журнала.
 
 /// Чего касается спор.
-enum ConflictEntity { task, project, section, label, taskLabel, other }
+enum ConflictEntity {
+  task,
+  project,
+  section,
+  label,
+  taskLabel,
+  settings,
+  other,
+}
 
 /// Поле в споре — по смыслу, а не по имени в журнале.
 enum ConflictField {
@@ -29,6 +37,11 @@ enum ConflictField {
   favorite,
   archived,
   viewStyle,
+
+  /// Тема настроек — id (`taskly`) — и внешний вид (`light`, `dark`,
+  /// `system`).
+  theme,
+  appearance,
 
   /// Удалено (`true`) или восстановлено, у метки задачи — снята или стоит.
   deleted,

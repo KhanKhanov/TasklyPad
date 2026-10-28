@@ -1,13 +1,16 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/clock.dart';
+import '../data/repositories/theme_settings_repository.dart';
 import '../data/repositories/workspace_repository.dart';
 import '../domain/conflicts.dart';
+import '../domain/theme_settings.dart';
 import '../domain/workspace.dart';
 import '../features/conflicts/logic/conflict_commands.dart';
 import '../features/labels/logic/label_commands.dart';
 import '../features/projects/logic/project_commands.dart';
 import '../features/sections/logic/section_commands.dart';
+import '../features/settings/logic/theme_commands.dart';
 import '../features/tasks/logic/task_commands.dart';
 import '../sync/conflict_repository.dart';
 import 'sync_providers.dart';
@@ -82,3 +85,27 @@ ConflictCommands conflictCommands(Ref ref) => ConflictCommands(
   mutator: ref.watch(mutatorProvider),
   read: ref.watch(workspaceRepositoryProvider).load,
 );
+
+@Riverpod(keepAlive: true)
+ThemeSettingsRepository themeSettingsRepository(Ref ref) =>
+    ThemeSettingsRepository(ref.watch(appDatabaseProvider));
+
+/// Настройки темы, прочитанные до первого кадра (`main`): без них приложение
+/// с сохранённой тёмной темой мигнуло бы светлой, пока поток не ответит.
+@Riverpod(keepAlive: true)
+ThemeSettings initialThemeSettings(Ref ref) => const ThemeSettings();
+
+/// Настройки темы — свои и пришедшие синхронизацией.
+@Riverpod(keepAlive: true)
+Stream<ThemeSettings> themeSettings(Ref ref) =>
+    ref.watch(themeSettingsRepositoryProvider).watch();
+
+@Riverpod(keepAlive: true)
+ThemeCommands themeCommands(Ref ref) {
+  final services = ref.watch(syncServicesProvider);
+  return ThemeCommands(
+    mutator: services.mutator,
+    meta: services.meta,
+    read: ref.watch(themeSettingsRepositoryProvider).load,
+  );
+}
