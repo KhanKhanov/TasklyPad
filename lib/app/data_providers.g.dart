@@ -313,3 +313,143 @@ final class LabelCommandsProvider
 }
 
 String _$labelCommandsHash() => r'2727eaa555f0f54059cbdc8de0e0ad3f5610282f';
+
+@ProviderFor(conflictRepository)
+final conflictRepositoryProvider = ConflictRepositoryProvider._();
+
+final class ConflictRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ConflictRepository,
+          ConflictRepository,
+          ConflictRepository
+        >
+    with $Provider<ConflictRepository> {
+  ConflictRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'conflictRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$conflictRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ConflictRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ConflictRepository create(Ref ref) {
+    return conflictRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ConflictRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ConflictRepository>(value),
+    );
+  }
+}
+
+String _$conflictRepositoryHash() =>
+    r'083efb66f03579c00e5d51cb68b63038c9edf289';
+
+/// Открытые конфликты карточками, новые сверху (экран и пункт сайдбара).
+
+@ProviderFor(openConflicts)
+final openConflictsProvider = OpenConflictsProvider._();
+
+/// Открытые конфликты карточками, новые сверху (экран и пункт сайдбара).
+
+final class OpenConflictsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ConflictCard>>,
+          List<ConflictCard>,
+          Stream<List<ConflictCard>>
+        >
+    with
+        $FutureModifier<List<ConflictCard>>,
+        $StreamProvider<List<ConflictCard>> {
+  /// Открытые конфликты карточками, новые сверху (экран и пункт сайдбара).
+  OpenConflictsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'openConflictsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$openConflictsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ConflictCard>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ConflictCard>> create(Ref ref) {
+    return openConflicts(ref);
+  }
+}
+
+String _$openConflictsHash() => r'39f8a95cc333214eb1d33dec54c0ba6b3d51ac67';
+
+@ProviderFor(conflictCommands)
+final conflictCommandsProvider = ConflictCommandsProvider._();
+
+final class ConflictCommandsProvider
+    extends
+        $FunctionalProvider<
+          ConflictCommands,
+          ConflictCommands,
+          ConflictCommands
+        >
+    with $Provider<ConflictCommands> {
+  ConflictCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'conflictCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$conflictCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<ConflictCommands> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ConflictCommands create(Ref ref) {
+    return conflictCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ConflictCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ConflictCommands>(value),
+    );
+  }
+}
+
+String _$conflictCommandsHash() => r'3ac7ab5ce24961099674b3fe696bebcd54ea5dc7';

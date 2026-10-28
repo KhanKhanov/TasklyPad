@@ -350,3 +350,58 @@ final class FolderPickerProvider
 }
 
 String _$folderPickerHash() => r'4ac82fe570e8ddbd3b9c68ee1eddca58a6e89d3b';
+
+/// Уведомления ОС о конфликтах синхронизации; в тестах — фейк. Пока только
+/// Windows: Android — О-35.
+
+@ProviderFor(conflictNotifications)
+final conflictNotificationsProvider = ConflictNotificationsProvider._();
+
+/// Уведомления ОС о конфликтах синхронизации; в тестах — фейк. Пока только
+/// Windows: Android — О-35.
+
+final class ConflictNotificationsProvider
+    extends
+        $FunctionalProvider<
+          ConflictNotifier,
+          ConflictNotifier,
+          ConflictNotifier
+        >
+    with $Provider<ConflictNotifier> {
+  /// Уведомления ОС о конфликтах синхронизации; в тестах — фейк. Пока только
+  /// Windows: Android — О-35.
+  ConflictNotificationsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'conflictNotificationsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$conflictNotificationsHash();
+
+  @$internal
+  @override
+  $ProviderElement<ConflictNotifier> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ConflictNotifier create(Ref ref) {
+    return conflictNotifications(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ConflictNotifier value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ConflictNotifier>(value),
+    );
+  }
+}
+
+String _$conflictNotificationsHash() =>
+    r'29f618268cee6672a44f3c304b4652b84e5c0568';

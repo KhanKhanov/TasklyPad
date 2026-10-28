@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../common/ui/ui_kit.dart';
+import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
@@ -11,7 +12,8 @@ import '../../projects/ui/project_tile.dart';
 import '../state/sidebar_state.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Фильтры и метки», «Избранное»
-/// (проекты и метки), «Мои проекты» деревом. Пункты «Добавить задачу»,
+/// (проекты и метки), «Мои проекты» деревом. «Конфликты» (нашего дополнения)
+/// видны, только пока есть нерешённые. Пункты «Добавить задачу»,
 /// «Поиск», «Сегодня», «Предстоящее» появляются вместе со своими экранами.
 class Sidebar extends ConsumerWidget {
   const Sidebar({super.key, required this.location});
@@ -23,6 +25,9 @@ class Sidebar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context);
+    final conflicts = ref.watch(
+      openConflictsProvider.select((cards) => cards.value?.length ?? 0),
+    );
     return ColoredBox(
       color: palette.sidebar,
       child: SafeArea(
@@ -81,7 +86,7 @@ class Sidebar extends ConsumerWidget {
               child: WorkspaceView(
                 builder: (context, ws) => ListView(
                   padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
-                  children: _content(context, ws),
+                  children: _content(context, ws, conflicts),
                 ),
               ),
             ),
@@ -91,7 +96,7 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  List<Widget> _content(BuildContext context, Workspace ws) {
+  List<Widget> _content(BuildContext context, Workspace ws, int conflicts) {
     final l10n = AppLocalizations.of(context);
     final inbox = ws.inbox;
     final favorites = ws.favoriteProjects;
@@ -119,6 +124,15 @@ class Sidebar extends ConsumerWidget {
                 !favoriteLabels.any((l) => location == '/label/${l.id}')),
         onTap: () => navigate(context, '/filters-labels'),
       ),
+      if (conflicts > 0)
+        _NavItem(
+          icon: Icons.sync_problem_outlined,
+          label: l10n.conflicts,
+          count: conflicts,
+          countColor: AppPalette.of(context).danger,
+          selected: location == '/conflicts',
+          onTap: () => navigate(context, '/conflicts'),
+        ),
       if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
         _GroupHeader(label: l10n.favorites),
         for (final p in favorites)
@@ -175,6 +189,7 @@ class _NavItem extends StatelessWidget {
     required this.count,
     required this.selected,
     required this.onTap,
+    this.countColor,
   });
 
   final IconData icon;
@@ -182,6 +197,9 @@ class _NavItem extends StatelessWidget {
   final int count;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Цвет числа; по умолчанию — вторичный текст.
+  final Color? countColor;
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +228,7 @@ class _NavItem extends StatelessWidget {
                     '$count',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: palette.textSecondary,
+                      color: countColor ?? palette.textSecondary,
                       fontSize: 12,
                     ),
                   ),

@@ -598,4 +598,197 @@ class AppLocalizationsRu extends AppLocalizations {
   String deviceThis(String name) {
     return '$name — это устройство';
   }
+
+  @override
+  String get conflicts => 'Конфликты';
+
+  @override
+  String get conflictsHint =>
+      'Одно и то же изменили на двух устройствах. Пока вы не выбрали, действует более поздняя правка.';
+
+  @override
+  String get conflictsEmpty => 'Конфликтов нет';
+
+  @override
+  String get conflictKeepThis => 'Оставить этот вариант';
+
+  @override
+  String get conflictKeepCurrent => 'Оставить текущее';
+
+  @override
+  String get conflictKeepDeleted => 'Оставить удалённым';
+
+  @override
+  String get conflictRestore => 'Восстановить';
+
+  @override
+  String get conflictActive => 'Действует сейчас';
+
+  @override
+  String get conflictCurrent => 'Сейчас';
+
+  @override
+  String conflictUnknownDevice(String id) {
+    return 'Устройство …$id';
+  }
+
+  @override
+  String conflictEntityTask(String title) {
+    return 'Задача «$title»';
+  }
+
+  @override
+  String conflictEntityProject(String title) {
+    return 'Проект «$title»';
+  }
+
+  @override
+  String conflictEntitySection(String title) {
+    return 'Раздел «$title»';
+  }
+
+  @override
+  String conflictEntityLabel(String title) {
+    return 'Метка «$title»';
+  }
+
+  @override
+  String conflictEntityTaskLabel(String label, String task) {
+    return 'Метка «$label» у задачи «$task»';
+  }
+
+  @override
+  String conflictEntityOther(String title) {
+    return 'Запись «$title»';
+  }
+
+  @override
+  String get conflictUntitled => 'без названия';
+
+  @override
+  String get conflictToastTitle => 'Конфликт синхронизации';
+
+  @override
+  String conflictToastOne(String entity, String field, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Конфликт: $entity, поля $field',
+      one: 'Конфликт: $entity, поле $field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictToastDeleted(String entity) {
+    return 'Конфликт удаления: $entity';
+  }
+
+  @override
+  String conflictToastMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count нового конфликта синхронизации',
+      many: '$count новых конфликтов синхронизации',
+      few: '$count новых конфликта синхронизации',
+      one: '$count новый конфликт синхронизации',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictOpen => 'Открыть';
+
+  @override
+  String get conflictRestoredHidden =>
+      'Восстановлено, но не видно: удалены его проект, раздел или родительская задача';
+
+  @override
+  String get fieldDescription => 'Описание';
+
+  @override
+  String get fieldSection => 'Раздел';
+
+  @override
+  String get fieldParentTask => 'Родительская задача';
+
+  @override
+  String get fieldCompleted => 'Выполнение';
+
+  @override
+  String get fieldInFavorites => 'Избранное';
+
+  @override
+  String get fieldArchived => 'Архив';
+
+  @override
+  String get fieldViewStyle => 'Раскладка';
+
+  @override
+  String get valueCompleted => 'Выполнена';
+
+  @override
+  String get valueNotCompleted => 'Не выполнена';
+
+  @override
+  String get valueInFavorites => 'В избранном';
+
+  @override
+  String get valueNotInFavorites => 'Не в избранном';
+
+  @override
+  String get valueArchived => 'В архиве';
+
+  @override
+  String get valueNotArchived => 'Не в архиве';
+
+  @override
+  String get valueDeleted => 'Удалено';
+
+  @override
+  String get valueRestored => 'Восстановлено';
+
+  @override
+  String get valueLabelRemoved => 'Метка снята';
+
+  @override
+  String get valueLabelAdded => 'Метка поставлена';
+
+  @override
+  String get valueEdited => 'Изменено';
+
+  @override
+  String get valueEmpty => '(пусто)';
+
+  @override
+  String get valueMissing => 'не найдено на этом устройстве';
+
+  @override
+  String valueDeletedRef(String name) {
+    return '$name (удалено)';
+  }
+
+  @override
+  String get viewList => 'Список';
+
+  @override
+  String get viewBoard => 'Доска';
+
+  @override
+  String get viewCalendar => 'Календарь';
+
+  @override
+  String get noSection => 'Без раздела';
+
+  @override
+  String get conflictThisDevice => 'Это устройство';
+
+  @override
+  String get conflictDeleteAgainTitle => 'Удалить снова?';
+
+  @override
+  String conflictDeleteAgainBody(String entity) {
+    return 'Сейчас это не удалено. «$entity» будет удалено вместе со всем, что внутри.';
+  }
 }

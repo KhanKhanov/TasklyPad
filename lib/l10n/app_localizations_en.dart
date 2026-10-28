@@ -598,4 +598,195 @@ class AppLocalizationsEn extends AppLocalizations {
   String deviceThis(String name) {
     return '$name — this device';
   }
+
+  @override
+  String get conflicts => 'Conflicts';
+
+  @override
+  String get conflictsHint =>
+      'The same item was changed on two devices. Until you choose, the later change applies.';
+
+  @override
+  String get conflictsEmpty => 'No conflicts';
+
+  @override
+  String get conflictKeepThis => 'Keep this version';
+
+  @override
+  String get conflictKeepCurrent => 'Keep current';
+
+  @override
+  String get conflictKeepDeleted => 'Keep deleted';
+
+  @override
+  String get conflictRestore => 'Restore';
+
+  @override
+  String get conflictActive => 'Applies now';
+
+  @override
+  String get conflictCurrent => 'Now';
+
+  @override
+  String conflictUnknownDevice(String id) {
+    return 'Device …$id';
+  }
+
+  @override
+  String conflictEntityTask(String title) {
+    return 'Task “$title”';
+  }
+
+  @override
+  String conflictEntityProject(String title) {
+    return 'Project “$title”';
+  }
+
+  @override
+  String conflictEntitySection(String title) {
+    return 'Section “$title”';
+  }
+
+  @override
+  String conflictEntityLabel(String title) {
+    return 'Label “$title”';
+  }
+
+  @override
+  String conflictEntityTaskLabel(String label, String task) {
+    return 'Label “$label” on task “$task”';
+  }
+
+  @override
+  String conflictEntityOther(String title) {
+    return 'Item “$title”';
+  }
+
+  @override
+  String get conflictUntitled => 'untitled';
+
+  @override
+  String get conflictToastTitle => 'Sync conflict';
+
+  @override
+  String conflictToastOne(String entity, String field, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Conflict: $entity, fields $field',
+      one: 'Conflict: $entity, field $field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictToastDeleted(String entity) {
+    return 'Delete conflict: $entity';
+  }
+
+  @override
+  String conflictToastMany(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new sync conflicts',
+      one: '$count new sync conflict',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictOpen => 'Open';
+
+  @override
+  String get conflictRestoredHidden =>
+      'Restored, but hidden: its project, section or parent task is deleted';
+
+  @override
+  String get fieldDescription => 'Description';
+
+  @override
+  String get fieldSection => 'Section';
+
+  @override
+  String get fieldParentTask => 'Parent task';
+
+  @override
+  String get fieldCompleted => 'Completion';
+
+  @override
+  String get fieldInFavorites => 'Favorites';
+
+  @override
+  String get fieldArchived => 'Archive';
+
+  @override
+  String get fieldViewStyle => 'Layout';
+
+  @override
+  String get valueCompleted => 'Completed';
+
+  @override
+  String get valueNotCompleted => 'Not completed';
+
+  @override
+  String get valueInFavorites => 'In favorites';
+
+  @override
+  String get valueNotInFavorites => 'Not in favorites';
+
+  @override
+  String get valueArchived => 'Archived';
+
+  @override
+  String get valueNotArchived => 'Not archived';
+
+  @override
+  String get valueDeleted => 'Deleted';
+
+  @override
+  String get valueRestored => 'Restored';
+
+  @override
+  String get valueLabelRemoved => 'Label removed';
+
+  @override
+  String get valueLabelAdded => 'Label added';
+
+  @override
+  String get valueEdited => 'Edited';
+
+  @override
+  String get valueEmpty => '(empty)';
+
+  @override
+  String get valueMissing => 'not found on this device';
+
+  @override
+  String valueDeletedRef(String name) {
+    return '$name (deleted)';
+  }
+
+  @override
+  String get viewList => 'List';
+
+  @override
+  String get viewBoard => 'Board';
+
+  @override
+  String get viewCalendar => 'Calendar';
+
+  @override
+  String get noSection => 'No section';
+
+  @override
+  String get conflictThisDevice => 'This device';
+
+  @override
+  String get conflictDeleteAgainTitle => 'Delete again?';
+
+  @override
+  String conflictDeleteAgainBody(String entity) {
+    return 'This is not deleted now. “$entity” will be deleted with everything inside it.';
+  }
 }

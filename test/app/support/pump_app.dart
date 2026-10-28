@@ -6,13 +6,15 @@ import 'package:planner/app/app.dart';
 import 'package:planner/app/sync_providers.dart';
 import 'package:planner/features/projects/ui/project_screen.dart';
 import 'package:planner/features/projects/ui/projects_screen.dart';
+import 'package:planner/platform/conflict_notifier.dart';
 
 import '../../sync/support/devices.dart';
+import 'fake_conflict_notifier.dart';
 
 /// Запустить приложение на устройстве с базой в памяти — тем же ядром
 /// данных (`startSync`), что и настоящий запуск — выполнить [body] и
 /// закрыть всё внутри теста. [overrides] — фейки поверх (выбор папки,
-/// синхронизация).
+/// синхронизация); уведомления ОС — всегда фейк ([notifier]).
 ///
 /// Закрытие — здесь, а не в `addTearDown`: поток запроса drift при отписке
 /// ставит таймер, и он должен сработать до проверки «таймеров не осталось»,
@@ -22,6 +24,7 @@ Future<void> withApp(
   Future<void> Function(TestDevice device) body, {
   Size size = const Size(1100, 800),
   List<Override> overrides = const [],
+  ConflictNotifier? notifier,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -31,6 +34,9 @@ Future<void> withApp(
     ProviderScope(
       overrides: [
         syncServicesProvider.overrideWithValue(device.services),
+        conflictNotificationsProvider.overrideWithValue(
+          notifier ?? FakeConflictNotifier(),
+        ),
         ...overrides,
       ],
       child: const PlannerApp(),

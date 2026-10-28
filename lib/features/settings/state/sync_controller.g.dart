@@ -50,7 +50,7 @@ final class SyncControllerProvider
   }
 }
 
-String _$syncControllerHash() => r'ce481bbdcde22f6b9a286f229ef404ff18a9f0d6';
+String _$syncControllerHash() => r'99373a90917cd4d5050659dd5e24a25c33061b1a';
 
 /// Когда синхронизироваться (docs/plans/m2-core-app.md, решение 10): при
 /// запуске, раз в [period], через [debounce] после своей правки, при

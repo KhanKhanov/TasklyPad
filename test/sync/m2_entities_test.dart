@@ -158,6 +158,35 @@ void main() {
     }
   });
 
+  test('выбор действующего значения пишет только отметку «решено» — без op '
+      'на само поле; конфликт закрыт на обоих', () async {
+    final project = await onPc.projects.add(name: 'Работа');
+    await syncBoth();
+
+    await onPc.projects.rename(project, 'Офис');
+    await onPhone.projects.rename(project, 'Дом');
+    await syncBoth();
+
+    final conflict = (await phone.conflicts()).single;
+    final winner = await phone.entity(EntityTypes.project, project);
+    final before = await phone.ownOps();
+    await phone.services.mutator.resolveConflict(conflict.id, {
+      ProjectFields.name: winner![ProjectFields.name],
+    });
+    final written = (await phone.ownOps()).skip(before.length).toList();
+    expect(written.map((o) => (o.entityType, o.field)), [
+      (conflictEntityType, conflictResolvedField),
+    ]);
+    await syncBoth();
+    for (final dev in [pc, phone]) {
+      expect((await dev.conflicts()).single.resolved, isTrue);
+      expect(
+        (await dev.entity(EntityTypes.project, project))![ProjectFields.name],
+        winner[ProjectFields.name],
+      );
+    }
+  });
+
   test(
     'свёрнутость и порядок, изменённые на обоих, — без конфликтов',
     () async {
@@ -334,6 +363,46 @@ void main() {
     expect(await pc.conflicts(), isEmpty);
     expect(await phone.conflicts(), isEmpty);
     await expectSame(inboxProjectId);
+  });
+
+  test('задачу с подзадачей завершили на обоих устройствах — без конфликтов, '
+      'дата выполнения — более поздняя', () async {
+    final a = await onPc.tasks.add(content: 'a');
+    final a1 = await onPc.tasks.add(content: 'a1', parentId: a);
+    await syncBoth();
+
+    await onPc.tasks.complete(a);
+    phone.advance(const Duration(minutes: 3));
+    await onPhone.tasks.complete(a);
+    await syncBoth();
+
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    for (final id in [a, a1]) {
+      final atPc = (await pc.taskRow(id))!.completedAt;
+      expect(atPc, isNotNull);
+      expect((await phone.taskRow(id))!.completedAt, atPc);
+      expect(
+        (await pc.entity(EntityTypes.task, id))![TaskFields.completedAt],
+        (await phone.entity(EntityTypes.task, id))![TaskFields.completedAt],
+      );
+    }
+  });
+
+  test('задачу вернули в работу на ПК, а на телефоне вернули и снова '
+      'завершили — конфликт по «выполнена»', () async {
+    final a = await onPc.tasks.add(content: 'a');
+    await onPc.tasks.complete(a);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(a);
+    await onPhone.tasks.complete(a);
+    await syncBoth();
+
+    final conflict = (await phone.conflicts()).single;
+    expect(conflict.field, TaskFields.isCompleted);
+    expect((await pc.conflicts()).single.id, conflict.id);
   });
 
   test('раздел отправлен в архив на ПК, переименован на телефоне — задачи '
