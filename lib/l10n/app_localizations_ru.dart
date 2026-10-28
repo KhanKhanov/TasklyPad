@@ -394,7 +394,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String deleteLabelBody(String name) {
-    return 'Метка «$name» будет удалена со всех задач.';
+    return 'Метка «$name» будет удалена.';
   }
 
   @override

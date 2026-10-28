@@ -15,13 +15,22 @@ import 'tree.dart';
 /// - подзадача живёт и показывается по дереву `parent_id`: её собственные
 ///   проект и раздел важны только для корневых задач;
 /// - цикл родителей разрывается одинаково на всех устройствах ([resolveParents]);
-/// - порядок — по `order_key`, при равенстве — по id.
+/// - порядок — по `order_key`, при равенстве — по id;
+/// - удалённая метка видна только на задачах, выполненных до её удаления, как
+///   в Todoist: «раньше» — по HLC записей журнала, одинаково на всех
+///   устройствах (SYNC_DESIGN «Специальные случаи»).
 final class Workspace {
+  /// `completionVersions` — HLC поля `is_completed` задач,
+  /// `labelDeletionVersions` — HLC поля `deleted` меток; строкой
+  /// `Hlc.toString()`, у которой порядок строк совпадает с порядком HLC.
   Workspace({
     required Iterable<Project> projects,
     required Iterable<Section> sections,
     required Iterable<Label> labels,
     required Iterable<Task> tasks,
+    Iterable<Label> deletedLabels = const [],
+    this._completionVersions = const {},
+    this._labelDeletionVersions = const {},
     Set<String> deletedProjectIds = const {},
     Set<String> deletedSectionIds = const {},
     Set<String> deletedTaskIds = const {},
@@ -30,6 +39,9 @@ final class Workspace {
     _initSections(sections, deletedProjectIds);
     for (final label in [...labels]..sort(_byOrder(_labelKey))) {
       _labels[label.id] = label;
+    }
+    for (final label in deletedLabels) {
+      _deletedLabels[label.id] = label;
     }
     _initTasks(tasks, deletedProjectIds, deletedSectionIds, deletedTaskIds);
   }
@@ -41,6 +53,9 @@ final class Workspace {
 
   final Map<String, Section> _sections = {};
   final Map<String, Label> _labels = {};
+  final Map<String, Label> _deletedLabels = {};
+  final Map<String, String> _completionVersions;
+  final Map<String, String> _labelDeletionVersions;
 
   // Задачи: живые, действующий родитель, дети по порядку.
   final Map<String, Task> _tasks = {};
@@ -134,6 +149,13 @@ final class Workspace {
   List<Label> get labels => _labels.values.toList();
 
   Label? label(String id) => _labels[id];
+
+  /// Удалённая метка — её имя и цвет видны на выполненных задачах.
+  Label? deletedLabel(String id) => _deletedLabels[id];
+
+  /// Метка из списка меток задачи ([Task.labelIds]): живая или — у
+  /// выполненной задачи — удалённая.
+  Label? taskLabel(String id) => _labels[id] ?? _deletedLabels[id];
 
   /// Активные задачи с меткой (с подзадачами, без архивных проектов), по
   /// порядку проектов и задач.
@@ -355,8 +377,8 @@ final class Workspace {
       _tasks[t.id] = t.copyWith(
         labelIds: [
           for (final id in t.labelIds)
-            if (_labels.containsKey(id)) id,
-        ]..sort((a, b) => _byOrder(_labelKey)(_labels[a]!, _labels[b]!)),
+            if (_labels.containsKey(id) || _completedBeforeDeletion(t, id)) id,
+        ]..sort((a, b) => _byOrder(_labelKey)(taskLabel(a)!, taskLabel(b)!)),
       );
       _taskParent[t.id] = parents[t.id];
     }
@@ -446,6 +468,20 @@ final class Workspace {
   static String _projectKey(Project p) => p.orderKey;
   static String _sectionKey(Section s) => s.orderKey;
   static String _labelKey(Label l) => l.orderKey;
+
+  /// Задачу [t] завершили раньше, чем удалили метку [labelId]: удалённая
+  /// метка на ней остаётся. Задача, активная в момент удаления, метку
+  /// потеряла и после завершения её не показывает. Нет времени одной из
+  /// записей — метка скрыта.
+  bool _completedBeforeDeletion(Task t, String labelId) {
+    if (!t.isCompleted || !_deletedLabels.containsKey(labelId)) return false;
+    final completed = _completionVersions[t.id];
+    final deleted = _labelDeletionVersions[labelId];
+    return completed != null &&
+        deleted != null &&
+        completed.compareTo(deleted) < 0;
+  }
+
   static String _taskKey(Task t) => t.orderKey;
 
   static int Function(T, T) _byOrder<T>(String Function(T) key) => (a, b) {

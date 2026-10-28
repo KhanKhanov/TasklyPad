@@ -58,8 +58,8 @@ final class LabelCommands {
   Future<void> setFavorite(String id, bool favorite) =>
       _update(id, {LabelFields.isFavorite: favorite});
 
-  /// Удалить (tombstone): метка пропадает со всех задач, связи остаются в
-  /// журнале — вернуть метку значит вернуть и её связи.
+  /// Удалить (tombstone) одной op; связи не трогаются. Что видно на задачах
+  /// после удаления — SYNC_DESIGN «Специальные случаи».
   Future<void> delete(String id) async {
     _alive(await _read(), id);
     await _mutator.delete(EntityTypes.label, id);

@@ -118,7 +118,7 @@
   "editLabel": "Edit label",
   "deleteLabel": "Delete label",
   "deleteLabelTitle": "Delete label?",
-  "deleteLabelBody": "The label \"{name}\" will be removed from all tasks.",
+  "deleteLabelBody": "The label \"{name}\" will be deleted.",
   "noLabels": "No labels yet",
   "previousTask": "Previous task",
   "nextTask": "Next task",

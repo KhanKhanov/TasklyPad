@@ -316,6 +316,36 @@ void main() {
     });
   });
 
+  testWidgets('панель выполненной задачи показывает удалённую метку', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final label = (await tester.runAsync(
+        () => app.labels.add(name: 'home'),
+      ))!;
+      await settle(tester);
+      final id = (await tester.runAsync(
+        () => app.tasks.add(content: 'Done', labelIds: {label}),
+      ))!;
+      await settle(tester);
+      await tester.tap(find.text('Done'));
+      await settle(tester);
+
+      await tester.runAsync(() => app.tasks.complete(id));
+      await settle(tester);
+      await tester.runAsync(() => app.labels.delete(label));
+      await settle(tester);
+      expect(
+        find.descendant(
+          of: find.byType(TaskDialog),
+          matching: find.text('home'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
   testWidgets('в полночь «Today» сам становится «Yesterday»', (tester) async {
     await withApp(tester, (device) async {
       final app = AppCommands(device);

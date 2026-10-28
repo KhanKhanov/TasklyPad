@@ -809,7 +809,7 @@ abstract class AppLocalizations {
   /// Текст подтверждения удаления метки
   ///
   /// In ru, this message translates to:
-  /// **'Метка «{name}» будет удалена со всех задач.'**
+  /// **'Метка «{name}» будет удалена.'**
   String deleteLabelBody(String name);
 
   /// Пустой список меток
