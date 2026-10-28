@@ -162,6 +162,32 @@ List<Conflict> findConflicts(
   return result;
 }
 
+/// Значение поля [field] сущности, каким его видел автор [author], когда
+/// писал свою правку: победитель LWW среди ops этого поля, которые автор знал
+/// — своих раньше [author] и чужих, которые он видел (как в [findConflicts]).
+/// `null` — ни одной такой op: у поля было значение по умолчанию.
+///
+/// Нужно выбору стороны конфликта целиком: действие пишет только поля,
+/// которые меняет (перенос задачи без смены раздела не пишет раздел), и
+/// сторона должна вернуть и то, что изменило только другое действие, — к
+/// значению, которое видел её автор. Для двух устройств точно, по той же
+/// причине, что [findConflicts].
+Object? seenValue(Op author, String field, Iterable<Op> entityOps) {
+  Op? seen;
+  for (final op in entityOps) {
+    if (op.field != field ||
+        op.entityType != author.entityType ||
+        op.entityId != author.entityId) {
+      continue;
+    }
+    final known = op.nodeId == author.nodeId
+        ? op.hlc < author.hlc
+        : _saw(author, op);
+    if (known && (seen == null || op.hlc > seen.hlc)) seen = op;
+  }
+  return seen?.value;
+}
+
 /// Автор [x] видел [y]: знание автора о сущности не старше [y].
 bool _saw(Op x, Op y) => x.base != null && !(x.base! < y.hlc);
 

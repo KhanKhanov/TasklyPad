@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../conflicts/ui/conflict_toast.dart';
 import '../../settings/state/sync_controller.dart';
 import '../state/sidebar_state.dart';
 import 'shell_keys.dart';
@@ -39,44 +40,47 @@ class _AppShellState extends ConsumerState<AppShell> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideLayoutWidth;
-        return ShellKeys(
-          onToggleSidebar: () {
-            final scaffold = _scaffold.currentState;
-            if (wide) {
-              ref.read(sidebarOpenProvider.notifier).toggle();
-            } else if (scaffold == null) {
-              return;
-            } else if (scaffold.isDrawerOpen) {
-              scaffold.closeDrawer();
-            } else {
-              scaffold.openDrawer();
-            }
-          },
-          child: Scaffold(
-            key: _scaffold,
-            backgroundColor: palette.background,
-            drawer: wide
-                ? null
-                : Drawer(
-                    width: _sidebarWidth,
-                    child: Sidebar(location: location),
+        // Уведомления о конфликтах — тоже на всё время работы приложения.
+        return ConflictNoticeListener(
+          child: ShellKeys(
+            onToggleSidebar: () {
+              final scaffold = _scaffold.currentState;
+              if (wide) {
+                ref.read(sidebarOpenProvider.notifier).toggle();
+              } else if (scaffold == null) {
+                return;
+              } else if (scaffold.isDrawerOpen) {
+                scaffold.closeDrawer();
+              } else {
+                scaffold.openDrawer();
+              }
+            },
+            child: Scaffold(
+              key: _scaffold,
+              backgroundColor: palette.background,
+              drawer: wide
+                  ? null
+                  : Drawer(
+                      width: _sidebarWidth,
+                      child: Sidebar(location: location),
+                    ),
+              body: Row(
+                children: [
+                  if (wide && open)
+                    SizedBox(
+                      width: _sidebarWidth,
+                      child: Sidebar(location: location),
+                    ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _TopBar(showToggle: !wide || !open),
+                        Expanded(child: widget.child),
+                      ],
+                    ),
                   ),
-            body: Row(
-              children: [
-                if (wide && open)
-                  SizedBox(
-                    width: _sidebarWidth,
-                    child: Sidebar(location: location),
-                  ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      _TopBar(showToggle: !wide || !open),
-                      Expanded(child: widget.child),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

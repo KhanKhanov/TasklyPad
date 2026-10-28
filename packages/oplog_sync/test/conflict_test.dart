@@ -94,4 +94,53 @@ void main() {
     expect(jsonEquals({'x': 1}, {'x': 2}), isFalse);
     expect(jsonEquals([1, 2], [2, 1]), isFalse);
   });
+
+  group('seenValue', () {
+    Hlc h(int ms, String node) => Hlc(wallMs: ms, counter: 0, nodeId: node);
+    Op op(
+      String id,
+      String node,
+      int ms,
+      String field,
+      Object? value, {
+      int? baseMs,
+      String? baseNode,
+      String entity = 't1',
+    }) => Op(
+      opId: id,
+      nodeId: node,
+      hlc: h(ms, node),
+      entityType: 'task',
+      entityId: entity,
+      field: field,
+      value: value,
+      base: baseMs == null ? null : h(baseMs, baseNode!),
+    );
+
+    // a: раздел s1 (10), раздел s2 (20); b видел a до 10 и пишет проект (30).
+    final ops = [
+      op('a1', 'a', 10, 'section_id', 's1'),
+      op('a2', 'a', 20, 'section_id', 's2'),
+      op('b1', 'b', 15, 'section_id', 'own'),
+      op('b2', 'b', 30, 'project_id', 'p', baseMs: 10, baseNode: 'a'),
+      op('x1', 'a', 5, 'section_id', 'other-entity', entity: 't2'),
+    ];
+
+    test('чужие — до base автора, свои — раньше его правки; побеждает '
+        'поздняя из известных', () {
+      final author = ops[3];
+      expect(seenValue(author, 'section_id', ops), 'own');
+      expect(
+        seenValue(author, 'section_id', [ops[0], ops[1], ops[3]]),
+        's1',
+        reason: 'a2 автор не видел',
+      );
+    });
+
+    test('ничего не видел — null; другая сущность и своя правка не в счёт', () {
+      final early = op('b0', 'b', 1, 'project_id', 'p0');
+      expect(seenValue(early, 'section_id', ops), isNull);
+      expect(seenValue(ops[3], 'project_id', ops), isNull);
+    });
+  });
 }

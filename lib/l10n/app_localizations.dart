@@ -1135,6 +1135,312 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{name} — это устройство'**
   String deviceThis(String name);
+
+  /// Экран и пункт сайдбара «Конфликты»
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфликты'**
+  String get conflicts;
+
+  /// Пояснение на экране «Конфликты»
+  ///
+  /// In ru, this message translates to:
+  /// **'Одно и то же изменили на двух устройствах. Пока вы не выбрали, действует более поздняя правка.'**
+  String get conflictsHint;
+
+  /// Пустой экран «Конфликты»
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфликтов нет'**
+  String get conflictsEmpty;
+
+  /// Кнопка стороны конфликта
+  ///
+  /// In ru, this message translates to:
+  /// **'Оставить этот вариант'**
+  String get conflictKeepThis;
+
+  /// Кнопка: оставить действующие значения
+  ///
+  /// In ru, this message translates to:
+  /// **'Оставить текущее'**
+  String get conflictKeepCurrent;
+
+  /// Кнопка стороны удаления
+  ///
+  /// In ru, this message translates to:
+  /// **'Оставить удалённым'**
+  String get conflictKeepDeleted;
+
+  /// Кнопка стороны правки в конфликте удаления
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановить'**
+  String get conflictRestore;
+
+  /// Отметка стороны, значения которой действуют
+  ///
+  /// In ru, this message translates to:
+  /// **'Действует сейчас'**
+  String get conflictActive;
+
+  /// Заголовок действующих значений, если поле правили после конфликта
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас'**
+  String get conflictCurrent;
+
+  /// Устройство без имени: конец id
+  ///
+  /// In ru, this message translates to:
+  /// **'Устройство …{id}'**
+  String conflictUnknownDevice(String id);
+
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача «{title}»'**
+  String conflictEntityTask(String title);
+
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Проект «{title}»'**
+  String conflictEntityProject(String title);
+
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел «{title}»'**
+  String conflictEntitySection(String title);
+
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка «{title}»'**
+  String conflictEntityLabel(String title);
+
+  /// Заголовок карточки метки задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка «{label}» у задачи «{task}»'**
+  String conflictEntityTaskLabel(String label, String task);
+
+  /// Заголовок карточки незнакомой сущности
+  ///
+  /// In ru, this message translates to:
+  /// **'Запись «{title}»'**
+  String conflictEntityOther(String title);
+
+  /// Название пустое или неизвестно
+  ///
+  /// In ru, this message translates to:
+  /// **'без названия'**
+  String get conflictUntitled;
+
+  /// Заголовок уведомления ОС
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфликт синхронизации'**
+  String get conflictToastTitle;
+
+  /// Уведомление об одном конфликте правки
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Конфликт: {entity}, поле {field}} other{Конфликт: {entity}, поля {field}}}'**
+  String conflictToastOne(String entity, String field, int count);
+
+  /// Уведомление об одном конфликте удаления
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфликт удаления: {entity}'**
+  String conflictToastDeleted(String entity);
+
+  /// Уведомление о нескольких конфликтах
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} новый конфликт синхронизации} few{{count} новых конфликта синхронизации} many{{count} новых конфликтов синхронизации} other{{count} нового конфликта синхронизации}}'**
+  String conflictToastMany(int count);
+
+  /// Кнопка тоста: перейти к «Конфликтам»
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть'**
+  String get conflictOpen;
+
+  /// Тост после «Восстановить», если элемент скрыт каскадом
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановлено, но не видно: удалены его проект, раздел или родительская задача'**
+  String get conflictRestoredHidden;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Описание'**
+  String get fieldDescription;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел'**
+  String get fieldSection;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Родительская задача'**
+  String get fieldParentTask;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнение'**
+  String get fieldCompleted;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранное'**
+  String get fieldInFavorites;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Архив'**
+  String get fieldArchived;
+
+  /// Подпись поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Раскладка'**
+  String get fieldViewStyle;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнена'**
+  String get valueCompleted;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Не выполнена'**
+  String get valueNotCompleted;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'В избранном'**
+  String get valueInFavorites;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Не в избранном'**
+  String get valueNotInFavorites;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'В архиве'**
+  String get valueArchived;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Не в архиве'**
+  String get valueNotArchived;
+
+  /// Сторона удаления
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалено'**
+  String get valueDeleted;
+
+  /// Сторона восстановления
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановлено'**
+  String get valueRestored;
+
+  /// Сторона снятия метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка снята'**
+  String get valueLabelRemoved;
+
+  /// Сторона установки метки
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка поставлена'**
+  String get valueLabelAdded;
+
+  /// Сторона правки без показываемых полей
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменено'**
+  String get valueEdited;
+
+  /// Пустое значение
+  ///
+  /// In ru, this message translates to:
+  /// **'(пусто)'**
+  String get valueEmpty;
+
+  /// Ссылка на сущность, которой нет
+  ///
+  /// In ru, this message translates to:
+  /// **'не найдено на этом устройстве'**
+  String get valueMissing;
+
+  /// Ссылка на удалённую сущность
+  ///
+  /// In ru, this message translates to:
+  /// **'{name} (удалено)'**
+  String valueDeletedRef(String name);
+
+  /// Вид проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Список'**
+  String get viewList;
+
+  /// Вид проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Доска'**
+  String get viewBoard;
+
+  /// Вид проекта
+  ///
+  /// In ru, this message translates to:
+  /// **'Календарь'**
+  String get viewCalendar;
+
+  /// Значение поля
+  ///
+  /// In ru, this message translates to:
+  /// **'Без раздела'**
+  String get noSection;
+
+  /// Сторона конфликта с этого устройства, имя которого неизвестно (нет папки)
+  ///
+  /// In ru, this message translates to:
+  /// **'Это устройство'**
+  String get conflictThisDevice;
+
+  /// Подтверждение «Оставить удалённым», когда удаление сейчас не действует
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить снова?'**
+  String get conflictDeleteAgainTitle;
+
+  /// Текст подтверждения повторного удаления
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас это не удалено. «{entity}» будет удалено вместе со всем, что внутри.'**
+  String conflictDeleteAgainBody(String entity);
 }
 
 class _AppLocalizationsDelegate

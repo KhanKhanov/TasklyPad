@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../features/conflicts/ui/conflicts_screen.dart';
 import '../features/labels/ui/filters_labels_screen.dart';
 import '../features/labels/ui/label_screen.dart';
 import '../features/projects/ui/project_screen.dart';
@@ -52,6 +53,11 @@ GoRouter router(Ref ref) {
             name: 'label',
             builder: (context, state) =>
                 LabelScreen(labelId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: '/conflicts',
+            name: 'conflicts',
+            builder: (context, state) => const ConflictsScreen(),
           ),
         ],
       ),

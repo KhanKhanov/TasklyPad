@@ -1,5 +1,8 @@
 ## Не выпущено
 
+- `seenValue(author, field, entityOps)` — значение поля, которое видел автор правки (свои ops раньше неё и
+  чужие, которые он видел, как в `findConflicts`): выбор стороны конфликта возвращает и поля, которые
+  изменило только другое действие.
 - `FolderTransport` создаёт `format.json`, только пока папка не известна узлу (`SyncStateStore.folderId`
   — `null`), и никогда не создаёт корень `SyncFs`; иначе — `SyncFolderMissingException`, ничего не
   записано. `SyncStateStore.forgetFolder` — забыть папку при её выборе (ломает внешние реализации

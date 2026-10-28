@@ -105,7 +105,55 @@ final class Mutator {
   Future<List<Op>> resolveConflict(
     String conflictId,
     Map<String, Object?> fields,
-  ) => _write(() => _engine.resolveConflict(conflictId, fields));
+  ) => resolveConflicts([conflictId], fields);
+
+  /// Выбор пользователя по карточке из конфликтов [conflictIds]: [fields]
+  /// пишутся одной правкой, все конфликты закрываются. Пишутся только поля,
+  /// значение которых меняется, — по той же причине, что в [update]:
+  /// «оставить действующий вариант» не должен спорить с параллельной правкой
+  /// этого поля на третьем устройстве. Поля уходят первому ещё открытому
+  /// конфликту: уже закрытый (отметка пришла синхронизацией, пока карточка
+  /// была на экране) движок пропускает вместе с полями. Все закрыты — ничего.
+  Future<List<Op>> resolveConflicts(
+    List<String> conflictIds,
+    Map<String, Object?> fields,
+  ) => _write(() async {
+    final all = {for (final c in await _store.conflicts()) c.id: c};
+    final missing = [
+      for (final id in conflictIds)
+        if (!all.containsKey(id)) id,
+    ];
+    if (missing.isNotEmpty) {
+      throw ArgumentError.value(missing, 'conflictIds', 'нет таких');
+    }
+    final open = [
+      for (final id in conflictIds)
+        if (!all[id]!.resolved) all[id]!,
+    ];
+    if (open.isEmpty) return const <Op>[];
+    final target = open.first;
+    final changed = <String, Object?>{};
+    final known = await _store.hasEntity(target.entityType, target.entityId);
+    for (final MapEntry(key: field, :value) in fields.entries) {
+      final current = await _store.fieldValue(
+        target.entityType,
+        target.entityId,
+        field,
+      );
+      final unchanged =
+          jsonEquals(current, value) ||
+          (known &&
+              current == null &&
+              _store.isProjectionDefault(target.entityType, field, value));
+      if (!unchanged) changed[field] = value;
+    }
+    final ops = [...await _engine.resolveConflict(target.id, changed)];
+    for (final c in open.skip(1)) {
+      // Закрытый предыдущим вызовом (то же поле) — без новых ops.
+      ops.addAll(await _engine.resolveConflict(c.id, const {}));
+    }
+    return ops;
+  });
 
   /// Несколько правок одной транзакцией (задача и её метки, перенос
   /// поддерева, завершение с подзадачами): ops одного действия пользователя

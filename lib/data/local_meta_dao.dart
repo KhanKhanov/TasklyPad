@@ -25,6 +25,7 @@ final class LocalMetaDao {
   static const String folderPathKey = 'sync.folder_path';
   static const String lastSyncKey = 'sync.last_ok_ms';
   static const String previousNodeIdsKey = 'node.previous_ids';
+  static const String notifiedConflictsKey = 'conflicts.notified';
 
   Future<String?> read(String key) async {
     final row = await (_db.select(
@@ -66,6 +67,23 @@ final class LocalMetaDao {
 
   Future<void> addPreviousNodeId(String id) async =>
       write(previousNodeIdsKey, jsonEncode([...await previousNodeIds(), id]));
+
+  /// Открытые конфликты, о которых это устройство уже уведомило
+  /// (`ConflictRepository.takeUnnotified`). Битое значение — пустое
+  /// множество: в худшем случае одно повторное уведомление.
+  Future<Set<String>> notifiedConflicts() async {
+    final json = await read(notifiedConflictsKey);
+    if (json == null) return const {};
+    try {
+      return {...(jsonDecode(json) as List<Object?>).cast<String>()};
+    } on Object catch (error) {
+      _log.w('Уведомлённые конфликты не разобраны: $json', error: error);
+      return const {};
+    }
+  }
+
+  Future<void> setNotifiedConflicts(Set<String> ids) =>
+      write(notifiedConflictsKey, jsonEncode([...ids]..sort()));
 
   /// Сохранённое состояние часов движка.
   Future<Hlc?> hlc() async => _parseHlc(await read(hlcKey));

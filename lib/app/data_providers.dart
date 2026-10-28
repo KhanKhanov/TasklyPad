@@ -2,11 +2,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/clock.dart';
 import '../data/repositories/workspace_repository.dart';
+import '../domain/conflicts.dart';
 import '../domain/workspace.dart';
+import '../features/conflicts/logic/conflict_commands.dart';
 import '../features/labels/logic/label_commands.dart';
 import '../features/projects/logic/project_commands.dart';
 import '../features/sections/logic/section_commands.dart';
 import '../features/tasks/logic/task_commands.dart';
+import '../sync/conflict_repository.dart';
 import 'sync_providers.dart';
 
 part 'data_providers.g.dart';
@@ -55,6 +58,27 @@ SectionCommands sectionCommands(Ref ref) => SectionCommands(
 
 @Riverpod(keepAlive: true)
 LabelCommands labelCommands(Ref ref) => LabelCommands(
+  mutator: ref.watch(mutatorProvider),
+  read: ref.watch(workspaceRepositoryProvider).load,
+);
+
+@Riverpod(keepAlive: true)
+ConflictRepository conflictRepository(Ref ref) {
+  final services = ref.watch(syncServicesProvider);
+  return ConflictRepository(
+    db: services.db,
+    store: services.store,
+    meta: services.meta,
+  );
+}
+
+/// Открытые конфликты карточками, новые сверху (экран и пункт сайдбара).
+@Riverpod(keepAlive: true)
+Stream<List<ConflictCard>> openConflicts(Ref ref) =>
+    ref.watch(conflictRepositoryProvider).watch();
+
+@Riverpod(keepAlive: true)
+ConflictCommands conflictCommands(Ref ref) => ConflictCommands(
   mutator: ref.watch(mutatorProvider),
   read: ref.watch(workspaceRepositoryProvider).load,
 );

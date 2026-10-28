@@ -4,8 +4,10 @@ import 'package:oplog_sync/oplog_sync.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../data/app_database.dart';
+import '../platform/conflict_notifier.dart';
 import '../platform/folder_picker.dart';
 import '../platform/windows/file_selector_folder_picker.dart';
+import '../platform/windows/toast_conflict_notifier.dart';
 import '../sync/io_sync_fs.dart';
 import '../sync/mutator.dart';
 import '../sync/sync_runner.dart';
@@ -59,3 +61,10 @@ SyncRunner syncRunner(Ref ref) => SyncRunner(
 FolderPicker folderPicker(Ref ref) => Platform.isWindows
     ? const FileSelectorFolderPicker()
     : const UnsupportedFolderPicker();
+
+/// Уведомления ОС о конфликтах синхронизации; в тестах — фейк. Пока только
+/// Windows: Android — О-35.
+@Riverpod(keepAlive: true)
+ConflictNotifier conflictNotifications(Ref ref) => Platform.isWindows
+    ? ToastConflictNotifier(profile: ref.watch(appProfileProvider))
+    : const InAppConflictNotifier();
