@@ -413,6 +413,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncSection => 'Sync';
 
   @override
+  String get themeSection => 'Theme';
+
+  @override
+  String get themeAppearance => 'Appearance';
+
+  @override
+  String get appearanceLight => 'Light';
+
+  @override
+  String get appearanceDark => 'Dark';
+
+  @override
+  String get appearanceSystem => 'System';
+
+  @override
+  String get themeTaskly => 'Taskly';
+
+  @override
+  String get syncTheme => 'Sync theme';
+
+  @override
+  String get themeUpdate => 'Update';
+
+  @override
   String get syncFolder => 'Sync folder';
 
   @override
@@ -656,6 +680,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String conflictEntityTaskLabel(String label, String task) {
     return 'Label “$label” on task “$task”';
   }
+
+  @override
+  String get conflictEntitySettings => 'Settings';
 
   @override
   String conflictEntityOther(String title) {

@@ -5,9 +5,8 @@ import 'app_palette.dart';
 /// Тема оформления: светлый и тёмный вариант, как у тем Todoist.
 ///
 /// Сейчас одна тема — Taskly: светлый вариант снят с официальных скриншотов
-/// Todoist, тёмный — с макета мобильного приложения пользователя. Тема
-/// Todoist добавится, когда будут сняты цвета её тёмного варианта (О-21);
-/// выбор темы — M2.3.
+/// Todoist, тёмный — с макета мобильного приложения пользователя. Темы
+/// Todoist — M10 (docs/plans/m2-core-app.md, коммит 4 M2.3).
 final class AppTheme {
   const AppTheme({required this.id, required this.light, required this.dark});
 
@@ -63,6 +62,14 @@ const AppTheme tasklyTheme = AppTheme(
     ],
   ),
 );
+
+/// Темы в разделе «Тема» по порядку.
+const List<AppTheme> appThemes = [tasklyTheme];
+
+/// Тема по id. Незнакомый id — от более новой версии приложения на другом
+/// устройстве — показывается темой Taskly, но в настройках остаётся как есть.
+AppTheme appThemeById(String id) =>
+    appThemes.firstWhere((theme) => theme.id == id, orElse: () => tasklyTheme);
 
 /// `ThemeData` Flutter по палитре: Material-виджеты (кнопки, поля, меню)
 /// получают те же цвета, что и наши виджеты через [AppPalette].

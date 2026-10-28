@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'view_options.g.dart';
 
-/// «Просмотр → Выполненные задачи» для вида [viewId] (id проекта).
+/// «Отображение → Выполненные задачи» для вида [viewId] (id проекта).
 ///
 /// Пока локально на этом устройстве: в Todoist настройки вида синхронизируются
 /// вместе с сортировкой и группировкой — это M4 (docs/OBLIGATIONS.md, О-22).

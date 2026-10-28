@@ -6,7 +6,7 @@ import '../../tasks/ui/task_actions.dart';
 
 /// Хоткеи оболочки, как в Todoist: `m` — сайдбар; `g`, затем буква —
 /// переход: `i` «Входящие», `p` «Мои проекты», `v` и `l` «Фильтры и метки»;
-/// `o` `s` — «Настройки».
+/// `o` `s` — «Настройки», `o` `t` — «Тема».
 /// Остальные переходы (`h`, `t`, `u`) появятся вместе с их экранами. Пока
 /// печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
@@ -47,7 +47,11 @@ class _ShellKeysState extends State<ShellKeys> {
       LogicalKeyboardKey.keyV: '/filters-labels',
       LogicalKeyboardKey.keyL: '/filters-labels',
     },
-    LogicalKeyboardKey.keyO: {LogicalKeyboardKey.keyS: '/settings'},
+    // `o t` — «Тема»: это первый раздел «Настроек», экран открывается на нём.
+    LogicalKeyboardKey.keyO: {
+      LogicalKeyboardKey.keyS: '/settings',
+      LogicalKeyboardKey.keyT: '/settings',
+    },
   };
 
   bool get _pending => _sinceGo.isRunning && _sinceGo.elapsed <= _goWindow;

@@ -452,4 +452,187 @@ final class ConflictCommandsProvider
   }
 }
 
-String _$conflictCommandsHash() => r'3ac7ab5ce24961099674b3fe696bebcd54ea5dc7';
+String _$conflictCommandsHash() => r'729c046abf53f42184de61938c3f84ef1a9ab4c2';
+
+@ProviderFor(themeSettingsRepository)
+final themeSettingsRepositoryProvider = ThemeSettingsRepositoryProvider._();
+
+final class ThemeSettingsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ThemeSettingsRepository,
+          ThemeSettingsRepository,
+          ThemeSettingsRepository
+        >
+    with $Provider<ThemeSettingsRepository> {
+  ThemeSettingsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'themeSettingsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$themeSettingsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ThemeSettingsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ThemeSettingsRepository create(Ref ref) {
+    return themeSettingsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ThemeSettingsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ThemeSettingsRepository>(value),
+    );
+  }
+}
+
+String _$themeSettingsRepositoryHash() =>
+    r'02297d083524bf20539697a82f3fa374bd97d506';
+
+/// Настройки темы, прочитанные до первого кадра (`main`): без них приложение
+/// с сохранённой тёмной темой мигнуло бы светлой, пока поток не ответит.
+
+@ProviderFor(initialThemeSettings)
+final initialThemeSettingsProvider = InitialThemeSettingsProvider._();
+
+/// Настройки темы, прочитанные до первого кадра (`main`): без них приложение
+/// с сохранённой тёмной темой мигнуло бы светлой, пока поток не ответит.
+
+final class InitialThemeSettingsProvider
+    extends $FunctionalProvider<ThemeSettings, ThemeSettings, ThemeSettings>
+    with $Provider<ThemeSettings> {
+  /// Настройки темы, прочитанные до первого кадра (`main`): без них приложение
+  /// с сохранённой тёмной темой мигнуло бы светлой, пока поток не ответит.
+  InitialThemeSettingsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'initialThemeSettingsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$initialThemeSettingsHash();
+
+  @$internal
+  @override
+  $ProviderElement<ThemeSettings> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ThemeSettings create(Ref ref) {
+    return initialThemeSettings(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ThemeSettings value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ThemeSettings>(value),
+    );
+  }
+}
+
+String _$initialThemeSettingsHash() =>
+    r'6189749e4a0b95294cd5e7aceeedd74106d7735a';
+
+/// Настройки темы — свои и пришедшие синхронизацией.
+
+@ProviderFor(themeSettings)
+final themeSettingsProvider = ThemeSettingsProvider._();
+
+/// Настройки темы — свои и пришедшие синхронизацией.
+
+final class ThemeSettingsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ThemeSettings>,
+          ThemeSettings,
+          Stream<ThemeSettings>
+        >
+    with $FutureModifier<ThemeSettings>, $StreamProvider<ThemeSettings> {
+  /// Настройки темы — свои и пришедшие синхронизацией.
+  ThemeSettingsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'themeSettingsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$themeSettingsHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<ThemeSettings> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<ThemeSettings> create(Ref ref) {
+    return themeSettings(ref);
+  }
+}
+
+String _$themeSettingsHash() => r'9ed7aa062b535f9af91393dcbe544ad897dcb179';
+
+@ProviderFor(themeCommands)
+final themeCommandsProvider = ThemeCommandsProvider._();
+
+final class ThemeCommandsProvider
+    extends $FunctionalProvider<ThemeCommands, ThemeCommands, ThemeCommands>
+    with $Provider<ThemeCommands> {
+  ThemeCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'themeCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$themeCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<ThemeCommands> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  ThemeCommands create(Ref ref) {
+    return themeCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ThemeCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ThemeCommands>(value),
+    );
+  }
+}
+
+String _$themeCommandsHash() => r'900e632d6e6ff43e4d8ab70328f80b28f3a43476';

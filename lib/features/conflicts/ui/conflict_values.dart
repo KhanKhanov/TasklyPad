@@ -4,10 +4,12 @@ import 'package:intl/intl.dart';
 
 import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
+import '../../../domain/theme_settings.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../sync/sync_runner.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../settings/ui/sync_devices.dart';
+import '../../settings/ui/theme_texts.dart';
 
 // Тексты карточек «Конфликты»: что за сущность, какое поле, какое значение.
 // Чистые функции от l10n — проверяются табличным тестом без виджетов.
@@ -26,6 +28,7 @@ String conflictEntityTitle(AppLocalizations l10n, ConflictCard card) {
       title,
       _nonEmpty(card.ownerTitle) ?? l10n.conflictUntitled,
     ),
+    ConflictEntity.settings => l10n.conflictEntitySettings,
     ConflictEntity.other => l10n.conflictEntityOther(title),
   };
 }
@@ -48,6 +51,8 @@ String conflictFieldTitle(AppLocalizations l10n, ConflictValue value) =>
       ConflictField.favorite => l10n.fieldInFavorites,
       ConflictField.archived => l10n.fieldArchived,
       ConflictField.viewStyle => l10n.fieldViewStyle,
+      ConflictField.theme => l10n.themeSection,
+      ConflictField.appearance => l10n.themeAppearance,
       ConflictField.deleted || ConflictField.other => value.key,
     };
 
@@ -101,6 +106,13 @@ String conflictValueText(
     (ConflictField.viewStyle, 'board') => l10n.viewBoard,
     (ConflictField.viewStyle, 'calendar') => l10n.viewCalendar,
     (ConflictField.viewStyle, 'list') => l10n.viewList,
+    // Незнакомая тема (от более новой версии) — её id как есть.
+    (ConflictField.theme, final String id) => themeTitle(l10n, id),
+    (ConflictField.appearance, final String raw) =>
+      switch (ThemeAppearance.parse(raw)) {
+        final ThemeAppearance a => appearanceTitle(l10n, a),
+        null => null,
+      },
     _ => null,
   };
   return text ?? (v == null ? l10n.valueEmpty : jsonEncode(v));

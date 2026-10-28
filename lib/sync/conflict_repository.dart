@@ -257,6 +257,8 @@ final class ConflictRepository {
       DateTime.fromMillisecondsSinceEpoch(op.hlc.wallMs, isUtc: true);
 
   Future<(String?, String?)> _titles(String type, String id) async {
+    // У настроек имени нет: заголовок карточки — просто «Настройки».
+    if (type == EntityTypes.settings) return (null, null);
     if (type != EntityTypes.taskLabel) return (await _title(type, id), null);
     final labelId = await _store.fieldValue(type, id, TaskLabelFields.labelId);
     final taskId = await _store.fieldValue(type, id, TaskLabelFields.taskId);
@@ -353,6 +355,7 @@ final class ConflictRepository {
     EntityTypes.section => ConflictEntity.section,
     EntityTypes.label => ConflictEntity.label,
     EntityTypes.taskLabel => ConflictEntity.taskLabel,
+    EntityTypes.settings => ConflictEntity.settings,
     _ => ConflictEntity.other,
   };
 
@@ -386,6 +389,9 @@ final class ConflictRepository {
     (EntityTypes.project || EntityTypes.section, ProjectFields.isArchived) =>
       ConflictField.archived,
     (EntityTypes.project, ProjectFields.viewStyle) => ConflictField.viewStyle,
+    (EntityTypes.settings, SettingsFields.themeId) => ConflictField.theme,
+    (EntityTypes.settings, SettingsFields.themeAppearance) =>
+      ConflictField.appearance,
     _ => ConflictField.other,
   };
 }

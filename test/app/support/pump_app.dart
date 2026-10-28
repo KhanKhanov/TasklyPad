@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/app/app.dart';
+import 'package:planner/app/data_providers.dart';
 import 'package:planner/app/sync_providers.dart';
+import 'package:planner/data/repositories/theme_settings_repository.dart';
 import 'package:planner/features/projects/ui/project_screen.dart';
 import 'package:planner/features/projects/ui/projects_screen.dart';
 import 'package:planner/platform/conflict_notifier.dart';
@@ -18,22 +20,32 @@ import 'fake_conflict_notifier.dart';
 ///
 /// Закрытие — здесь, а не в `addTearDown`: поток запроса drift при отписке
 /// ставит таймер, и он должен сработать до проверки «таймеров не осталось»,
-/// которую фреймворк делает сразу после тела теста.
+/// которую фреймворк делает сразу после тела теста. [before] — подготовка
+/// базы до запуска приложения (сохранённые настройки); [firstFrame] —
+/// проверка первого кадра, пока потоки базы ещё не ответили.
 Future<void> withApp(
   WidgetTester tester,
   Future<void> Function(TestDevice device) body, {
   Size size = const Size(1100, 800),
   List<Override> overrides = const [],
   ConflictNotifier? notifier,
+  Future<void> Function(TestDevice device)? before,
+  void Function()? firstFrame,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final device = (await tester.runAsync(TestDevice.start))!;
+  await tester.runAsync(() async => before?.call(device));
+  // Как в main: тема — до первого кадра.
+  final theme = (await tester.runAsync(
+    ThemeSettingsRepository(device.db).load,
+  ))!;
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         syncServicesProvider.overrideWithValue(device.services),
+        initialThemeSettingsProvider.overrideWithValue(theme),
         conflictNotificationsProvider.overrideWithValue(
           notifier ?? FakeConflictNotifier(),
         ),
@@ -42,8 +54,9 @@ Future<void> withApp(
       child: const PlannerApp(),
     ),
   );
-  await settle(tester);
   try {
+    firstFrame?.call();
+    await settle(tester);
     await body(device);
   } finally {
     await tester.pumpWidget(const SizedBox.shrink());

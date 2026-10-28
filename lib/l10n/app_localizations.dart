@@ -587,10 +587,10 @@ abstract class AppLocalizations {
   /// Кнопка настроек вида, как в Todoist
   ///
   /// In ru, this message translates to:
-  /// **'Просмотр'**
+  /// **'Отображение'**
   String get viewOptions;
 
-  /// Переключатель в «Просмотр»
+  /// Переключатель в «Отображение»
   ///
   /// In ru, this message translates to:
   /// **'Выполненные задачи'**
@@ -841,6 +841,54 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Синхронизация'**
   String get syncSection;
+
+  /// Раздел настроек и подпись поля в конфликте
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get themeSection;
+
+  /// Светлый, тёмный или как в системе (Todoist: Appearance)
+  ///
+  /// In ru, this message translates to:
+  /// **'Внешний вид'**
+  String get themeAppearance;
+
+  /// Внешний вид
+  ///
+  /// In ru, this message translates to:
+  /// **'Светлый'**
+  String get appearanceLight;
+
+  /// Внешний вид
+  ///
+  /// In ru, this message translates to:
+  /// **'Тёмный'**
+  String get appearanceDark;
+
+  /// Внешний вид как в системе (Todoist: System)
+  ///
+  /// In ru, this message translates to:
+  /// **'Системный'**
+  String get appearanceSystem;
+
+  /// Название темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Taskly'**
+  String get themeTaskly;
+
+  /// Переключатель, как в Todoist (Sync theme)
+  ///
+  /// In ru, this message translates to:
+  /// **'Синхронизировать тему'**
+  String get syncTheme;
+
+  /// Кнопка сохранения темы на компьютере (Todoist: Update)
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get themeUpdate;
 
   /// Подпись выбранной папки
   ///
@@ -1225,6 +1273,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Метка «{label}» у задачи «{task}»'**
   String conflictEntityTaskLabel(String label, String task);
+
+  /// Заголовок карточки конфликта настроек
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройки'**
+  String get conflictEntitySettings;
 
   /// Заголовок карточки незнакомой сущности
   ///
