@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift/internal/versioned_schema.dart';
-import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:meta/meta.dart' show visibleForTesting;
 
 import 'app_database.steps.dart';
 import 'tables/entity_tables.dart';

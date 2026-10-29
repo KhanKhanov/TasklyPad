@@ -4,7 +4,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../projects/ui/project_screen.dart';
+import '../../common/ui/layout.dart';
 import 'label_dialog.dart';
 import 'label_tile.dart';
 

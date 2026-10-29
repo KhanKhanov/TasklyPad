@@ -5,7 +5,7 @@ import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/conflicts.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/sync_runner.dart';
+import '../../../domain/sync_status.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../settings/ui/sync_section.dart';
 import 'conflict_values.dart';

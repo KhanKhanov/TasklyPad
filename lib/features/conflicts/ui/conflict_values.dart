@@ -6,9 +6,9 @@ import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
 import '../../../domain/theme_settings.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/sync_runner.dart';
+import '../../../domain/sync_status.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../settings/ui/sync_devices.dart';
+import '../../common/ui/device_title.dart';
 import '../../settings/ui/theme_texts.dart';
 
 // Тексты карточек «Конфликты»: что за сущность, какое поле, какое значение.

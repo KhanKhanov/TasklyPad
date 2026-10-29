@@ -5,6 +5,7 @@ import 'package:oplog_sync/oplog_sync.dart';
 import '../core/ids.dart';
 import '../data/local_meta_dao.dart';
 import '../data/projection/entity_fields.dart';
+import '../domain/undo.dart';
 import 'drift_op_store.dart';
 
 /// Единственная точка записи данных пользователя в приложении.
@@ -243,7 +244,7 @@ typedef UndoTarget = ({String entityType, String entityId, Set<String> fields});
 ///
 /// Если за время тоста поле изменило другое устройство, отмена — обычная
 /// правка поверх него (последняя по времени).
-final class Undo {
+final class Undo implements UndoAction {
   Undo._(this._mutator, this._values);
 
   final Mutator _mutator;
@@ -254,9 +255,11 @@ final class Undo {
 
   /// Отменять нечего: действие ничего не изменило (например, задача уже
   /// была выполнена).
+  @override
   bool get isEmpty => _values.isEmpty;
 
   /// Вернуть прежние значения одной транзакцией.
+  @override
   Future<void> call() => _mutator.batch(() async {
     for (final v in _values) {
       await _mutator.update(v.entityType, v.entityId, v.fields);

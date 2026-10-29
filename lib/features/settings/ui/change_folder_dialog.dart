@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/sync_runner.dart';
-import 'sync_devices.dart';
+import '../../../domain/sync_status.dart';
+import '../../common/ui/device_title.dart';
 import 'sync_section.dart';
 
 /// Подтверждение смены папки (docs/plans/m2-core-app.md, решение 12):

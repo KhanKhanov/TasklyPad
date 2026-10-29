@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../sections/ui/section_block.dart';
 import '../../sections/ui/section_editor.dart';
@@ -16,9 +17,6 @@ import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
 import '../../tasks/ui/view_options_button.dart';
 import 'project_menu.dart';
-
-/// Ширина колонки контента, как у Todoist на широком экране.
-const double contentMaxWidth = 800;
 
 /// Экран проекта (и «Входящих»): заголовок с «Отображение» и меню, задачи без
 /// раздела, разделы со своими задачами и «Добавить раздел». Хоткеи `a`,

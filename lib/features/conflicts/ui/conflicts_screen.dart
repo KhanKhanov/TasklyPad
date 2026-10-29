@@ -5,7 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../projects/ui/project_screen.dart';
+import '../../common/ui/layout.dart';
 import '../../settings/state/sync_controller.dart';
 import 'conflict_card.dart';
 

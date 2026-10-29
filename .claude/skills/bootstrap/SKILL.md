@@ -31,7 +31,7 @@ allowed-tools: Bash(flutter *), Bash(dart *), Bash(git *)
 6. l10n: `l10n.yaml` (arb-dir lib/l10n, template app_ru.arb), файлы app_ru.arb и app_en.arb с 3 строками.
    В pubspec: `flutter: generate: true`.
 7. Скелет папок по .claude/rules/architecture.md с файлами-заглушками `README.md` в каждом слое.
-   core: `ids.dart` (UUIDv7), `fractional_index.dart` (between(a, b)), `clock.dart`, `result.dart` —
+   core: `ids.dart` (UUIDv7), `fractional_index.dart` (between(a, b)), `clock.dart` —
    каждый с unit-тестом в test/core.
 8. Минимальное приложение: MaterialApp.router с одним экраном «Входящие» (пусто) и l10n.
 9. test/fixtures/README.md с описанием формата таблиц для парсеров. docs/GLOSSARY.md — дополни

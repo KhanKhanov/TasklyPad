@@ -1,6 +1,6 @@
 # data
 
-drift: таблицы, DAO, миграции, репозитории. Таблицы сущностей — проекции op-log; прямые update/delete запрещены, все записи — через `Mutator` (см. docs/SYNC_DESIGN.md, «Инварианты реализации»).
+drift: таблицы, DAO, миграции, репозитории. Таблицы сущностей — проекции op-log; прямые update/delete запрещены, все записи — через `Mutator` (см. docs/SYNC_DESIGN.md, «Инварианты реализации»). Без Flutter, кроме `db_open.dart`: файл базы открывается через `drift_flutter` и `path_provider`.
 
 - `app_database.dart` — `AppDatabase`, версия схемы и миграции; снимки схем — `drift_schemas/`. `app_database.steps.dart` — сгенерированные классы схем для шагов миграции (`drift_dev make-migrations`), руками не правится.
 - `tables/` — `sync_tables.dart` (журнал, версии полей, конфликты, курсоры, локальные настройки) и `entity_tables.dart` (проекции).

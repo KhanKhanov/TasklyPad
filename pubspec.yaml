@@ -39,6 +39,8 @@ dependencies:
 
   # Инфраструктура
   logger: ^2.8.0
+  # Аннотации (`visibleForTesting`) для слоёв без Flutter — lib/data.
+  meta: ^1.19.0
   path: ^1.9.1
   path_provider: ^2.1.6
   shared_preferences: ^2.5.6

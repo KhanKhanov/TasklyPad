@@ -6,7 +6,7 @@ import 'package:oplog_sync/oplog_sync.dart';
 import '../../../app/sync_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/sync_runner.dart';
+import '../../../domain/sync_status.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/sync_controller.dart';
 import 'change_folder_dialog.dart';

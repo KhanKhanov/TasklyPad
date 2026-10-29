@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../shell/ui/app_shell.dart';
+import '../../common/ui/layout.dart';
 
 /// Раскладка окна задачи. Узкий экран (телефон) — на весь экран, поля под
 /// подзадачами; широкий — окно поверх списка с полями справа.

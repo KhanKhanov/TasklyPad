@@ -5,9 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:oplog_sync/oplog_sync.dart';
 import 'package:planner/app/sync_providers.dart';
+import 'package:planner/domain/sync_status.dart';
 import 'package:planner/features/settings/state/sync_controller.dart';
 import 'package:planner/features/settings/ui/settings_screen.dart';
-import 'package:planner/sync/sync_runner.dart';
 
 import '../../app/support/pump_app.dart';
 import '../support/app_commands.dart';

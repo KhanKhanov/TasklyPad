@@ -3,16 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../settings/state/sync_controller.dart';
 import '../state/sidebar_state.dart';
 import 'shell_keys.dart';
 import 'sidebar.dart';
 
-/// Ширина, начиная с которой сайдбар стоит рядом с контентом, а не
-/// выезжает поверх (телефон, узкое окно): макет desktop — от 900 px
-/// (.claude/rules/platform-windows.md).
-const double wideLayoutWidth = 900;
 const double _sidebarWidth = 280;
 
 /// Оболочка всех экранов: сайдбар слева и контент справа; на узком экране

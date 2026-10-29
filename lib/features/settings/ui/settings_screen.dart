@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../projects/ui/project_screen.dart';
+import '../../common/ui/layout.dart';
 import 'sync_section.dart';
 import 'theme_section.dart';
 
