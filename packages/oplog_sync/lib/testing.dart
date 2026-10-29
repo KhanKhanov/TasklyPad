@@ -130,6 +130,7 @@ final class ScenarioNode {
     String id, {
     int startMs = scenarioStartMs,
     Set<String> silentFields = const {},
+    Set<String> silentEntityTypes = const {},
     String? opIdPrefix,
   }) : _now = startMs {
     final prefix = opIdPrefix ?? id;
@@ -139,6 +140,7 @@ final class ScenarioNode {
       nowMs: () => _now,
       newOpId: () => '$prefix-${++_seq}',
       silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
     );
   }
 
@@ -211,13 +213,28 @@ final class _Run {
   Future<ScenarioNode> node(
     String id, {
     Set<String> silentFields = const {},
-  }) async => ScenarioNode(await probe(), id, silentFields: silentFields);
+    Set<String> silentEntityTypes = const {},
+  }) async => ScenarioNode(
+    await probe(),
+    id,
+    silentFields: silentFields,
+    silentEntityTypes: silentEntityTypes,
+  );
 
   Future<(ScenarioNode, ScenarioNode)> ab({
     Set<String> silentFields = const {},
+    Set<String> silentEntityTypes = const {},
   }) async => (
-    await node('a', silentFields: silentFields),
-    await node('b', silentFields: silentFields),
+    await node(
+      'a',
+      silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
+    ),
+    await node(
+      'b',
+      silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
+    ),
   );
 
   Future<void> finish() async {
@@ -866,6 +883,187 @@ final List<ContractScenario<ProbeFactory>> _engineScenarios = [
     check(await c.task('t1'), entity, 'задача после rebuild');
   }),
 
+  _scenario('переиздание: прежний узел и другой узел удалили, каждый одним '
+      'действием с полем; действие прежнего узла позже и переиздано целиком '
+      '— конфликтов нет, инкрементально == rebuild', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedTask(a, b);
+    a.advance(5000); // действие a позже — его поле и удаление побеждают
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    await b.engine.mutate('task', 't1', {Op.deletedField: true, 'label': 'x'});
+    await b.pushTo(a);
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    final adopted = await c.engine.adopt('a', null);
+    checkThat(
+      adopted.any((o) => o.isTombstone) && adopted.any((o) => !o.isTombstone),
+      'переизданы и поле, и удаление',
+    );
+    check(await c.conflicts(), <Conflict>[], 'конфликты');
+    final task = await c.task('t1');
+    await c.engine.rebuild();
+    check(await c.conflicts(), <Conflict>[], 'конфликты после rebuild');
+    check(await c.task('t1'), task, 'задача после rebuild');
+  }),
+
+  _scenario('переиздание: поле действия побеждает, а его удаление переписано '
+      'чужим удалением, — удаление переиздаётся вместе с полем, конфликтов '
+      'нет, LWW прежний, инкрементально == rebuild', (run) async {
+    final (a, b) = await run.ab();
+    await _sharedTask(a, b);
+    final mark = (await a.opsOf('a')).last.hlc; // выгружено до этой метки
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    b.advance(5000); // удаление b позже удаления a
+    final bDelete = await b.engine.delete('task', 't1');
+    await b.pushTo(a);
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    final adopted = await c.engine.adopt('a', mark);
+    check(adopted.map((o) => o.field).toList()..sort(), [
+      Op.deletedField,
+      'label',
+    ], 'переизданы поле и удаление его действия');
+    check(
+      await c.store.fieldHlc('task', 't1', Op.deletedField),
+      bDelete.single.hlc,
+      'удаление b по-прежнему побеждает',
+    );
+    await c.pushTo(b);
+    const expected = {
+      'title': 'v0',
+      'priority': 4,
+      'label': 'x',
+      Op.deletedField: true,
+    };
+    for (final node in [c, b]) {
+      final at = 'на ${node.engine.nodeId}';
+      check(await node.conflicts(), <Conflict>[], 'конфликты $at');
+      check(await node.task('t1'), expected, 'задача $at');
+      await node.engine.rebuild();
+      check(
+        await node.conflicts(),
+        <Conflict>[],
+        'конфликты $at после rebuild',
+      );
+      check(await node.task('t1'), expected, 'задача $at после rebuild');
+    }
+  }),
+
+  _scenario('переиздание: другой узел видел удаление, восстановил и удалил '
+      'снова, — проигравшее удаление не переиздаётся', (run) async {
+    final (a, b) = await run.ab();
+    final c = await run.node('c');
+    await a.engine.mutate('task', 't1', {'title': 'v0'});
+    await a.pushTo(b);
+    await a.pushTo(c);
+    a.advance(1000);
+    b.advance(2000);
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    await a.pushTo(b);
+    await a.pushTo(c);
+    await b.engine.mutate('task', 't1', {Op.deletedField: false});
+    b.advance(10);
+    await b.engine.delete('task', 't1');
+    await b.pushTo(c);
+    // Победитель — удаление того, кто видел исходное (конфликты копий — О-59).
+    final adopted = await c.engine.adopt('a', null);
+    check(adopted.map((o) => o.field).toList()..sort(), [
+      'label',
+      'title',
+    ], 'переизданы только поля-победители');
+  }),
+
+  _scenario('переиздание: другой узел, не видя удаления, удалил и '
+      'восстановил, — проигравшее удаление не переиздаётся', (run) async {
+    final (a, b) = await run.ab();
+    final c = await run.node('c');
+    await a.engine.mutate('task', 't1', {'title': 'v0'});
+    await a.pushTo(b);
+    await a.pushTo(c);
+    a.advance(1000);
+    b.advance(2000);
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    await a.pushTo(c);
+    await b.engine.delete('task', 't1');
+    b.advance(10);
+    await b.engine.mutate('task', 't1', {Op.deletedField: false});
+    await b.pushTo(c);
+    // Победитель — восстановление, а не удаление (ложная карточка — О-59).
+    final adopted = await c.engine.adopt('a', null);
+    check(adopted.map((o) => o.field).toList()..sort(), [
+      'label',
+      'title',
+    ], 'переизданы только поля-победители');
+  }),
+
+  _scenario('переиздание: проигравшее удаление переписано более поздним '
+      'удалением того же прежнего узла — переиздаётся только победитель', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await _sharedTask(a, b);
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    await a.engine.mutate('task', 't1', {Op.deletedField: false});
+    final last = await a.engine.delete('task', 't1');
+    await b.engine.mutate('task', 't1', {'title': 'от b'});
+    await b.pushTo(a);
+    final c = ScenarioNode(a.probe, 'c', startMs: scenarioStartMs + 60000);
+    final adopted = await c.engine.adopt('a', null);
+    final tombstones = adopted.where((o) => o.isTombstone).toList();
+    check(tombstones.length, 1, 'переизданных удалений');
+    check(
+      tombstones.single.hlc.wallMs,
+      last.single.hlc.wallMs,
+      'переиздано последнее удаление',
+    );
+    check(
+      tombstones.single.hlc.counter,
+      last.single.hlc.counter,
+      'счётчик последнего удаления',
+    );
+  }),
+
+  _scenario('переиздание: другой узел видел удаление, восстановил сущность и '
+      'правил её, — проигравшее удаление не переиздаётся, конфликтов нет, '
+      'инкрементально == rebuild', (run) async {
+    final (a, b) = await run.ab();
+    final c = await run.node('c'); // id c больше id a, как у копии
+    await a.engine.mutate('task', 't1', {'title': 'v0'});
+    await a.pushTo(b);
+    await a.pushTo(c);
+    a.advance(1000);
+    b.advance(2000);
+    c.advance(3000);
+    await a.engine.mutate('task', 't1', {'label': 'x', Op.deletedField: true});
+    await a.pushTo(b);
+    await a.pushTo(c);
+    await b.engine.mutate('task', 't1', {Op.deletedField: false});
+    b.advance(10);
+    await b.engine.mutate('task', 't1', {'title': 'после восстановления'});
+    await b.pushTo(c);
+    // a больше не используется, c переиздаёт его правки (смена папки).
+    final adopted = await c.engine.adopt('a', null);
+    check(adopted.map((o) => o.field).toList()..sort(), [
+      'label',
+    ], 'переиздано только поле-победитель');
+    await c.pushTo(b);
+    const expected = {
+      'title': 'после восстановления',
+      'label': 'x',
+      Op.deletedField: false,
+    };
+    for (final node in [c, b]) {
+      final at = 'на ${node.engine.nodeId}';
+      check(await node.conflicts(), <Conflict>[], 'конфликты $at');
+      check(await node.task('t1'), expected, 'задача $at');
+      await node.engine.rebuild();
+      check(
+        await node.conflicts(),
+        <Conflict>[],
+        'конфликты $at после rebuild',
+      );
+      check(await node.task('t1'), expected, 'задача $at после rebuild');
+    }
+  }),
+
   _scenario('движок: op из далёкого будущего — rejected, в журнал не '
       'попадает', (run) async {
     final (a, b) = await run.ab();
@@ -1031,28 +1229,97 @@ final List<ContractScenario<ProbeFactory>> _detectionScenarios = [
     check(await a.taskField('t1', 'order_key'), 'b0', 'order_key на a');
   }),
 
-  _scenario('детекция: оба узла одной правкой записали поле и удаление — '
-      'таблица конфликтов одна при любом порядке доставки и после rebuild', (
+  for (final sameValue in [true, false])
+    _scenario('детекция: оба удалили, каждый одним действием с полем '
+        '(${sameValue ? 'одинаковое' : 'разное'} значение), — конфликта '
+        'удаления нет${sameValue ? '' : ', спор о поле остаётся'}; при любом '
+        'порядке ops и после rebuild', (run) async {
+      final (a, b) = await run.ab();
+      await _sharedTask(a, b);
+      // Удаление последним в действии a и первым в действии b.
+      await a.engine.mutate('task', 't1', {
+        'label': 'a',
+        Op.deletedField: true,
+      });
+      await b.engine.mutate('task', 't1', {
+        Op.deletedField: true,
+        'label': sameValue ? 'a' : 'b',
+      });
+      await syncBoth(a, b);
+      final onA = await a.conflicts();
+      if (sameValue) {
+        check(onA, <Conflict>[], 'конфликты на a');
+      } else {
+        check(onA.length, 1, 'конфликтов на a');
+        check(onA.single.kind, ConflictKind.edit, 'вид');
+        check(onA.single.field, 'label', 'поле');
+      }
+      check(await b.conflicts(), onA, 'конфликты на b');
+      check(await a.probe.alive('task'), <String, Object?>{}, 'alive на a');
+
+      // Внутри пакета ops одного действия идут в любом порядке.
+      final opsA = await a.opsOf('a');
+      final opsB = await b.opsOf('b');
+      // [opsB, opsA] — чужое удаление записано раньше, чем пришли правка a и
+      // её удаление: поштучная детекция дала бы здесь ложный конфликт.
+      final orders = [
+        [...opsA, ...opsB],
+        [...opsB, ...opsA],
+        [...opsB.reversed, ...opsA.reversed],
+      ];
+      for (var i = 0; i < orders.length; i++) {
+        final node = await run.node('c$i');
+        await node.engine.applyAll(orders[i]);
+        check(await node.conflicts(), onA, 'конфликты на c$i');
+        await node.engine.rebuild();
+        check(await node.conflicts(), onA, 'конфликты на c$i после rebuild');
+      }
+    }),
+
+  _scenario('детекция: отмена своего удаления против чужого удаления — '
+      'конфликт edit по deleted, одинаково на обоих и после rebuild', (
     run,
   ) async {
     final (a, b) = await run.ab();
     await _sharedTask(a, b);
-    await a.engine.mutate('task', 't1', {'due': 'a', Op.deletedField: true});
-    await b.engine.mutate('task', 't1', {'due': 'b', Op.deletedField: true});
-    final c = await run.node('c');
-    final d = await run.node('d');
-    await a.pushAllTo(c);
-    await b.pushAllTo(c);
-    await b.pushAllTo(d);
-    await a.pushAllTo(d);
-    final onC = await c.conflicts();
-    checkThat(
-      onC.any((x) => x.kind == ConflictKind.delete),
-      'есть конфликт вида delete',
-    );
-    check(await d.conflicts(), onC, 'c и d');
-    await d.engine.rebuild();
-    check(await d.conflicts(), onC, 'после rebuild');
+    await a.engine.delete('task', 't1');
+    await b.engine.delete('task', 't1');
+    b.advance(100);
+    await b.engine.mutate('task', 't1', {Op.deletedField: false});
+    await syncBoth(a, b);
+
+    final onA = await a.conflicts();
+    check(onA.length, 1, 'конфликтов на a');
+    check(onA.single.kind, ConflictKind.edit, 'вид');
+    check(onA.single.field, Op.deletedField, 'поле');
+    check(await b.conflicts(), onA, 'конфликты на b');
+    await b.engine.rebuild();
+    check(await b.conflicts(), onA, 'конфликты на b после rebuild');
+  }),
+
+  _scenario('детекция: молчащий тип сущности — правка и удаление без '
+      'конфликтов, LWW работает; другие типы спорят как раньше', (run) async {
+    final (a, b) = await run.ab(silentEntityTypes: {'record'});
+    await a.engine.mutate('record', 'r1', {'value': 'v0'});
+    await _sharedTask(a, b);
+    await a.engine.mutate('record', 'r1', {'value': 'от a'});
+    await a.engine.mutate('task', 't1', {'title': 'от a'});
+    await b.engine.mutate('record', 'r1', {'value': 'от b'});
+    await b.engine.delete('record', 'r1');
+    await b.engine.mutate('task', 't1', {'title': 'от b'});
+    await syncBoth(a, b);
+
+    for (final node in [a, b]) {
+      final at = 'на ${node.engine.nodeId}';
+      final list = await node.conflicts();
+      check(list.map((c) => c.entityType).toList(), ['task'], 'конфликты $at');
+      check(await node.probe.entity('record', 'r1'), {
+        'value': 'от b',
+        Op.deletedField: true,
+      }, 'запись $at');
+      await node.engine.rebuild();
+      check(await node.conflicts(), list, 'конфликты $at после rebuild');
+    }
   }),
 
   _scenario('детекция: правка vs удаление — конфликт вида delete с одним id '

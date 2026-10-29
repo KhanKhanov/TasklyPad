@@ -118,12 +118,13 @@ String conflictId(
 /// Какую из двух записей одного конфликта (одинаковый [Conflict.id]) хранить:
 /// `true`, если пара id ops `a` (старшая, младшая) раньше пары `b`.
 ///
-/// Один id могут дать разные пары: оба узла одним действием записали поле и
-/// удаление, и «удаление на A против поля на B» и «удаление на B против поля
-/// на A» имеют одинаковые сущность, вид, поле и два HLC ([conflictId]). Без
-/// общего правила строка конфликта зависела бы от порядка доставки и
-/// `rebuild`. Id конфликта не меняется: по нему синхронизируется выбор
-/// пользователя.
+/// Один id дали бы разные пары, если оба узла одним действием записали поле и
+/// удаление: «удаление на A против поля на B» и «удаление на B против поля
+/// на A» имеют одинаковые сущность, вид, поле и два HLC ([conflictId]).
+/// [findConflicts] такие пары конфликтом не считает («удалили оба»), но
+/// хранилище всё равно не должно зависеть от порядка записи: без общего
+/// правила строка конфликта зависела бы от порядка доставки и `rebuild`. Id
+/// конфликта не меняется: по нему синхронизируется выбор пользователя.
 bool conflictPairPrecedes((String, String) a, (String, String) b) {
   final older = a.$1.compareTo(b.$1);
   return older != 0 ? older < 0 : a.$2.compareTo(b.$2) < 0;
@@ -141,8 +142,15 @@ bool conflictPairPrecedes((String, String) a, (String, String) b) {
 /// другого: `base` автора (что он знал о сущности от других узлов) меньше
 /// HLC чужой op. Параллельная пара — конфликт, если:
 /// - одно поле и разные значения → [ConflictKind.edit];
-/// - одна из ops — tombstone, другая правит обычное поле → [ConflictKind.delete].
-/// Поля из [silentFields] (например порядок) конфликтов не дают.
+/// - одна из ops — tombstone, другая правит обычное поле → [ConflictKind.delete],
+///   кроме правки, автор которой тем же действием (тот же узел и HLC) сам
+///   удалил сущность: удалили оба, спорить не о чем.
+/// Поля из [silentFields] (например порядок) и сущности типов из
+/// [silentEntityTypes] конфликтов не дают — их сводит LWW.
+///
+/// Исключение для удаления смотрит на соседние ops действия, поэтому
+/// [entityOps] должен содержать действие [op] целиком: движок ищет конфликты
+/// после записи всего пакета, а транспорт доставляет действие одним пакетом.
 ///
 /// Для двух устройств правило точное: ops каждого узла доставляются по
 /// порядку, поэтому «видел op узла с HLC ≥ X» означает «видел X». Для трёх и
@@ -152,8 +160,12 @@ List<Conflict> findConflicts(
   Op op,
   Iterable<Op> entityOps, {
   Set<String> silentFields = const {},
+  Set<String> silentEntityTypes = const {},
 }) {
-  if (op.entityType == conflictEntityType) return const [];
+  if (op.entityType == conflictEntityType ||
+      silentEntityTypes.contains(op.entityType)) {
+    return const [];
+  }
   final result = <Conflict>[];
   for (final other in entityOps) {
     if (other.opId == op.opId || other.nodeId == op.nodeId) continue;
@@ -170,11 +182,22 @@ List<Conflict> findConflicts(
       if (edit.field == Op.deletedField || silentFields.contains(edit.field)) {
         continue;
       }
+      if (_deletedInSameAction(edit, entityOps)) continue;
       result.add(_conflict(ConflictKind.delete, edit.field, op, other));
     }
   }
   return result;
 }
+
+/// Автор [edit] тем же действием (общий узел и HLC) записал и tombstone.
+bool _deletedInSameAction(Op edit, Iterable<Op> entityOps) => entityOps.any(
+  (o) =>
+      o.isTombstone &&
+      o.nodeId == edit.nodeId &&
+      o.hlc == edit.hlc &&
+      o.entityType == edit.entityType &&
+      o.entityId == edit.entityId,
+);
 
 /// Значение поля [field] сущности, каким его видел автор [author], когда
 /// писал свою правку: победитель LWW среди ops этого поля, которые автор знал
