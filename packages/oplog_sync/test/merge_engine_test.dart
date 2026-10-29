@@ -16,6 +16,41 @@ void main() {
     );
   });
 
+  test('applyAll — действие на границе дрейфа часов, время идёт между ops → '
+      'отклонено целиком', () async {
+    // Часы получателя тикают на каждом вызове: при проверке по своему
+    // времени для каждой op первая op действия отклонялась бы, вторая —
+    // принималась, и действие разорвалось бы между проходами.
+    const start = 1761110400000;
+    var now = start;
+    final engine = MergeEngine(
+      nodeId: 'b',
+      store: MemoryOpStore(),
+      nowMs: () => now++,
+      newOpId: () => 'x',
+    );
+    final hlc = Hlc(
+      wallMs: start + Hlc.maxDrift.inMilliseconds + 1,
+      counter: 0,
+      nodeId: 'a',
+    );
+    Op op(String id, String field, Object? value) => Op(
+      opId: id,
+      nodeId: 'a',
+      hlc: hlc,
+      entityType: 'task',
+      entityId: 't1',
+      field: field,
+      value: value,
+    );
+    final report = await engine.applyAll([
+      op('a-1', 'label', 'x'),
+      op('a-2', Op.deletedField, true),
+    ]);
+    expect(report.rejected, 2);
+    expect(await engine.store.allOps(), isEmpty);
+  });
+
   test('Op — JSON туда и обратно', () {
     const hlc = Hlc(wallMs: 1761110400000, counter: 1, nodeId: 'a');
     const op = Op(

@@ -114,6 +114,7 @@ final class MergeEngine {
     required this.nowMs,
     required this.newOpId,
     this.silentFields = const {},
+    this.silentEntityTypes = const {},
     Hlc? initialClock,
   }) : _clock = initialClock ?? Hlc.zero(nodeId) {
     if (nodeId.isEmpty || nodeId.contains(':')) {
@@ -135,6 +136,11 @@ final class MergeEngine {
   /// Поля, параллельная правка которых не считается конфликтом (например,
   /// ключ порядка: о переставленной задаче пользователя не спрашиваем).
   final Set<String> silentFields;
+
+  /// Типы сущностей, параллельная правка и удаление которых не считаются
+  /// конфликтом: спор о них и так виден в другом поле (например, история
+  /// выполнений — по сроку задачи).
+  final Set<String> silentEntityTypes;
 
   Hlc _clock;
 
@@ -193,9 +199,7 @@ final class MergeEngine {
         await store.writeField(op);
       }
       // Проверка та же, что у получателя, — иначе узлы могли бы разойтись.
-      for (final op in ops) {
-        await _detectConflicts(op, null);
-      }
+      await _detectAll(ops, null);
       return ops;
     });
   }
@@ -206,10 +210,23 @@ final class MergeEngine {
 
   /// Применить одну чужую op. Найденные конфликты — в [OpStore.conflicts];
   /// транспортам, которым нужен список новых конфликтов, — [applyAll].
-  Future<ApplyResult> apply(Op op) =>
-      store.transaction(() => _applyInTx(op, ApplyReport()));
+  ///
+  /// Op одного действия (общий HLC) применяйте пакетом через [applyAll]:
+  /// поштучно правило «удалили оба» ([findConflicts]) увидит действие не
+  /// целиком.
+  Future<ApplyResult> apply(Op op) => store.transaction(() async {
+    final appended = <Op>[];
+    final result = await _applyInTx(op, appended, nowMs());
+    await _detectAll(appended, null);
+    return result;
+  });
 
   /// Применить пакет ops одной транзакцией.
+  ///
+  /// Конфликты ищутся после записи всего пакета: ops одного действия
+  /// приходят одним пакетом, но внутри него — в любом порядке. Время для
+  /// проверки дрейфа часов берётся одно на пакет: ops одного действия
+  /// принимаются или отклоняются вместе, и действие не разрывается.
   ///
   /// [ApplyReport.conflicts] — новые конфликты, ещё не разрешённые к концу
   /// пакета: если тот же пакет принёс и выбор пользователя с другого
@@ -217,9 +234,12 @@ final class MergeEngine {
   Future<ApplyReport> applyAll(Iterable<Op> ops) {
     return store.transaction(() async {
       final report = ApplyReport();
+      final appended = <Op>[];
+      final now = nowMs();
       for (final op in ops) {
-        report.add(await _applyInTx(op, report));
+        report.add(await _applyInTx(op, appended, now));
       }
+      await _detectAll(appended, report);
       if (report.conflicts.isNotEmpty) {
         final resolved = {
           for (final c in await store.conflicts())
@@ -268,6 +288,14 @@ final class MergeEngine {
   /// Переиздать от этого узла ops прежнего id [previousNodeId] с HLC после
   /// [after] (`null` — все), которые всё ещё побеждают в своих полях.
   ///
+  /// Tombstone их действия, переписанный чужим удалением, автор которого
+  /// исходный tombstone не видел, переиздаётся тоже: без него копия поля
+  /// спорила бы с этим удалением, хотя её действие само удаляло сущность
+  /// (правило «удалили оба» в [findConflicts]). Tombstone, переписанный
+  /// восстановлением или удалением того, кто его видел, не переиздаётся:
+  /// копию (другой узел в HLC) тот автор «не видел», и она спорила бы с его
+  /// правками.
+  ///
   /// Нужно, когда копия базы получила новый id: ops прежнего id выгружает
   /// только прежний узел, а его устройства может уже не быть.
   ///
@@ -283,14 +311,31 @@ final class MergeEngine {
       throw ArgumentError.value(previousNodeId, 'previousNodeId', 'свой узел');
     }
     return store.transaction(() async {
-      final adopted = <Op>[];
-      for (final op in await store.opsOfNodeAfter(previousNodeId, after)) {
+      final pending = await store.opsOfNodeAfter(previousNodeId, after);
+      final winners = <Op>[];
+      for (final op in pending) {
         final current = await store.fieldHlc(
           op.entityType,
           op.entityId,
           op.field,
         );
-        if (current != op.hlc) continue; // поле уже переписано позже
+        if (current == op.hlc) winners.add(op); // иначе переписано позже
+      }
+      String action(Op op) =>
+          '${op.entityType}\u0000${op.entityId}\u0000${op.hlc}';
+      final copiedActions = {for (final op in winners) action(op)};
+      final copiedOps = {for (final op in winners) op.opId};
+      final toCopy = [...winners];
+      for (final op in pending) {
+        if (op.isTombstone &&
+            !copiedOps.contains(op.opId) &&
+            copiedActions.contains(action(op)) &&
+            await _deletedByUnseen(op)) {
+          toCopy.add(op);
+        }
+      }
+      final adopted = <Op>[];
+      for (final op in toCopy) {
         Hlc? base;
         for (final other in await store.opsForEntity(
           op.entityType,
@@ -316,35 +361,80 @@ final class MergeEngine {
           base: base,
         );
         await store.appendOp(copy);
-        // Метки различаются только узлом: победитель — как при rebuild.
-        if (copy.hlc > op.hlc) await store.writeField(copy);
-        await _detectConflicts(copy, null);
+        // Победитель — как при rebuild: у поля-победителя метки различаются
+        // только узлом; проигравший tombstone в проекцию не попадает, а при
+        // равных времени и счётчике заменяет удаление тем же значением.
+        final current = await store.fieldHlc(
+          op.entityType,
+          op.entityId,
+          op.field,
+        );
+        if (current == null || copy.hlc > current) {
+          await store.writeField(copy);
+        }
         if (copy.hlc > _clock) _clock = copy.hlc;
         adopted.add(copy);
       }
+      // После всех копий: копии одного действия должны видеть друг друга.
+      await _detectAll(adopted, null);
       return adopted;
     });
   }
 
-  Future<ApplyResult> _applyInTx(Op op, ApplyReport report) async {
+  /// Победитель поля `deleted` сущности [tombstone] — tombstone другого узла,
+  /// и его автор [tombstone] не видел (как в [findConflicts]). Более позднее
+  /// удаление того же узла переиздаётся само, как победитель.
+  Future<bool> _deletedByUnseen(Op tombstone) async {
+    final current = await store.fieldHlc(
+      tombstone.entityType,
+      tombstone.entityId,
+      Op.deletedField,
+    );
+    final winner = (await store.opsForEntity(
+      tombstone.entityType,
+      tombstone.entityId,
+    )).where((o) => o.field == Op.deletedField && o.hlc == current).firstOrNull;
+    if (winner == null ||
+        !winner.isTombstone ||
+        winner.nodeId == tombstone.nodeId) {
+      return false;
+    }
+    final base = winner.base;
+    return base == null || base < tombstone.hlc;
+  }
+
+  /// Записать op в журнал и проекцию; дописанная в журнал op — в [appended]
+  /// (конфликты по ней ищет вызывающий, когда записан весь пакет).
+  Future<ApplyResult> _applyInTx(Op op, List<Op> appended, int now) async {
     if (await store.containsOp(op.opId)) return ApplyResult.duplicate;
     try {
-      _clock = _clock.receive(op.hlc, nowMs());
+      _clock = _clock.receive(op.hlc, now);
     } on HlcDriftException {
       return ApplyResult.rejected;
     }
     await store.appendOp(op);
-    await _detectConflicts(op, report);
+    appended.add(op);
     final current = await store.fieldHlc(op.entityType, op.entityId, op.field);
     if (current != null && !(op.hlc > current)) return ApplyResult.stale;
     await store.writeField(op);
     return ApplyResult.applied;
   }
 
+  Future<void> _detectAll(List<Op> ops, ApplyReport? report) async {
+    for (final op in ops) {
+      await _detectConflicts(op, report);
+    }
+  }
+
   Future<void> _detectConflicts(Op op, ApplyReport? report) async {
     if (op.entityType == conflictEntityType) return;
     final entityOps = await store.opsForEntity(op.entityType, op.entityId);
-    for (final c in findConflicts(op, entityOps, silentFields: silentFields)) {
+    for (final c in findConflicts(
+      op,
+      entityOps,
+      silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
+    )) {
       if (await store.putConflict(c)) report?.conflicts.add(c);
     }
   }
@@ -387,6 +477,7 @@ final class MergeEngine {
             op,
             group,
             silentFields: silentFields,
+            silentEntityTypes: silentEntityTypes,
           )) {
             await store.putConflict(c);
           }
