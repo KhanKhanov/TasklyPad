@@ -98,7 +98,7 @@ void main() {
         'дают одну базу', () async {
       final random = Random(seed);
       final nodes = [await _node('a'), await _node('b'), await _node('c')];
-      final ids = ['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0'];
+      final ids = ['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0', 'g0'];
 
       T pick<T>(List<T> list) => list[random.nextInt(list.length)];
 
@@ -134,6 +134,7 @@ void main() {
                 },
               },
               {TaskFields.isCollapsed: random.nextBool()},
+              {TaskFields.isCompleted: random.nextBool()},
               // Поле, которого эта версия не знает (от более новой).
               {
                 'responsible_uid': pick(['u1', 'u2']),
@@ -147,8 +148,18 @@ void main() {
             'z',
           ]),
         },
-        'l' => {
-          pick([LabelFields.name, LabelFields.color]): pick(['дом', 'red']),
+        'l' => pick<Map<String, Object?>>([
+          {
+            pick([LabelFields.name, LabelFields.color]): pick(['дом', 'red']),
+          },
+          {Op.deletedField: random.nextBool()},
+        ]),
+        // Настройки — без таблицы, только `field_versions`.
+        'g' => {
+          pick([SettingsFields.themeId, SettingsFields.themeAppearance]): pick([
+            'taskly',
+            'dark',
+          ]),
         },
         'x' => pick<Map<String, Object?>>([
           {TaskLabelFields.taskId: 't0', TaskLabelFields.labelId: 'l0'},
@@ -170,6 +181,7 @@ void main() {
             'p' => EntityTypes.project,
             'l' => EntityTypes.label,
             'x' => EntityTypes.taskLabel,
+            'g' => EntityTypes.settings,
             _ => EntityTypes.section,
           };
           await node.engine.mutate(type, id, randomFields(id));

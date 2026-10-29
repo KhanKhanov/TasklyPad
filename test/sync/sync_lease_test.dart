@@ -82,6 +82,22 @@ void main() {
       },
     );
 
+    test('аренда прежнего запуска (окно закрыли посреди прохода) не мешает '
+        'первому проходу после перезапуска', () async {
+      final folder = tempDir('lease_');
+      final dev = await TestDevice.start();
+      final stale = SyncLease(
+        dev.db,
+        owner: 'прежний запуск',
+        clock: dev.clock,
+      );
+      expect(await stale.tryAcquire(), isTrue);
+
+      final again = await dev.restart();
+      final report = await again.folder(IoSyncFs(folder.path)).syncOnce();
+      expect(report, isNotNull);
+    });
+
     test('аренда отпускается и после ошибки транспорта', () async {
       final folder = tempDir('lease_');
       final fs = IoSyncFs(folder.path);

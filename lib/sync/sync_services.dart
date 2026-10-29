@@ -125,6 +125,12 @@ Future<SyncServices> startSync(
     await marker.write(identity.nodeId);
   }
 
+  // На базу — один SyncServices (на Windows — один процесс на профиль), так
+  // что аренда, найденная при запуске, — от прежнего запуска, который закрыли
+  // или уронили посреди прохода. Без снятия она 10 минут блокировала бы
+  // синхронизацию и смену папки. Android с фоновой задачей — О-42.
+  await meta.remove(LocalMetaDao.syncLeaseKey);
+
   final inbox = await store.fieldValue(
     EntityTypes.project,
     inboxProjectId,

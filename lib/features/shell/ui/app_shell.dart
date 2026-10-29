@@ -10,8 +10,9 @@ import 'shell_keys.dart';
 import 'sidebar.dart';
 
 /// Ширина, начиная с которой сайдбар стоит рядом с контентом, а не
-/// выезжает поверх (телефон, узкое окно).
-const double wideLayoutWidth = 720;
+/// выезжает поверх (телефон, узкое окно): макет desktop — от 900 px
+/// (.claude/rules/platform-windows.md).
+const double wideLayoutWidth = 900;
 const double _sidebarWidth = 280;
 
 /// Оболочка всех экранов: сайдбар слева и контент справа; на узком экране

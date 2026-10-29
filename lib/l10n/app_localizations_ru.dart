@@ -143,10 +143,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get moveSectionTitle => 'Перенести раздел';
 
   @override
-  String get projectsActive => 'Активные';
-
-  @override
-  String get projectsArchived => 'В архиве';
+  String get onlyArchivedProjects => 'Только архивные проекты';
 
   @override
   String get noArchivedProjects => 'В архиве нет проектов';

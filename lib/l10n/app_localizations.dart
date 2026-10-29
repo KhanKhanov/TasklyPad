@@ -332,17 +332,11 @@ abstract class AppLocalizations {
   /// **'Перенести раздел'**
   String get moveSectionTitle;
 
-  /// Вкладка экрана проектов
+  /// Переключатель экрана «Мои проекты» (help «Archive or unarchive a project»)
   ///
   /// In ru, this message translates to:
-  /// **'Активные'**
-  String get projectsActive;
-
-  /// Вкладка экрана проектов
-  ///
-  /// In ru, this message translates to:
-  /// **'В архиве'**
-  String get projectsArchived;
+  /// **'Только архивные проекты'**
+  String get onlyArchivedProjects;
 
   /// Пустой архив
   ///

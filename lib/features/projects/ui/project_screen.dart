@@ -137,7 +137,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                           sectionId: section.id,
                           addAt: _addAt(section.id),
                           onAddAt: (at) => _openAdd(section.id, at),
-                          canAdd: canAdd,
+                          canAdd: canAdd && !section.isArchived,
                         ),
                     ],
                     if (canAdd)

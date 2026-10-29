@@ -143,10 +143,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get moveSectionTitle => 'Move section';
 
   @override
-  String get projectsActive => 'Active';
-
-  @override
-  String get projectsArchived => 'Archived';
+  String get onlyArchivedProjects => 'Archived projects only';
 
   @override
   String get noArchivedProjects => 'No archived projects';
@@ -274,7 +271,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get viewOptions => 'View';
+  String get viewOptions => 'Display';
 
   @override
   String get completedTasks => 'Completed tasks';

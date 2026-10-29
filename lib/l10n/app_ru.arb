@@ -199,13 +199,9 @@
   "@moveSectionTitle": {
     "description": "Заголовок выбора проекта"
   },
-  "projectsActive": "Активные",
-  "@projectsActive": {
-    "description": "Вкладка экрана проектов"
-  },
-  "projectsArchived": "В архиве",
-  "@projectsArchived": {
-    "description": "Вкладка экрана проектов"
+  "onlyArchivedProjects": "Только архивные проекты",
+  "@onlyArchivedProjects": {
+    "description": "Переключатель экрана «Мои проекты» (help «Archive or unarchive a project»)"
   },
   "noArchivedProjects": "В архиве нет проектов",
   "@noArchivedProjects": {

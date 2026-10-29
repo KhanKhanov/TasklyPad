@@ -439,6 +439,28 @@ final List<ContractScenario<ProbeFactory>> _storeScenarios = [
     check(await store.conflicts(), [_conflict('c1')], 'конфликты');
   }),
 
+  _scenario('хранилище: putConflict с тем же id — остаётся меньшая пара '
+      'ops при любом порядке, запись не новая', (run) async {
+    Conflict pair(String older, String newer) => Conflict(
+      id: 'c1',
+      kind: ConflictKind.delete,
+      entityType: 'task',
+      entityId: 't1',
+      field: 'due',
+      olderOpId: older,
+      newerOpId: newer,
+    );
+    for (final order in [
+      [pair('b-3', 'c-4'), pair('b-2', 'c-5')],
+      [pair('b-2', 'c-5'), pair('b-3', 'c-4')],
+    ]) {
+      final store = (await run.probe()).store;
+      checkThat(await store.putConflict(order.first), 'первая — новая');
+      checkThat(!await store.putConflict(order.last), 'вторая — не новая');
+      check(await store.conflicts(), [pair('b-2', 'c-5')], 'меньшая пара');
+    }
+  }),
+
   _scenario('хранилище: resolved берётся из op, даже записанной до '
       'putConflict', (run) async {
     final store = (await run.probe()).store;
@@ -1007,6 +1029,30 @@ final List<ContractScenario<ProbeFactory>> _detectionScenarios = [
     await syncBoth(a, b);
     check(await a.conflicts(), <Conflict>[], 'конфликты на a');
     check(await a.taskField('t1', 'order_key'), 'b0', 'order_key на a');
+  }),
+
+  _scenario('детекция: оба узла одной правкой записали поле и удаление — '
+      'таблица конфликтов одна при любом порядке доставки и после rebuild', (
+    run,
+  ) async {
+    final (a, b) = await run.ab();
+    await _sharedTask(a, b);
+    await a.engine.mutate('task', 't1', {'due': 'a', Op.deletedField: true});
+    await b.engine.mutate('task', 't1', {'due': 'b', Op.deletedField: true});
+    final c = await run.node('c');
+    final d = await run.node('d');
+    await a.pushAllTo(c);
+    await b.pushAllTo(c);
+    await b.pushAllTo(d);
+    await a.pushAllTo(d);
+    final onC = await c.conflicts();
+    checkThat(
+      onC.any((x) => x.kind == ConflictKind.delete),
+      'есть конфликт вида delete',
+    );
+    check(await d.conflicts(), onC, 'c и d');
+    await d.engine.rebuild();
+    check(await d.conflicts(), onC, 'после rebuild');
   }),
 
   _scenario('детекция: правка vs удаление — конфликт вида delete с одним id '

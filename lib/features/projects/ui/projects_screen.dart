@@ -8,8 +8,9 @@ import 'project_dialog.dart';
 import 'project_screen.dart';
 import 'project_tile.dart';
 
-/// Экран «Мои проекты», как в Todoist: активные проекты деревом и архив
-/// (оттуда — «Вернуть из архива» и «Удалить»).
+/// Экран «Мои проекты», как в Todoist: активные проекты деревом, а при
+/// переключателе «Только архивные проекты» — архив (оттуда — «Вернуть из
+/// архива» и «Удалить»; help «Archive or unarchive a project»).
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});
 
@@ -54,13 +55,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            SegmentedButton<bool>(
-              segments: [
-                ButtonSegment(value: false, label: Text(l10n.projectsActive)),
-                ButtonSegment(value: true, label: Text(l10n.projectsArchived)),
-              ],
-              selected: {_archived},
-              onSelectionChanged: (v) => setState(() => _archived = v.single),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.onlyArchivedProjects),
+              value: _archived,
+              onChanged: (v) => setState(() => _archived = v),
             ),
             const SizedBox(height: 12),
             if (_archived) ...[

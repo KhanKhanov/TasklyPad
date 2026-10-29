@@ -56,7 +56,7 @@ void main() {
   });
 
   testWidgets('архивировать проект с подтверждением → уходит из сайдбара, '
-      'в «Мои проекты → В архиве» возвращается', (tester) async {
+      'в «Мои проекты → Только архивные проекты» возвращается', (tester) async {
     await withApp(tester, (device) async {
       await tester.runAsync(
         () => AppCommands(device).projects.add(name: 'Work'),
@@ -76,7 +76,7 @@ void main() {
 
       await tester.tap(find.text('My Projects'));
       await settle(tester);
-      await tester.tap(find.text('Archived'));
+      await tester.tap(find.text('Archived projects only'));
       await tester.pumpAndSettle();
       expect(find.text('Work'), findsOneWidget);
       await tester.tap(screenMenu());
@@ -145,6 +145,48 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await settle(tester);
       expect(find.text('Sprint'), findsNothing);
+    });
+  });
+
+  testWidgets('архивный раздел виден только при «Completed tasks», серым; '
+      '«Unarchive» возвращает его', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final work = (await tester.runAsync(
+        () => app.projects.add(name: 'Work'),
+      ))!;
+      await settle(tester);
+      final week = (await tester.runAsync(
+        () => app.sections.add(work, name: 'Week'),
+      ))!;
+      await settle(tester);
+      await tester.runAsync(() => app.sections.archive(week));
+      await settle(tester);
+      await tester.tap(find.text('Work'));
+      await settle(tester);
+      expect(find.text('Week'), findsNothing);
+
+      await tester.tap(find.byTooltip('Display'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.widgetWithText(CheckedPopupMenuItem<void>, 'Completed tasks'),
+      );
+      await settle(tester);
+      expect(find.text('Week'), findsOneWidget);
+      // У архивного раздела нет «Добавить задачу»: кнопка одна — у задач
+      // без раздела.
+      expect(find.text('Add task'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('More actions').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Archive'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      expect(find.text('Delete'), findsOneWidget);
+      await openMenuItem(tester, 'Unarchive');
+      expect(
+        (await tester.runAsync(app.read))!.section(week)!.isArchived,
+        isFalse,
+      );
     });
   });
 

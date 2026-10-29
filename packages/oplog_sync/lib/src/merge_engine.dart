@@ -32,10 +32,13 @@ abstract interface class OpStore {
   /// отсортированные по HLC. Транспорт выгружает так свои новые ops.
   Future<List<Op>> opsOfNodeAfter(String nodeId, Hlc? after);
 
-  /// Сохранить производную запись конфликта, если её ещё нет.
+  /// Сохранить производную запись конфликта, если её ещё нет. Запись с тем
+  /// же id заменяется, только если пара ops новой раньше
+  /// ([conflictPairPrecedes]): так строка не зависит от порядка доставки.
   ///
   /// [Conflict.resolved] здесь игнорируется: он приходит только op-ом на
-  /// сущность [conflictEntityType]. Возвращает `true`, если запись новая.
+  /// сущность [conflictEntityType]. Возвращает `true`, если запись новая
+  /// (замена пары — не новая запись).
   Future<bool> putConflict(Conflict conflict);
 
   /// Все известные конфликты; `resolved` — из проекции op-ов.
@@ -495,7 +498,16 @@ final class MemoryOpStore implements OpStore {
 
   @override
   Future<bool> putConflict(Conflict conflict) async {
-    if (_conflicts.containsKey(conflict.id)) return false;
+    final existing = _conflicts[conflict.id];
+    if (existing != null) {
+      if (conflictPairPrecedes(
+        (conflict.olderOpId, conflict.newerOpId),
+        (existing.olderOpId, existing.newerOpId),
+      )) {
+        _conflicts[conflict.id] = conflict.withResolved(false);
+      }
+      return false;
+    }
     _conflicts[conflict.id] = conflict.withResolved(false);
     return true;
   }

@@ -180,7 +180,22 @@ final class DriftOpStore implements OpStore {
     final existing = await (_db.select(
       _db.conflicts,
     )..where((t) => t.id.equals(conflict.id))).getSingleOrNull();
-    if (existing != null) return false;
+    if (existing != null) {
+      if (conflictPairPrecedes(
+        (conflict.olderOpId, conflict.newerOpId),
+        (existing.olderOpId, existing.newerOpId),
+      )) {
+        await (_db.update(
+          _db.conflicts,
+        )..where((t) => t.id.equals(conflict.id))).write(
+          ConflictsCompanion(
+            olderOpId: Value(conflict.olderOpId),
+            newerOpId: Value(conflict.newerOpId),
+          ),
+        );
+      }
+      return false;
+    }
     await _db
         .into(_db.conflicts)
         .insert(

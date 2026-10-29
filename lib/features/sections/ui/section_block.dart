@@ -9,10 +9,12 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import 'section_editor.dart';
 
-enum _SectionAction { edit, move, duplicate, archive, delete }
+enum _SectionAction { edit, move, duplicate, archive, unarchive, delete }
 
 /// Раздел в списке проекта: стрелка свернуть, название, число задач и меню
 /// «⋯» — Редактировать, Перенести в…, Дублировать, Архивировать, Удалить.
+/// Архивный раздел (виден при «Выполненные задачи») — серым, в меню «Вернуть
+/// из архива» и «Удалить» (help «Introduction to sections»).
 /// Задачи раздела выводит список задач (коммит 2 M2.2).
 class SectionBlock extends ConsumerStatefulWidget {
   const SectionBlock({
@@ -77,14 +79,16 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
               children: [
                 Flexible(
                   child: GestureDetector(
-                    onTap: widget.readOnly
+                    onTap: widget.readOnly || s.isArchived
                         ? null
                         : () => setState(() => _editing = true),
                     child: Text(
                       s.name,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: palette.textPrimary,
+                        color: s.isArchived
+                            ? palette.textSecondary
+                            : palette.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -109,22 +113,29 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
               icon: const Icon(Icons.more_horiz),
               onSelected: (a) => _run(context, a),
               itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: _SectionAction.edit,
-                  child: Text(l10n.actionEdit),
-                ),
-                PopupMenuItem(
-                  value: _SectionAction.move,
-                  child: Text(l10n.actionMoveTo),
-                ),
-                PopupMenuItem(
-                  value: _SectionAction.duplicate,
-                  child: Text(l10n.actionDuplicate),
-                ),
-                PopupMenuItem(
-                  value: _SectionAction.archive,
-                  child: Text(l10n.actionArchive),
-                ),
+                if (s.isArchived)
+                  PopupMenuItem(
+                    value: _SectionAction.unarchive,
+                    child: Text(l10n.actionUnarchive),
+                  )
+                else ...[
+                  PopupMenuItem(
+                    value: _SectionAction.edit,
+                    child: Text(l10n.actionEdit),
+                  ),
+                  PopupMenuItem(
+                    value: _SectionAction.move,
+                    child: Text(l10n.actionMoveTo),
+                  ),
+                  PopupMenuItem(
+                    value: _SectionAction.duplicate,
+                    child: Text(l10n.actionDuplicate),
+                  ),
+                  PopupMenuItem(
+                    value: _SectionAction.archive,
+                    child: Text(l10n.actionArchive),
+                  ),
+                ],
                 PopupMenuItem(
                   value: _SectionAction.delete,
                   child: Text(l10n.actionDelete),
@@ -161,6 +172,8 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
         );
         if (!ok || !context.mounted) return;
         await runCommand(context, () => commands.archive(s.id));
+      case _SectionAction.unarchive:
+        await runCommand(context, () => commands.unarchive(s.id));
       case _SectionAction.delete:
         final ok = await confirmAction(
           context,
