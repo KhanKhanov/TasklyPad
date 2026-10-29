@@ -5,7 +5,7 @@ import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../projects/ui/project_screen.dart';
+import '../../common/ui/layout.dart';
 import '../../shell/ui/shell_keys.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_list.dart';

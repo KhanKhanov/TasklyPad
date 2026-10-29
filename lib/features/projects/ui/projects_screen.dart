@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import 'project_dialog.dart';
-import 'project_screen.dart';
 import 'project_tile.dart';
 
 /// Экран «Мои проекты», как в Todoist: активные проекты деревом, а при

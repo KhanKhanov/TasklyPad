@@ -19,7 +19,7 @@
 - Новая версия пакета — не раньше 7 дней после выхода (`cooldown` в `.github/dependabot.yml`): первые
   ошибки релиза обычно находят в эти дни. Исправления безопасности — без выдержки.
 - Flutter обновляется локально и в CI одним коммитом; после обновления — полный прогон проверок
-  и `flutter test integration_test -d windows`.
+  и integration-тесты на Windows (по одному файлу — docs/GLOSSARY «`flutter test integration_test/<файл> -d windows`»).
 - Новая зависимость, обновление мажорной версии или SDK — решение пользователя (Decision Gate, docs/GLOSSARY.md).
 
 ## Как часто проверять

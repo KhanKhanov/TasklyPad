@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/sync_runner.dart';
+import '../../../domain/sync_status.dart';
+import '../../common/ui/device_title.dart';
 import '../state/sync_controller.dart';
 import 'sync_section.dart';
 
@@ -61,14 +62,4 @@ class SyncDevices extends ConsumerWidget {
       ],
     );
   }
-}
-
-/// Название устройства в списках: имя компьютера, профиль, «это устройство».
-String deviceTitle(AppLocalizations l10n, SyncDevice device) {
-  final name =
-      device.name ??
-      (device.isFormerThisDevice ? l10n.deviceFormerThis : l10n.deviceUnnamed);
-  final profile = device.profile;
-  final title = profile == null ? name : l10n.deviceWithProfile(name, profile);
-  return device.isThisDevice ? l10n.deviceThis(title) : title;
 }

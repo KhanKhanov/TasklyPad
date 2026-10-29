@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/sync_providers.dart';
+import '../../../domain/sync_status.dart';
 import '../../../sync/sync_runner.dart';
 
 part 'sync_controller.g.dart';

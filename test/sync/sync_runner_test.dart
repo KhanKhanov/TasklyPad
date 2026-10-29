@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:oplog_sync/oplog_sync.dart';
 import 'package:path/path.dart' as p;
 import 'package:planner/data/local_meta_dao.dart';
+import 'package:planner/domain/sync_status.dart';
 import 'package:planner/sync/io_sync_fs.dart';
 import 'package:planner/sync/node_identity.dart';
 import 'package:planner/sync/sync_runner.dart';

@@ -1,10 +1,14 @@
 # sync
 
-Адаптеры к packages/oplog_sync: DriftOpStore, SyncFs для Windows (dart:io) и Android (SAF), Mutator — единственная точка записи данных.
+Адаптеры к packages/oplog_sync: DriftOpStore, SyncFs для Windows (dart:io) и Android (SAF), Mutator — единственная точка записи данных. Без Flutter: логика слияния — в пакете, здесь только хранение, файлы и сборка.
 
-- `sync_services.dart` — `startSync`: сборка ядра данных при запуске (reproject, узел, часы, движок, `Mutator`, «Входящие»).
-- `mutator.dart` — создать / изменить / удалить / восстановить / выбрать вариант конфликта; слияние поля-объекта `due`.
-- `drift_op_store.dart`, `drift_sync_state_store.dart` — журнал, проекции и курсоры в базе.
+- `sync_services.dart` — `startSync`: сборка ядра данных при запуске (reproject, узел, часы, аренда, движок, `Mutator`, «Входящие»).
+- `mutator.dart` — создать / изменить / удалить / восстановить / выбрать вариант конфликта; слияние полей-объектов (`due`); `Undo` — обратная операция для тоста «Отменить».
+- `drift_op_store.dart`, `drift_sync_state_store.dart` — журнал, проекции, конфликты и курсоры в базе.
 - `io_sync_fs.dart` — папка синхронизации на диске (Windows); SAF для Android — в M6.
 - `folder_sync.dart`, `sync_lease.dart` — один проход синхронизации под арендой (один синхронизатор на базу).
+- `sync_runner.dart` — то, что нужно экрану настроек: проход, выбор и смена папки, список устройств, пересборка. Типы, которые видит интерфейс, — в lib/domain/sync_status.dart.
+- `conflict_repository.dart` — открытые конфликты для экрана «Конфликты» и уведомлений.
 - `node_identity.dart` — id узла и метка вне базы: копия базы получает новый id.
+
+Интерфейс получает всё это через провайдеры lib/app; логика фич пишет через `Mutator`.

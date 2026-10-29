@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
+import '../../../domain/undo.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../../sync/mutator.dart';
 import '../../common/ui/ui_kit.dart';
 
 /// Длительность тоста «Отменить»: в help Todoist — «несколько секунд»,
@@ -27,7 +27,7 @@ void showUndoToast(
   ScaffoldMessengerState messenger,
   AppLocalizations l10n,
   String message,
-  Undo undo,
+  UndoAction undo,
 ) {
   var used = false;
   late final bool Function() undoByKey;
@@ -151,11 +151,11 @@ Future<void> deleteTask(BuildContext context, WidgetRef ref, Task task) async {
 Future<void> runWithUndo(
   BuildContext context,
   String message,
-  Future<Undo> Function() action,
+  Future<UndoAction> Function() action,
 ) async {
   final messenger = ScaffoldMessenger.of(context);
   final l10n = AppLocalizations.of(context);
-  Undo? undo;
+  UndoAction? undo;
   await runGuarded(messenger, l10n, () async => undo = await action());
   final done = undo;
   if (done != null && !done.isEmpty && messenger.mounted) {

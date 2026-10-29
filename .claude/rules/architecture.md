@@ -7,7 +7,7 @@ packages/
                FolderTransport, LanTransport, снапшоты, компакция. Свои unit-тесты (dart test).
 lib/
   app/         bootstrap, router (go_router), тема, DI
-  core/        ids.dart (UUIDv7), fractional_index.dart, clock.dart, result.dart
+  core/        ids.dart (UUIDv7), fractional_index.dart, clock.dart
   domain/      сущности (freezed, immutable), value objects, политики (recurrence, karma)
   data/        drift: таблицы, DAO, миграции, репозитории; проекции op-log
   sync/        адаптеры к oplog_sync: DriftOpStore, SyncFs для Windows (dart:io) и Android (SAF), Mutator

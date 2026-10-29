@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:planner/domain/conflicts.dart';
 import 'package:planner/domain/models.dart';
+import 'package:planner/domain/sync_status.dart';
 import 'package:planner/features/conflicts/ui/conflict_values.dart';
 import 'package:planner/l10n/app_localizations.dart';
-import 'package:planner/sync/sync_runner.dart';
 
 // Тексты карточек «Конфликты» по-русски: каждое поле каждого вида значения.
 void main() {
