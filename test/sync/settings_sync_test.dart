@@ -219,6 +219,44 @@ void main() {
       expect(await repo(pc).load(), isEmpty);
     });
 
+    test('конфликт общей темы не показывается на устройстве, где '
+        '«Синхронизировать тему» выключена', () async {
+      await onPc.theme.save(light, syncTheme: true);
+      await syncBoth();
+      await onPc.theme.save(dark, syncTheme: true);
+      await onPhone.theme.save(
+        const ThemeChoice(
+          themeId: 'taskly',
+          appearance: ThemeAppearance.system,
+        ),
+        syncTheme: true,
+      );
+      await syncBoth();
+      ConflictRepository repo(TestDevice dev) => ConflictRepository(
+        db: dev.db,
+        store: dev.services.store,
+        meta: dev.services.meta,
+      );
+      expect(await repo(phone).load(), hasLength(1));
+      expect(await repo(phone).takeUnnotified(), hasLength(1));
+      final cards = repo(phone).watch();
+      final seen = <int>[];
+      final sub = cards.listen((c) => seen.add(c.length));
+
+      await onPhone.theme.save(await effective(onPhone), syncTheme: false);
+      expect(await repo(phone).load(), isEmpty);
+      expect(await repo(phone).takeUnnotified(), isEmpty);
+      expect(await repo(pc).load(), hasLength(1));
+      await pumpEventQueue();
+      expect(seen.last, 0, reason: 'watch видит выключение');
+
+      // Включили снова — тот же конфликт виден, но уведомление не повторяется.
+      await onPhone.theme.save(await effective(onPhone), syncTheme: true);
+      expect(await repo(phone).load(), hasLength(1));
+      expect(await repo(phone).takeUnnotified(), isEmpty);
+      await sub.cancel();
+    });
+
     test('у телефона синхронизация выключена: правки ПК его не меняют, его '
         'правки не уходят; включение делает его тему общей', () async {
       await onPc.theme.save(light, syncTheme: true);

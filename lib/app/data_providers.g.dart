@@ -635,4 +635,4 @@ final class ThemeCommandsProvider
   }
 }
 
-String _$themeCommandsHash() => r'900e632d6e6ff43e4d8ab70328f80b28f3a43476';
+String _$themeCommandsHash() => r'1b428ce9f30113a62cb14149ddd5aa19e09b46ed';

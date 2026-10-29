@@ -71,18 +71,21 @@ final class DriftProbe implements OpStoreProbe {
 /// Фабрика хранилищ на базе в памяти.
 Future<OpStoreProbe> driftProbeFactory() async => DriftProbe(memoryDatabase());
 
-/// Таблицы сущностей: имя → строки, упорядоченные по id.
+/// Таблицы сущностей: имя → строки, упорядоченные по id. Список — из реестра
+/// проекторов, а не константой: новая таблица проверяется сама.
 Future<Map<String, Object?>> dumpEntityTables(AppDatabase db) =>
-    _dump(db, const ['tasks', 'projects']);
+    _dump(db, _projectionTables(db));
 
 /// Все таблицы, которые пересобирает `rebuild`, и журнал.
-Future<Map<String, Object?>> dumpSyncedState(AppDatabase db) => _dump(
-  db,
-  const ['ops', 'field_versions', 'conflicts', 'tasks', 'projects'],
-);
+Future<Map<String, Object?>> dumpSyncedState(AppDatabase db) =>
+    _dump(db, ['ops', 'field_versions', 'conflicts', ..._projectionTables(db)]);
+
+List<String> _projectionTables(AppDatabase db) =>
+    [for (final p in DriftOpStore(db).registry.all) p.table.actualTableName]
+      ..sort();
 
 Future<Map<String, Object?>> _dump(AppDatabase db, List<String> tables) async {
-  // Имена таблиц — константы теста, не данные.
+  // Имена таблиц — из схемы базы, не данные.
   return {
     for (final table in tables)
       table: [

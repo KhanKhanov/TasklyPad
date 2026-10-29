@@ -17,26 +17,102 @@ const Duration undoToastDuration = Duration(seconds: 5);
 /// Тост с кнопкой «Отменить», как в Todoist: слева внизу, несколько секунд.
 /// Отмена работает и когда строки уже нет (выполненная задача скрылась),
 /// поэтому берёт [messenger], а не `context`.
+///
+/// Пока тост виден, `Ctrl+Z` делает то же, что кнопка (help «Use keyboard
+/// shortcuts»: «Click Undo or press Ctrl+Z before the message closes»), кроме
+/// поля ввода — там это отмена правки текста. Клавишу слушает содержимое
+/// тоста ([_UndoShortcut]): обработчик живёт, пока тост на экране, и
+/// снимается и при закрытии окна задачи вместе с её `ScaffoldMessenger`.
 void showUndoToast(
   ScaffoldMessengerState messenger,
   AppLocalizations l10n,
   String message,
   Undo undo,
 ) {
+  var used = false;
+  late final bool Function() undoByKey;
+  void run() {
+    if (used) return;
+    used = true;
+    if (identical(_currentUndoToast[messenger], undoByKey)) {
+      _currentUndoToast[messenger] = null;
+    }
+    unawaited(runGuarded(messenger, l10n, undo.call));
+  }
+
+  undoByKey = () {
+    run();
+    messenger.hideCurrentSnackBar();
+    return true;
+  };
+  _currentUndoToast[messenger] = undoByKey;
   messenger
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: _UndoShortcut(
+          // Уходящий прежний тост ещё на экране, пока новый ждёт очереди:
+          // `Ctrl+Z` отменяет последнее действие, а не то, чей тост виден.
+          onUndo: () => _currentUndoToast[messenger]?.call() ?? false,
+          child: Text(message),
+        ),
         duration: undoToastDuration,
+        // Тост с кнопкой во Flutter по умолчанию не закрывается сам
+        // (`persist = action != null`); в Todoist он уходит через секунды.
+        persist: false,
         behavior: SnackBarBehavior.floating,
         width: 360,
-        action: SnackBarAction(
-          label: l10n.actionUndo,
-          onPressed: () => unawaited(runGuarded(messenger, l10n, undo.call)),
-        ),
+        action: SnackBarAction(label: l10n.actionUndo, onPressed: run),
       ),
     );
+}
+
+/// Отмена последнего действия с тостом у каждого `ScaffoldMessenger`:
+/// `Ctrl+Z` относится только к нему. Ключ — сам мессенджер, поэтому запись
+/// уходит вместе с ним (окно задачи закрыто — запись собрана сборщиком).
+final Expando<bool Function()> _currentUndoToast = Expando('тост «Отменить»');
+
+/// Содержимое тоста, которое слушает `Ctrl+Z`, пока стоит на экране.
+class _UndoShortcut extends StatefulWidget {
+  const _UndoShortcut({required this.onUndo, required this.child});
+
+  /// `true` — клавиша обработана.
+  final bool Function() onUndo;
+  final Widget child;
+
+  @override
+  State<_UndoShortcut> createState() => _UndoShortcutState();
+}
+
+class _UndoShortcutState extends State<_UndoShortcut> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  bool _onKey(KeyEvent event) {
+    final keys = HardwareKeyboard.instance;
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.keyZ ||
+        !keys.isControlPressed ||
+        keys.isShiftPressed ||
+        keys.isAltPressed ||
+        keys.isMetaPressed ||
+        isTypingInTextField()) {
+      return false;
+    }
+    return widget.onUndo();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// Выполнить или вернуть в работу. Выполнение — с тостом «Отменить».

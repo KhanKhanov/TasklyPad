@@ -143,6 +143,127 @@ void main() {
     });
   });
 
+  testWidgets('`Ctrl+Z`, пока виден тост, отменяет выполнение; после '
+      'закрытия тоста — ничего', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final first = await addTask(tester, app, 'First');
+      final second = await addTask(tester, app, 'Second');
+      Future<void> complete(String content) async {
+        await tester.tap(
+          find.descendant(
+            of: row(content),
+            matching: find.byTooltip('Complete'),
+          ),
+        );
+        await settle(tester);
+      }
+
+      Future<void> ctrlZ() async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await settle(tester);
+        await tester.pumpAndSettle(); // тост уезжает анимацией
+      }
+
+      Future<bool> done(String id) async =>
+          (await tester.runAsync(app.read))!.task(id)!.isCompleted;
+
+      await complete('First');
+      expect(find.text('Undo'), findsOneWidget);
+      await ctrlZ();
+      expect(await done(first), isFalse);
+      expect(find.text('Undo'), findsNothing);
+
+      await complete('Second');
+      await tester.pump(undoToastDuration + const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('Undo'), findsNothing);
+      await ctrlZ();
+      expect(await done(second), isTrue);
+    });
+  });
+
+  Future<void> pressCtrlZ(WidgetTester tester, {bool shift = false}) async {
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    if (shift) await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+    if (shift) await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+  }
+
+  testWidgets('`Ctrl+Shift+Z` не отменяет; два тоста подряд — `Ctrl+Z` '
+      'отменяет только последнее действие, и в окне смены тоста — ни одного '
+      'лишнего', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final a = await addTask(tester, app, 'A');
+      final b = await addTask(tester, app, 'B');
+      Future<bool> done(String id) async =>
+          (await tester.runAsync(app.read))!.task(id)!.isCompleted;
+      Finder circle(String content) => find.descendant(
+        of: row(content),
+        matching: find.byTooltip('Complete'),
+      );
+
+      await tester.tap(circle('A'));
+      await settle(tester);
+      await pressCtrlZ(tester, shift: true);
+      await settle(tester);
+      expect(await done(a), isTrue);
+
+      // Тост B ждёт, пока уйдёт тост A: Ctrl+Z в это окно отменяет
+      // последнее действие (B), а не A, чей тост ещё виден.
+      await tester.tap(circle('B'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(await done(b), isTrue);
+      await pressCtrlZ(tester);
+      await settle(tester);
+      await tester.pumpAndSettle();
+      expect(await done(a), isTrue);
+      expect(await done(b), isFalse);
+
+      // Отмена одна: повторный Ctrl+Z не трогает A.
+      await pressCtrlZ(tester);
+      await settle(tester);
+      expect(await done(a), isTrue);
+    });
+  });
+
+  testWidgets('тост в окне задачи, окно закрыли — `Ctrl+Z` в списке старое '
+      'действие не отменяет', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final parent = await addTask(tester, app, 'Parent');
+      final child = await addTask(tester, app, 'Child', parentId: parent);
+      await tester.tap(find.text('Parent'));
+      await settle(tester);
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(TaskDialog),
+              matching: find.byTooltip('Complete'),
+            )
+            .last,
+      );
+      await settle(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settle(tester);
+      expect(find.byType(TaskDialog), findsNothing);
+
+      await pressCtrlZ(tester);
+      await settle(tester);
+      expect(
+        (await tester.runAsync(app.read))!.task(child)!.isCompleted,
+        isTrue,
+      );
+    });
+  });
+
   testWidgets('ошибка записи (не отказ правилами) показывается, а не '
       'теряется', (tester) async {
     late BuildContext context;
@@ -211,7 +332,7 @@ void main() {
       await settle(tester);
       await tester.tap(find.text('My Projects'));
       await settle(tester);
-      await tester.tap(find.text('Archived'));
+      await tester.tap(find.text('Archived projects only'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Work'));
       await settle(tester);

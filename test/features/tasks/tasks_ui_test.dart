@@ -104,7 +104,7 @@ void main() {
       await settle(tester);
       expect(row('Done task'), findsNothing);
 
-      await tester.tap(find.byTooltip('View'));
+      await tester.tap(find.byTooltip('Display'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(CheckedPopupMenuItem<void>));
       await settle(tester);

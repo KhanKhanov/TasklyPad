@@ -390,6 +390,33 @@ void main() {
     expect(ws.labelTaskCount('gone'), 0);
   });
 
+  test('projectView: архивные разделы — только при showCompleted и после '
+      'активных', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: [_section('old', 'p', archived: true), _section('week', 'p')],
+      labels: const [],
+      tasks: [_task('t', section: 'old', completed: true)],
+    );
+    List<String> sections({required bool completed}) => [
+      for (final s in ws.projectView('p', showCompleted: completed).sections)
+        s.section.id,
+    ];
+    expect(sections(completed: false), ['week']);
+    expect(sections(completed: true), ['week', 'old']);
+    expect(
+      ws
+          .projectView('p', showCompleted: true)
+          .sections
+          .last
+          .tasks
+          .single
+          .value
+          .id,
+      't',
+    );
+  });
+
   test('labelTaskCount — столько же задач, сколько в labelTasks', () {
     final ws = Workspace(
       projects: [inbox, _project('p')],

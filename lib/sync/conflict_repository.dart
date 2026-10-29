@@ -15,7 +15,9 @@ import 'drift_op_store.dart';
 ///
 /// Конфликты по полям из [silentFields] не показываются: по текущим правилам
 /// это не конфликт (записаны до того, как поле стало «молчащим»), и
-/// «Пересобрать базу из журнала» их удалит.
+/// «Пересобрать базу из журнала» их удалит. Конфликты общей темы не
+/// показываются, пока на устройстве выключена «Синхронизировать тему»: тема
+/// на нём своя, спор его не касается (решение 3А конца этапа M2).
 final class ConflictRepository {
   ConflictRepository({
     required this._db,
@@ -33,24 +35,41 @@ final class ConflictRepository {
     TaskLabelFields.labelId,
   };
 
-  /// Карточки сейчас и после каждого изменения конфликтов или полей.
+  /// Поля общей темы в `settings`.
+  static const Set<String> _themeFields = {
+    SettingsFields.themeId,
+    SettingsFields.themeAppearance,
+  };
+
+  /// Карточки сейчас и после каждого изменения конфликтов, полей или
+  /// переключателя «Синхронизировать тему» (`local_meta`).
   Stream<List<ConflictCard>> watch() => _db
-      .customSelect('SELECT 1', readsFrom: {_db.conflicts, _db.fieldVersions})
+      .customSelect(
+        'SELECT 1',
+        readsFrom: {_db.conflicts, _db.fieldVersions, _db.localMeta},
+      )
       .watch()
       .asyncMap((_) => load());
 
   /// Открытые конфликты карточками, новые сверху.
-  Future<List<ConflictCard>> load() => _db.transaction(_load);
+  Future<List<ConflictCard>> load() =>
+      _db.transaction(() async => _cards((await _open()).shown));
 
   /// Карточки, о которых это устройство ещё не уведомляло, — и запомнить,
   /// что уведомило обо всех открытых. Решение по таблице конфликтов, а не по
   /// отчёту прохода: конфликт из перечитанного после сбоя чанка, из прохода,
   /// упавшего после применения, и из переиздания (`adopt`) в отчёт не
   /// попадает (О-9). Запоминаются только открытые: разрешённые выпадают сами.
+  /// Скрытый сейчас конфликт темы, о котором уже уведомили, остаётся в
+  /// памяти: после включения «Синхронизировать тему» он не новый.
   Future<List<ConflictCard>> takeUnnotified() => _db.transaction(() async {
-    final cards = await _load();
+    final (:shown, :hidden) = await _open();
+    final cards = await _cards(shown);
     final notified = await _meta.notifiedConflicts();
-    final open = {for (final card in cards) ...card.conflictIds};
+    final open = {
+      for (final card in cards) ...card.conflictIds,
+      ...notified.where(hidden.contains),
+    };
     if (open.length != notified.length || !notified.containsAll(open)) {
       await _meta.setNotifiedConflicts(open);
     }
@@ -60,11 +79,26 @@ final class ConflictRepository {
     ];
   });
 
-  Future<List<ConflictCard>> _load() async {
-    final open = [
-      for (final c in await _store.conflicts())
-        if (!c.resolved && !silentFields.contains(c.field)) c,
-    ];
+  /// Открытые конфликты: показываемые и скрытые на этом устройстве (тема при
+  /// выключенной «Синхронизировать тему»).
+  Future<({List<Conflict> shown, Set<String> hidden})> _open() async {
+    final themeShared = await _meta.themeSync();
+    final shown = <Conflict>[];
+    final hidden = <String>{};
+    for (final c in await _store.conflicts()) {
+      if (c.resolved || silentFields.contains(c.field)) continue;
+      if (!themeShared &&
+          c.entityType == EntityTypes.settings &&
+          _themeFields.contains(c.field)) {
+        hidden.add(c.id);
+      } else {
+        shown.add(c);
+      }
+    }
+    return (shown: shown, hidden: hidden);
+  }
+
+  Future<List<ConflictCard>> _cards(List<Conflict> open) async {
     if (open.isEmpty) return const [];
     final opsByEntity = <String, Map<String, Op>>{};
     final groups = <String, List<(Conflict, Op, Op)>>{};

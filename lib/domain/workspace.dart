@@ -183,7 +183,10 @@ final class Workspace {
 
   /// Список проекта: задачи без раздела, затем разделы со своими задачами.
   /// Завершённые и их подзадачи — только при [showCompleted], после
-  /// активных соседей. Подзадачи свёрнутой задачи не выводятся.
+  /// активных соседей; архивные разделы — тоже только при нём, после
+  /// активных (help «Introduction to sections»: «To find archived sections,
+  /// turn on Completed tasks under Display»). Подзадачи свёрнутой задачи не
+  /// выводятся.
   ProjectView projectView(String projectId, {bool showCompleted = false}) {
     List<TreeItem<Task>> tree(String? sectionId) => flattenTree(
       _visible(_roots[(projectId, sectionId)] ?? const [], showCompleted),
@@ -195,6 +198,9 @@ final class Workspace {
       unsectioned: tree(null),
       sections: [
         for (final s in sectionsOf(projectId)) (section: s, tasks: tree(s.id)),
+        if (showCompleted)
+          for (final s in sectionsOf(projectId, archived: true))
+            (section: s, tasks: tree(s.id)),
       ],
     );
   }
