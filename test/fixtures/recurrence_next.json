@@ -1,0 +1,459 @@
+[
+  {
+    "name": "every day — в срок → завтра",
+    "source": "help «Introduction to recurring dates»: every day",
+    "input": { "date": "2026-10-26", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-26T10:00:00+03:00",
+    "expect": { "date": "2026-10-27" }
+  },
+  {
+    "name": "every day — просроченная на два дня → завтра, не сегодня",
+    "source": "help «Complete a task with a recurring date»: due yesterday, completed today → tomorrow",
+    "input": { "date": "2026-10-24", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-26T10:00:00+03:00",
+    "expect": { "date": "2026-10-27" }
+  },
+  {
+    "name": "every day — выполнена заранее → следующая после срока",
+    "source": "help «Introduction to recurring dates»: next date is calculated from the task's date",
+    "input": { "date": "2026-10-28", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-26T10:00:00+03:00",
+    "expect": { "date": "2026-10-29" }
+  },
+  {
+    "name": "every 3 months — от срока",
+    "source": "help «Introduction to recurring dates»: every 3 months, Jan 10 → Apr 10",
+    "input": { "date": "2026-01-10", "rule": { "rrule": ["FREQ=MONTHLY;INTERVAL=3"], "from_completion": false } },
+    "now": "2026-01-20T12:00:00+03:00",
+    "expect": { "date": "2026-04-10" }
+  },
+  {
+    "name": "every! 3 months — от дня выполнения",
+    "source": "help «Introduction to recurring dates»: every! 3 months, completed Jan 20 → Apr 20",
+    "input": { "date": "2026-01-10", "rule": { "rrule": ["FREQ=MONTHLY;INTERVAL=3"], "from_completion": true } },
+    "now": "2026-01-20T12:00:00+03:00",
+    "expect": { "date": "2026-04-20" }
+  },
+  {
+    "name": "after 10 days = every! 10 days",
+    "source": "help «Introduction to recurring dates»: after 10 days",
+    "input": { "date": "2026-10-20", "rule": { "rrule": ["FREQ=DAILY;INTERVAL=10"], "from_completion": true } },
+    "now": "2026-10-26T18:00:00+03:00",
+    "expect": { "date": "2026-11-05" }
+  },
+  {
+    "name": "every! 3 days at 9:00 — дата от выполнения, время из срока",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-21", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY;INTERVAL=3"], "from_completion": true } },
+    "now": "2026-10-26T15:00:00+03:00",
+    "expect": { "date": "2026-10-29", "time": "09:00" }
+  },
+  {
+    "name": "every mon, fri at 20:00 — дни недели и время",
+    "source": "help «Introduction to recurring dates»: every mon, fri at 20:00",
+    "input": { "date": "2026-10-26", "time": "20:00", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=MO,FR"], "from_completion": false } },
+    "now": "2026-10-26T21:00:00+03:00",
+    "expect": { "date": "2026-10-30", "time": "20:00" }
+  },
+  {
+    "name": "every workday — пятница → понедельник",
+    "source": "help «Introduction to recurring dates»: every weekday / every workday",
+    "input": { "date": "2026-10-30", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"], "from_completion": false } },
+    "now": "2026-10-30T10:00:00+03:00",
+    "expect": { "date": "2026-11-02" }
+  },
+  {
+    "name": "every mon — просроченная → ближайший будущий понедельник",
+    "source": "help «Introduction to recurring dates»: weekday-based patterns move to the next matching day",
+    "input": { "date": "2026-10-19", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=MO"], "from_completion": false } },
+    "now": "2026-10-28T10:00:00+03:00",
+    "expect": { "date": "2026-11-02" }
+  },
+  {
+    "name": "every hour — в срок → следующий час",
+    "source": "help «Introduction to recurring dates»: every hour",
+    "input": { "date": "2026-10-26", "time": "10:00", "rule": { "rrule": ["FREQ=HOURLY"], "from_completion": false } },
+    "now": "2026-10-26T10:05:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "11:00" }
+  },
+  {
+    "name": "every hour — просроченная на 4 часа → ближайший будущий час",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-26", "time": "06:00", "rule": { "rrule": ["FREQ=HOURLY"], "from_completion": false } },
+    "now": "2026-10-26T10:05:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "11:00" }
+  },
+  {
+    "name": "every! 3 hours — от момента выполнения",
+    "source": "help «Introduction to recurring dates»: every! 3 hours",
+    "input": { "date": "2026-10-26", "time": "10:00", "rule": { "rrule": ["FREQ=HOURLY;INTERVAL=3"], "from_completion": true } },
+    "now": "2026-10-26T10:17:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "13:17" }
+  },
+  {
+    "name": "every 12 hours starting at 9pm — 9 вечера → 9 утра",
+    "source": "help «Introduction to recurring dates»: every 12 hours starting at 9pm",
+    "input": { "date": "2026-10-26", "time": "21:00", "rule": { "rrule": ["FREQ=HOURLY;INTERVAL=12"], "from_completion": false } },
+    "now": "2026-10-26T21:30:00+03:00",
+    "expect": { "date": "2026-10-27", "time": "09:00" }
+  },
+  {
+    "name": "every day at 9:00 — просроченная, сегодня 9:00 ещё впереди → сегодня",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-24", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-26T08:00:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "09:00" }
+  },
+  {
+    "name": "every day at 9:00 — просроченная, сегодня 9:00 уже прошло → завтра",
+    "source": "help «Complete a task with a recurring date»: due yesterday, completed today → tomorrow",
+    "input": { "date": "2026-10-25", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-26T10:00:00+03:00",
+    "expect": { "date": "2026-10-27", "time": "09:00" }
+  },
+  {
+    "name": "everyday until Nov 3 — предпоследнее → последнее (включительно)",
+    "source": "help «Introduction to recurring dates»: everyday ending aug 3 — inclusive",
+    "input": { "date": "2026-11-02", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103T235959Z"], "from_completion": false } },
+    "now": "2026-11-02T10:00:00+03:00",
+    "expect": { "date": "2026-11-03" }
+  },
+  {
+    "name": "everyday until Nov 3 — последнее выполнено → серия закончилась",
+    "source": "help «Introduction to recurring dates»: everyday ending aug 3",
+    "input": { "date": "2026-11-03", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103T235959Z"], "from_completion": false } },
+    "now": "2026-11-03T10:00:00+03:00",
+    "expect": { "ended": true }
+  },
+  {
+    "name": "everyday until Nov 3 at 9:00 — время в последний день входит в серию",
+    "source": "help «Introduction to recurring dates»: everyday ending aug 3 — inclusive",
+    "input": { "date": "2026-11-02", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103T235959Z"], "from_completion": false } },
+    "now": "2026-11-02T10:00:00+03:00",
+    "expect": { "date": "2026-11-03", "time": "09:00" }
+  },
+  {
+    "name": "every day until Nov 3 — просроченная, будущих вхождений нет → серия закончилась",
+    "source": "допущение О-57",
+    "input": { "date": "2026-11-01", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103T235959Z"], "from_completion": false } },
+    "now": "2026-11-05T10:00:00+03:00",
+    "expect": { "ended": true }
+  },
+  {
+    "name": "every Wednesday, Friday, Saturday ending Saturday — суббота последняя",
+    "source": "help «Introduction to recurring dates»: every Wednesday, Friday, Saturday ending Saturday",
+    "input": { "date": "2026-10-31", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=WE,FR,SA;UNTIL=20261031T235959Z"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "ended": true }
+  },
+  {
+    "name": "every 15th workday — 15-й рабочий день следующего месяца",
+    "source": "help «Introduction to recurring dates»: every 15th workday",
+    "input": { "date": "2026-10-21", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=15"], "from_completion": false } },
+    "now": "2026-10-21T10:00:00+03:00",
+    "expect": { "date": "2026-11-20" }
+  },
+  {
+    "name": "every last workday at 3pm — последний рабочий день месяца",
+    "source": "help «Introduction to recurring dates»: every last workday at 3pm",
+    "input": { "date": "2026-10-30", "time": "15:00", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1"], "from_completion": false } },
+    "now": "2026-10-30T16:00:00+03:00",
+    "expect": { "date": "2026-11-30", "time": "15:00" }
+  },
+  {
+    "name": "every 1st wed jan, 3rd thu jul — два правила, ближайшее из них",
+    "source": "help «Introduction to recurring dates»: every 1st wed jan, 3rd thu jul",
+    "input": { "date": "2026-01-07", "rule": { "rrule": ["FREQ=YEARLY;BYMONTH=1;BYDAY=1WE", "FREQ=YEARLY;BYMONTH=7;BYDAY=3TH"], "from_completion": false } },
+    "now": "2026-01-07T10:00:00+03:00",
+    "expect": { "date": "2026-07-16" }
+  },
+  {
+    "name": "every 1st wed jan, 3rd thu jul — после июльского → январь следующего года",
+    "source": "help «Introduction to recurring dates»: every 1st wed jan, 3rd thu jul",
+    "input": { "date": "2026-07-16", "rule": { "rrule": ["FREQ=YEARLY;BYMONTH=1;BYDAY=1WE", "FREQ=YEARLY;BYMONTH=7;BYDAY=3TH"], "from_completion": false } },
+    "now": "2026-07-16T10:00:00+03:00",
+    "expect": { "date": "2027-01-06" }
+  },
+  {
+    "name": "every 2, 15, 27 — числа месяца",
+    "source": "help «Introduction to recurring dates»: every 2, 15, 27",
+    "input": { "date": "2026-10-15", "rule": { "rrule": ["FREQ=MONTHLY;BYMONTHDAY=2,15,27"], "from_completion": false } },
+    "now": "2026-10-15T10:00:00+03:00",
+    "expect": { "date": "2026-10-27" }
+  },
+  {
+    "name": "every 14 jan, 14 apr, 15 jun, 15 sep — даты разных месяцев",
+    "source": "help «Introduction to recurring dates»: every 14 jan, 14 apr, 15 jun, 15 sep",
+    "input": { "date": "2026-06-15", "rule": { "rrule": ["FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=14", "FREQ=YEARLY;BYMONTH=4;BYMONTHDAY=14", "FREQ=YEARLY;BYMONTH=6;BYMONTHDAY=15", "FREQ=YEARLY;BYMONTH=9;BYMONTHDAY=15"], "from_completion": false } },
+    "now": "2026-06-15T10:00:00+03:00",
+    "expect": { "date": "2026-09-15" }
+  },
+  {
+    "name": "every other fri — через неделю",
+    "source": "help «Introduction to recurring dates»: every other fri",
+    "input": { "date": "2026-10-30", "rule": { "rrule": ["FREQ=WEEKLY;INTERVAL=2;BYDAY=FR"], "from_completion": false } },
+    "now": "2026-10-30T10:00:00+03:00",
+    "expect": { "date": "2026-11-13" }
+  },
+  {
+    "name": "every tue — вхождение перенесено на среду → возврат к вторникам",
+    "source": "help «Introduction to recurring dates»: absolute patterns snap back to their fixed schedule (решение 10А)",
+    "input": { "date": "2026-10-28", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=TU"], "from_completion": false } },
+    "now": "2026-10-28T10:00:00+03:00",
+    "expect": { "date": "2026-11-03" }
+  },
+  {
+    "name": "every 12 days — вхождение перенесено → интервал от перенесённой даты",
+    "source": "help «Introduction to recurring dates»: relative patterns calculate from the rescheduled date (решение 10А)",
+    "input": { "date": "2026-10-22", "rule": { "rrule": ["FREQ=DAILY;INTERVAL=12"], "from_completion": false } },
+    "now": "2026-10-22T10:00:00+03:00",
+    "expect": { "date": "2026-11-03" }
+  },
+  {
+    "name": "every day at 9:00, Berlin — через переход на зимнее время остаётся 9:00",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-24", "time": "09:00", "tz": "Europe/Berlin", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-24T10:00:00+02:00",
+    "expect": { "date": "2026-10-25", "time": "09:00" }
+  },
+  {
+    "name": "every day at 9:00, Berlin — после перехода по-прежнему 9:00",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-25", "time": "09:00", "tz": "Europe/Berlin", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-10-25T10:00:00+01:00",
+    "expect": { "date": "2026-10-26", "time": "09:00" }
+  },
+  {
+    "name": "every 3 hours, Berlin, ночь перехода — шаг по стенным часам",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-25", "time": "00:00", "tz": "Europe/Berlin", "rule": { "rrule": ["FREQ=HOURLY;INTERVAL=3"], "from_completion": false } },
+    "now": "2026-10-25T00:30:00+02:00",
+    "expect": { "date": "2026-10-25", "time": "03:00" }
+  },
+  {
+    "name": "every day at 9:00, Berlin, весенний переход — 9:00 после перевода часов",
+    "source": "допущение О-57",
+    "input": { "date": "2026-03-28", "time": "09:00", "tz": "Europe/Berlin", "rule": { "rrule": ["FREQ=DAILY"], "from_completion": false } },
+    "now": "2026-03-28T10:00:00+01:00",
+    "expect": { "date": "2026-03-29", "time": "09:00" }
+  },
+  {
+    "name": "every 31st — короткий месяц пропускается",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-31", "rule": { "rrule": ["FREQ=MONTHLY;BYMONTHDAY=31"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "date": "2026-12-31" }
+  },
+  {
+    "name": "UNTIL датой — конец дня: срок со временем в последний день входит в серию",
+    "source": "формат правила срока, SYNC_DESIGN «Проекции»; help: ending — inclusive",
+    "input": { "date": "2026-11-02", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103"], "from_completion": false } },
+    "now": "2026-11-02T10:00:00+03:00",
+    "expect": { "date": "2026-11-03", "time": "09:00" }
+  },
+  {
+    "name": "«Отложить» every! 3 days — следующее вхождение после срока, не от сегодня",
+    "source": "help «Introduction to recurring dates»: Postpone — next future occurrence",
+    "postpone": true,
+    "input": { "date": "2026-11-05", "rule": { "rrule": ["FREQ=DAILY;INTERVAL=3"], "from_completion": true } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "date": "2026-11-08" }
+  },
+  {
+    "name": "«Отложить» every mon — срок сегодня → следующий понедельник",
+    "source": "help «Introduction to recurring dates»: Postpone — next future occurrence",
+    "postpone": true,
+    "input": { "date": "2026-10-26", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=MO"], "from_completion": false } },
+    "now": "2026-10-26T10:00:00+03:00",
+    "expect": { "date": "2026-11-02" }
+  },
+  {
+    "name": "every hour — просроченная на год → ближайший будущий час (перебор от срока)",
+    "source": "допущение О-57",
+    "input": { "date": "2025-10-26", "time": "10:00", "rule": { "rrule": ["FREQ=HOURLY"], "from_completion": false } },
+    "now": "2026-10-26T10:05:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "11:00" }
+  },
+  {
+    "name": "every month от 31 января → 28 февраля (прижатие к концу месяца)",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-01-31", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-01-31T10:00:00+03:00",
+    "expect": { "date": "2026-02-28" }
+  },
+  {
+    "name": "every month от 28 февраля (после прижатия) → 28 марта: серия идёт от текущего срока",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-02-28", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-02-28T10:00:00+03:00",
+    "expect": { "date": "2026-03-28" }
+  },
+  {
+    "name": "every month от 31 января — просрочена до 5 марта → 31 марта",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-01-31", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-03-05T10:00:00+03:00",
+    "expect": { "date": "2026-03-31" }
+  },
+  {
+    "name": "every 3 months от 30 ноября → 28 февраля",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-11-30", "rule": { "rrule": ["FREQ=MONTHLY;INTERVAL=3"], "from_completion": false } },
+    "now": "2026-11-30T10:00:00+03:00",
+    "expect": { "date": "2027-02-28" }
+  },
+  {
+    "name": "every! 3 months, выполнено 31 марта → 30 июня",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-03-10", "rule": { "rrule": ["FREQ=MONTHLY;INTERVAL=3"], "from_completion": true } },
+    "now": "2026-03-31T18:00:00+03:00",
+    "expect": { "date": "2026-06-30" }
+  },
+  {
+    "name": "every year от 29 февраля 2028 → 28 февраля 2029",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2028-02-29", "rule": { "rrule": ["FREQ=YEARLY"], "from_completion": false } },
+    "now": "2028-02-29T10:00:00+03:00",
+    "expect": { "date": "2029-02-28" }
+  },
+  {
+    "name": "every month at 9:00 до 15 ноября — от 31 октября следующего нет → серия закончилась",
+    "source": "help «Introduction to recurring dates»: ending — inclusive",
+    "input": { "date": "2026-10-31", "time": "09:00", "rule": { "rrule": ["FREQ=MONTHLY;UNTIL=20261115"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "ended": true }
+  },
+  {
+    "name": "every year — просрочен на 20 лет → ближайшая будущая годовщина",
+    "source": "допущение О-57",
+    "input": { "date": "2006-10-30", "rule": { "rrule": ["FREQ=YEARLY"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "date": "2027-10-30" }
+  },
+  {
+    "name": "every other fri — перенесено с пт 30.10 на пн 02.11 → 06.11 (фаза интервала теряется)",
+    "source": "допущение О-57 (решение 2А «Ход M3.3»)",
+    "input": { "date": "2026-11-02", "rule": { "rrule": ["FREQ=WEEKLY;INTERVAL=2;BYDAY=FR"], "from_completion": false } },
+    "now": "2026-11-02T10:00:00+03:00",
+    "expect": { "date": "2026-11-06" }
+  },
+  {
+    "name": "every other fri — перенесено на день раньше, чт 29.10 → та же пт 30.10",
+    "source": "допущение О-57 (решение 2А «Ход M3.3»)",
+    "input": { "date": "2026-10-29", "rule": { "rrule": ["FREQ=WEEKLY;INTERVAL=2;BYDAY=FR"], "from_completion": false } },
+    "now": "2026-10-29T10:00:00+03:00",
+    "expect": { "date": "2026-10-30" }
+  },
+  {
+    "name": "every month от 31 декабря → 31 января следующего года",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-12-31", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-12-31T10:00:00+03:00",
+    "expect": { "date": "2027-01-31" }
+  },
+  {
+    "name": "every month от 31 января високосного года → 29 февраля",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2028-01-31", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2028-01-31T10:00:00+03:00",
+    "expect": { "date": "2028-02-29" }
+  },
+  {
+    "name": "every other year от 29 февраля 2028 → 28 февраля 2030",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2028-02-29", "rule": { "rrule": ["FREQ=YEARLY;INTERVAL=2"], "from_completion": false } },
+    "now": "2028-02-29T10:00:00+03:00",
+    "expect": { "date": "2030-02-28" }
+  },
+  {
+    "name": "every month от 31 января, выполнена 28 февраля → 31 марта (не раньше завтра)",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-01-31", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-02-28T10:00:00+03:00",
+    "expect": { "date": "2026-03-31" }
+  },
+  {
+    "name": "every month до 28 февраля от 31 января → 28 февраля входит в серию",
+    "source": "help «Introduction to recurring dates»: ending — inclusive",
+    "input": { "date": "2026-01-31", "rule": { "rrule": ["FREQ=MONTHLY;UNTIL=20260228"], "from_completion": false } },
+    "now": "2026-01-31T10:00:00+03:00",
+    "expect": { "date": "2026-02-28" }
+  },
+  {
+    "name": "every! year — от дня выполнения",
+    "source": "help «Introduction to recurring dates»: every! — from completion",
+    "input": { "date": "2026-03-10", "rule": { "rrule": ["FREQ=YEARLY"], "from_completion": true } },
+    "now": "2026-05-20T10:00:00+03:00",
+    "expect": { "date": "2027-05-20" }
+  },
+  {
+    "name": "every month at 9:00 от 31 января → 28 февраля 9:00",
+    "source": "допущение О-57 (решение 1А «Ход M3.3»)",
+    "input": { "date": "2026-01-31", "time": "09:00", "rule": { "rrule": ["FREQ=MONTHLY"], "from_completion": false } },
+    "now": "2026-01-31T10:00:00+03:00",
+    "expect": { "date": "2026-02-28", "time": "09:00" }
+  },
+  {
+    "name": "every last day — последнее число следующего месяца",
+    "source": "help «Introduction to recurring dates»: last day (BYMONTHDAY=-1)",
+    "input": { "date": "2026-10-31", "rule": { "rrule": ["FREQ=MONTHLY;BYMONTHDAY=-1"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "date": "2026-11-30" }
+  },
+  {
+    "name": "every 3rd fri — третья пятница следующего месяца",
+    "source": "help «Introduction to recurring dates»: nth weekday of month",
+    "input": { "date": "2026-10-16", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=3FR"], "from_completion": false } },
+    "now": "2026-10-16T10:00:00+03:00",
+    "expect": { "date": "2026-11-20" }
+  },
+  {
+    "name": "every last fri — последняя пятница следующего месяца",
+    "source": "help «Introduction to recurring dates»: last weekday of month",
+    "input": { "date": "2026-10-30", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=-1FR"], "from_completion": false } },
+    "now": "2026-10-30T10:00:00+03:00",
+    "expect": { "date": "2026-11-27" }
+  },
+  {
+    "name": "every first workday — первый рабочий день следующего месяца",
+    "source": "help «Introduction to recurring dates»: every 15th workday, first workday, last workday",
+    "input": { "date": "2026-10-01", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=1"], "from_completion": false } },
+    "now": "2026-10-01T10:00:00+03:00",
+    "expect": { "date": "2026-11-02" }
+  },
+  {
+    "name": "every weekend — суббота → воскресенье",
+    "source": "help «Introduction to recurring dates»: weekdays and workdays",
+    "input": { "date": "2026-10-31", "rule": { "rrule": ["FREQ=WEEKLY;BYDAY=SA,SU"], "from_completion": false } },
+    "now": "2026-10-31T10:00:00+03:00",
+    "expect": { "date": "2026-11-01" }
+  },
+  {
+    "name": "четвёртый с конца понедельник (-4MO) — в любом месяце он есть",
+    "source": "допущение О-57",
+    "input": { "date": "2026-10-05", "rule": { "rrule": ["FREQ=MONTHLY;BYDAY=-4MO"], "from_completion": false } },
+    "now": "2026-10-05T10:00:00+03:00",
+    "expect": { "date": "2026-11-09" }
+  },
+  {
+    "name": "every other year jan 31 — 31 января есть каждый год",
+    "source": "допущение О-57",
+    "input": { "date": "2026-01-31", "rule": { "rrule": ["FREQ=YEARLY;INTERVAL=2;BYMONTH=1;BYMONTHDAY=31"], "from_completion": false } },
+    "now": "2026-01-31T10:00:00+03:00",
+    "expect": { "date": "2028-01-31" }
+  },
+  {
+    "name": "UNTIL временем — вхождение позже этого времени в последний день не входит",
+    "source": "формат правила срока, SYNC_DESIGN «Проекции»",
+    "input": { "date": "2026-11-02", "time": "09:00", "rule": { "rrule": ["FREQ=DAILY;UNTIL=20261103T080000Z"], "from_completion": false } },
+    "now": "2026-11-02T10:00:00+03:00",
+    "expect": { "ended": true }
+  },
+  {
+    "name": "every 5 hours — просрочен на 26 лет: фаза сохраняется, без долгого перебора",
+    "source": "допущение О-57",
+    "input": { "date": "2000-01-01", "time": "10:00", "rule": { "rrule": ["FREQ=HOURLY;INTERVAL=5"], "from_completion": false } },
+    "now": "2026-10-26T10:05:00+03:00",
+    "expect": { "date": "2026-10-26", "time": "15:00" }
+  }
+]

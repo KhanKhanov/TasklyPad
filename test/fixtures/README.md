@@ -8,8 +8,14 @@
 quick_add.json     "Купить молоко завтра в 17:00 #Дом @срочно p1"  → поля задачи
 dates.json         "следующий пн", "Jan 15", "через 3 дня"         → дата/время
 recurrence.json    "каждый 3-й пт", "every! 3 days"                 → RRULE + from_completion
+recurrence_next.json  срок с правилом + момент выполнения          → следующий срок
 filters.json       "today & p1 | overdue"                          → AST / список задач
 ```
+
+Каждая запись несёт `source`: страница help Todoist или `"допущение О-57"`, если help молчит
+(docs/OBLIGATIONS.md). В `recurrence_next.json`: `input` — срок {date, time?, tz?, rule}, `now` — момент
+выполнения со смещением пояса срока (функция получает его стенное время), `postpone: true` — «Отложить»,
+`"expect": { "ended": true }` — серия закончилась.
 
 Формат записи:
 ```json
