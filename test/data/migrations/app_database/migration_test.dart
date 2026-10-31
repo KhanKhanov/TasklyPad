@@ -9,6 +9,7 @@ import 'package:planner/sync/drift_op_store.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 // Снимки схем — drift_schemas/, классы generated/ — из
 // `dart run drift_dev make-migrations`. При новой версии схемы: снимок,
@@ -187,6 +188,7 @@ void main() {
           await m.addColumn(s.tasks, s.tasks.deadlineDate);
           throw StateError('сбой посреди миграции');
         },
+        from2To3: (m, s) async {},
       ),
     );
     await expectLater(
@@ -205,6 +207,170 @@ void main() {
 
     final db = AppDatabase(schema.newConnection());
     await verifier.migrateAndValidate(db, 2);
+    await db.close();
+  });
+
+  test('v2 → v3 — строки v2 целы, колонки правила пустые, записей выполнения '
+      'нет', () {
+    const task = v2.TasksData(
+      id: 't1',
+      content: 'Зарядка',
+      description: '',
+      projectId: 'p1',
+      orderKey: 'a0',
+      priority: 4,
+      dueDate: '2026-10-30',
+      dueTime: '07:00',
+      dueTz: 'Europe/Moscow',
+      deadlineDate: '2026-11-01',
+      durationAmount: 30,
+      durationUnit: 'minute',
+      isCollapsed: 0,
+      isCompleted: 0,
+      addedAt: '2026-10-24T09:00:00.000Z',
+      deleted: 0,
+    );
+    const op = v2.OpsData(
+      opId: 'o1',
+      nodeId: 'a',
+      hlc: '0001761300000000-0000-a',
+      entityType: 'task',
+      entityId: 't1',
+      field: 'content',
+      valueJson: '"Зарядка"',
+    );
+    return verifier.testWithDataIntegrity(
+      oldVersion: 2,
+      newVersion: 3,
+      createOld: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insert(oldDb.tasks, task);
+        batch.insert(oldDb.ops, op);
+      },
+      validateItems: (newDb) async {
+        expect(await newDb.select(newDb.tasks).get(), [
+          const v3.TasksData(
+            id: 't1',
+            content: 'Зарядка',
+            description: '',
+            projectId: 'p1',
+            orderKey: 'a0',
+            priority: 4,
+            dueDate: '2026-10-30',
+            dueTime: '07:00',
+            dueTz: 'Europe/Moscow',
+            dueIsRecurring: 0,
+            deadlineDate: '2026-11-01',
+            durationAmount: 30,
+            durationUnit: 'minute',
+            isCollapsed: 0,
+            isCompleted: 0,
+            addedAt: '2026-10-24T09:00:00.000Z',
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.ops).get(), [
+          const v3.OpsData(
+            opId: 'o1',
+            nodeId: 'a',
+            hlc: '0001761300000000-0000-a',
+            entityType: 'task',
+            entityId: 't1',
+            field: 'content',
+            valueJson: '"Зарядка"',
+          ),
+        ]);
+        expect(await newDb.select(newDb.completions).get(), isEmpty);
+      },
+    );
+  });
+
+  test('v2 → v3 — правило в сроке и выполнения, пришедшие до обновления, '
+      'после reproject в новых колонках и таблице', () async {
+    // Сборка M2 уже приняла ops сборки M3: правило лежит незнакомым ключом
+    // срока, выполнение — сущностью без таблицы, обе — в field_versions.
+    final hlc = const Hlc(wallMs: 1761300000000, counter: 0, nodeId: 'b');
+    final schema = await verifier.schemaAt(2);
+    final old = v2.DatabaseAtV2(schema.newConnection());
+    await old.batch((batch) {
+      batch.insertAll(old.fieldVersions, [
+        v2.FieldVersionsData(
+          entityType: 'task',
+          entityId: 't1',
+          field: 'due',
+          hlc: '$hlc',
+          valueJson:
+              '{"date":"2026-10-30","string":"каждый день","lang":"ru",'
+              '"rule":{"rrule":["FREQ=DAILY"],"from_completion":false}}',
+        ),
+        v2.FieldVersionsData(
+          entityType: 'completion',
+          entityId: 'c1',
+          field: 'task_id',
+          hlc: '$hlc',
+          valueJson: '"t1"',
+        ),
+      ]);
+      batch.insert(
+        old.localMeta,
+        const v2.LocalMetaData(key: 'projector_version', value: '2'),
+      );
+    });
+    await old.close();
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    final store = DriftOpStore(db);
+    expect(await store.needsReproject(), isTrue);
+    await store.reproject();
+
+    final task = await db.select(db.tasks).getSingle();
+    expect(
+      (task.dueDate, task.dueString, task.dueLang),
+      ('2026-10-30', 'каждый день', 'ru'),
+    );
+    expect(task.dueIsRecurring, isTrue);
+    final completion = await db.select(db.completions).getSingle();
+    expect((completion.id, completion.taskId), ('c1', 't1'));
+  });
+
+  test('v2 → v3 — сбой посередине откатывает миграцию целиком, повтор '
+      'проходит', () async {
+    final schema = await verifier.schemaAt(2);
+    final failing = AppDatabase(
+      schema.newConnection(),
+      migrationSteps: migrationSteps(
+        from1To2: (m, s) async {},
+        from2To3: (m, s) async {
+          await m.addColumn(s.tasks, s.tasks.dueString);
+          await m.createTable(s.completions);
+          throw StateError('сбой посреди миграции');
+        },
+      ),
+    );
+    await expectLater(
+      failing.customSelect('SELECT 1').get(),
+      throwsA(isA<StateError>()),
+    );
+    await failing.close();
+
+    final raw = schema.rawDatabase;
+    expect(raw.select('PRAGMA user_version').single.values.single, 2);
+    final columns = raw
+        .select('PRAGMA table_info(tasks)')
+        .map((row) => row['name'])
+        .toList();
+    expect(columns, isNot(contains('due_string')));
+    final tables = raw
+        .select("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .map((row) => row['name'])
+        .toList();
+    expect(tables, isNot(contains('completions')));
+
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 3);
     await db.close();
   });
 }

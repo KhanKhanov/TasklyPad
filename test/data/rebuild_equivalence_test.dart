@@ -17,6 +17,7 @@ Future<ScenarioNode> _node(String id) async => ScenarioNode(
   DriftProbe(memoryDatabase()),
   id,
   silentFields: {TaskFields.orderKey},
+  silentEntityTypes: silentEntityTypes,
 );
 
 /// Состояние узла не меняется от rebuild и совпадает с reproject.
@@ -98,7 +99,10 @@ void main() {
         'дают одну базу', () async {
       final random = Random(seed);
       final nodes = [await _node('a'), await _node('b'), await _node('c')];
-      final ids = ['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0', 'g0'];
+      final ids = [
+        ...['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0', 'g0'],
+        ...['c0', 'c1'],
+      ];
 
       T pick<T>(List<T> list) => list[random.nextInt(list.length)];
 
@@ -125,6 +129,17 @@ void main() {
                     'time': '10:00',
                     'tz': 'Europe/Moscow',
                   },
+                  {
+                    'date': '2026-11-02',
+                    'string': 'каждый день',
+                    'lang': 'ru',
+                    'rule': {
+                      'rrule': ['FREQ=DAILY'],
+                      'from_completion': random.nextBool(),
+                    },
+                  },
+                  // Неразобранное правило: срок без повтора.
+                  {'date': '2026-11-03', 'rule': 'FREQ=DAILY'},
                 ]),
               },
               {Op.deletedField: random.nextBool()},
@@ -161,6 +176,16 @@ void main() {
             'dark',
           ]),
         },
+        // Выполненное вхождение: молчащий тип, правки — без конфликтов.
+        'c' => pick<Map<String, Object?>>([
+          {
+            CompletionFields.taskId: 't0',
+            CompletionFields.dueWas: '2026-10-2${random.nextInt(3)}',
+            CompletionFields.completedAt:
+                '2026-10-2${random.nextInt(9)}T09:00:00Z',
+          },
+          {Op.deletedField: random.nextBool()},
+        ]),
         'x' => pick<Map<String, Object?>>([
           {TaskLabelFields.taskId: 't0', TaskLabelFields.labelId: 'l0'},
           {Op.deletedField: random.nextBool()},
@@ -182,6 +207,7 @@ void main() {
             'l' => EntityTypes.label,
             'x' => EntityTypes.taskLabel,
             'g' => EntityTypes.settings,
+            'c' => EntityTypes.completion,
             _ => EntityTypes.section,
           };
           await node.engine.mutate(type, id, randomFields(id));

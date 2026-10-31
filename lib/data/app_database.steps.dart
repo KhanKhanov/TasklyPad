@@ -765,8 +765,369 @@ i1.GeneratedColumn<String> _column_40(String aliasedName) =>
       type: i1.DriftSqlType.string,
       $customConstraints: 'NULL',
     );
+
+final class Schema3 extends i0.VersionedSchema {
+  Schema3({required super.database}) : super(version: 3);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    ops,
+    fieldVersions,
+    conflicts,
+    syncCursors,
+    localMeta,
+    projects,
+    tasks,
+    sections,
+    labels,
+    taskLabels,
+    completions,
+    opsByField,
+    opsByNodeHlc,
+    tasksByProject,
+    tasksByDue,
+    tasksByParent,
+    sectionsByProject,
+    taskLabelsByTask,
+    taskLabelsByLabel,
+    completionsByTask,
+  ];
+  late final Shape0 ops = Shape0(
+    source: i0.VersionedTable(
+      entityName: 'ops',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(op_id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_7,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape1 fieldVersions = Shape1(
+    source: i0.VersionedTable(
+      entityName: 'field_versions',
+      withoutRowId: true,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(entity_type, entity_id, field)'],
+      columns: [_column_4, _column_5, _column_6, _column_2, _column_7],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape2 conflicts = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'conflicts',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_8,
+        _column_9,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_10,
+        _column_11,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape3 syncCursors = Shape3(
+    source: i0.VersionedTable(
+      entityName: 'sync_cursors',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(node_id)'],
+      columns: [_column_1, _column_12],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape4 localMeta = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'local_meta',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY("key")'],
+      columns: [_column_13, _column_14],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape5 projects = Shape5(
+    source: i0.VersionedTable(
+      entityName: 'projects',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_8,
+        _column_15,
+        _column_16,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_23,
+        _column_24,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape10 tasks = Shape10(
+    source: i0.VersionedTable(
+      entityName: 'tasks',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_8,
+        _column_25,
+        _column_26,
+        _column_27,
+        _column_28,
+        _column_17,
+        _column_18,
+        _column_29,
+        _column_30,
+        _column_31,
+        _column_32,
+        _column_41,
+        _column_42,
+        _column_43,
+        _column_44,
+        _column_33,
+        _column_34,
+        _column_35,
+        _column_23,
+        _column_36,
+        _column_37,
+        _column_38,
+        _column_24,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape7 sections = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'sections',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_8,
+        _column_15,
+        _column_27,
+        _column_18,
+        _column_23,
+        _column_20,
+        _column_24,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape8 labels = Shape8(
+    source: i0.VersionedTable(
+      entityName: 'labels',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_8,
+        _column_15,
+        _column_16,
+        _column_18,
+        _column_19,
+        _column_24,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape9 taskLabels = Shape9(
+    source: i0.VersionedTable(
+      entityName: 'task_labels',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [_column_8, _column_39, _column_40, _column_24],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape11 completions = Shape11(
+    source: i0.VersionedTable(
+      entityName: 'completions',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [_column_8, _column_39, _column_45, _column_37, _column_24],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Index opsByField = i1.Index(
+    'ops_by_field',
+    'CREATE INDEX ops_by_field ON ops (entity_type, entity_id, field)',
+  );
+  final i1.Index opsByNodeHlc = i1.Index(
+    'ops_by_node_hlc',
+    'CREATE INDEX ops_by_node_hlc ON ops (node_id, hlc)',
+  );
+  final i1.Index tasksByProject = i1.Index(
+    'tasks_by_project',
+    'CREATE INDEX tasks_by_project ON tasks (project_id, order_key)',
+  );
+  final i1.Index tasksByDue = i1.Index(
+    'tasks_by_due',
+    'CREATE INDEX tasks_by_due ON tasks (due_date)',
+  );
+  final i1.Index tasksByParent = i1.Index(
+    'tasks_by_parent',
+    'CREATE INDEX tasks_by_parent ON tasks (parent_id)',
+  );
+  final i1.Index sectionsByProject = i1.Index(
+    'sections_by_project',
+    'CREATE INDEX sections_by_project ON sections (project_id, order_key)',
+  );
+  final i1.Index taskLabelsByTask = i1.Index(
+    'task_labels_by_task',
+    'CREATE INDEX task_labels_by_task ON task_labels (task_id)',
+  );
+  final i1.Index taskLabelsByLabel = i1.Index(
+    'task_labels_by_label',
+    'CREATE INDEX task_labels_by_label ON task_labels (label_id)',
+  );
+  final i1.Index completionsByTask = i1.Index(
+    'completions_by_task',
+    'CREATE INDEX completions_by_task ON completions (task_id)',
+  );
+}
+
+class Shape10 extends i0.VersionedTable {
+  Shape10({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get content =>
+      columnsByName['content']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get description =>
+      columnsByName['description']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get projectId =>
+      columnsByName['project_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get sectionId =>
+      columnsByName['section_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get parentId =>
+      columnsByName['parent_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get orderKey =>
+      columnsByName['order_key']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get priority =>
+      columnsByName['priority']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get dueDate =>
+      columnsByName['due_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueTime =>
+      columnsByName['due_time']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueTz =>
+      columnsByName['due_tz']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueString =>
+      columnsByName['due_string']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueLang =>
+      columnsByName['due_lang']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueRule =>
+      columnsByName['due_rule']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get dueIsRecurring =>
+      columnsByName['due_is_recurring']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get deadlineDate =>
+      columnsByName['deadline_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get durationAmount =>
+      columnsByName['duration_amount']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get durationUnit =>
+      columnsByName['duration_unit']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get isCollapsed =>
+      columnsByName['is_collapsed']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get isCompleted =>
+      columnsByName['is_completed']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get completedAt =>
+      columnsByName['completed_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get addedAt =>
+      columnsByName['added_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+}
+
+i1.GeneratedColumn<String> _column_41(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'due_string',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
+i1.GeneratedColumn<String> _column_42(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'due_lang',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
+i1.GeneratedColumn<String> _column_43(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'due_rule',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
+i1.GeneratedColumn<int> _column_44(String aliasedName) =>
+    i1.GeneratedColumn<int>(
+      'due_is_recurring',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.int,
+      $customConstraints:
+          'NOT NULL DEFAULT 0 CHECK (due_is_recurring IN (0, 1))',
+      defaultValue: const i1.CustomExpression('0'),
+    );
+
+class Shape11 extends i0.VersionedTable {
+  Shape11({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get taskId =>
+      columnsByName['task_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get dueWas =>
+      columnsByName['due_was']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get completedAt =>
+      columnsByName['completed_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get deleted =>
+      columnsByName['deleted']! as i1.GeneratedColumn<int>;
+}
+
+i1.GeneratedColumn<String> _column_45(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'due_was',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -775,6 +1136,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from1To2(migrator, schema);
         return 2;
+      case 2:
+        final schema = Schema3(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from2To3(migrator, schema);
+        return 3;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -783,6 +1149,7 @@ i0.MigrationStepWithVersion migrationSteps({
 
 i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) => i0.VersionedSchema.stepByStepHelper(
-  step: migrationSteps(from1To2: from1To2),
+  step: migrationSteps(from1To2: from1To2, from2To3: from2To3),
 );

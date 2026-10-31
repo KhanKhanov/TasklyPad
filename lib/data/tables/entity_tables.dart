@@ -56,6 +56,19 @@ class Tasks extends Table {
   TextColumn get dueTime => text().nullable()();
   TextColumn get dueTz => text().nullable()();
 
+  /// Срок текстом, как его ввёл пользователь, и язык разбора (`ru`, `en`).
+  TextColumn get dueString => text().nullable()();
+  TextColumn get dueLang => text().nullable()();
+
+  /// Правило повторения — JSON `{"rrule": [...], "from_completion": bool}`;
+  /// `null` — срок не повторяется или правило не разобрано.
+  TextColumn get dueRule => text().nullable()();
+
+  /// Есть правило [dueRule] — значок повтора и фильтр `recurring` (M5) без
+  /// разбора JSON.
+  BoolColumn get dueIsRecurring =>
+      boolean().withDefault(const Constant(false))();
+
   /// Дедлайн — отдельная от срока дата `YYYY-MM-DD`, без времени.
   TextColumn get deadlineDate => text().nullable()();
 
@@ -102,6 +115,27 @@ class Labels extends Table {
   TextColumn get color => text().withDefault(const Constant('charcoal'))();
   TextColumn get orderKey => text().withDefault(const Constant(''))();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Выполненные вхождения повторяющихся задач — история для «Завершённых»
+/// (M8) и кармы (M10). Id детерминированный (`completionId`): одно
+/// вхождение, отмеченное на двух устройствах, — одна строка; «Отменить» —
+/// строка с `deleted = true`.
+@DataClassName('CompletionRow')
+@TableIndex(name: 'completions_by_task', columns: {#taskId})
+class Completions extends Table {
+  TextColumn get id => text()();
+  TextColumn get taskId => text().nullable()();
+
+  /// Срок вхождения: `YYYY-MM-DD` или `YYYY-MM-DDTHH:MM`.
+  TextColumn get dueWas => text().nullable()();
+
+  /// UTC ISO-8601.
+  TextColumn get completedAt => text().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override

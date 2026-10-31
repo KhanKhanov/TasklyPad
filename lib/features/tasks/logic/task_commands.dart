@@ -571,10 +571,24 @@ final class TaskCommands {
 
   String _now() => _clock.nowUtc().toIso8601String();
 
+  /// Срок целиком, с правилом: ключ, которого нет, `Mutator.update` уберёт
+  /// из прежнего срока (известный ключ), — срок без правила снимает повтор.
   static Map<String, Object?>? _dueValue(Due? due) => due == null
       ? null
-      : ({DueKeys.date: due.date, DueKeys.time: due.time, DueKeys.tz: due.tz}
-          ..removeWhere((_, v) => v == null));
+      : ({
+          DueKeys.date: due.date,
+          DueKeys.time: due.time,
+          DueKeys.tz: due.tz,
+          DueKeys.string: due.string,
+          DueKeys.lang: due.lang,
+          DueKeys.rule: switch (due.rule) {
+            final rule? => {
+              RuleKeys.rrule: rule.rrule,
+              RuleKeys.fromCompletion: rule.fromCompletion,
+            },
+            null => null,
+          },
+        }..removeWhere((_, v) => v == null));
 
   static Map<String, Object?>? _deadlineValue(String? date) =>
       date == null ? null : {DeadlineKeys.date: date};

@@ -2,6 +2,7 @@ import 'package:oplog_sync/oplog_sync.dart';
 
 import '../data/app_database.dart';
 import '../data/local_meta_dao.dart';
+import '../data/projection/due_rule.dart';
 import '../data/projection/entity_fields.dart';
 import '../domain/conflicts.dart';
 import '../domain/models.dart';
@@ -13,9 +14,10 @@ import 'drift_op_store.dart';
 /// журнала ops, а «разрешён ли конфликт» — из `DriftOpStore.conflicts`, чтобы
 /// правило было записано в одном месте.
 ///
-/// Конфликты по полям из [silentFields] не показываются: по текущим правилам
-/// это не конфликт (записаны до того, как поле стало «молчащим»), и
-/// «Пересобрать базу из журнала» их удалит. Конфликты общей темы не
+/// Конфликты по полям из [silentFields] и сущностям типов из
+/// [silentEntityTypes] не показываются: по текущим правилам это не конфликт
+/// (записаны до того, как поле или тип стали «молчащими»), и «Пересобрать
+/// базу из журнала» их удалит. Конфликты общей темы не
 /// показываются, пока на устройстве выключена «Синхронизировать тему»: тема
 /// на нём своя, спор его не касается (решение 3А конца этапа M2).
 final class ConflictRepository {
@@ -86,7 +88,11 @@ final class ConflictRepository {
     final shown = <Conflict>[];
     final hidden = <String>{};
     for (final c in await _store.conflicts()) {
-      if (c.resolved || silentFields.contains(c.field)) continue;
+      if (c.resolved ||
+          silentFields.contains(c.field) ||
+          silentEntityTypes.contains(c.entityType)) {
+        continue;
+      }
       if (!themeShared &&
           c.entityType == EntityTypes.settings &&
           _themeFields.contains(c.field)) {
@@ -369,10 +375,14 @@ final class ConflictRepository {
       raw[DueKeys.tz],
     );
     if (date is! String) return raw;
+    final (string, lang) = (raw[DueKeys.string], raw[DueKeys.lang]);
     return Due(
       date: date,
       time: time is String ? time : null,
       tz: tz is String ? tz : null,
+      string: string is String ? string : null,
+      lang: lang is String ? lang : null,
+      rule: recurrenceRuleOf(raw[DueKeys.rule]),
     );
   }
 

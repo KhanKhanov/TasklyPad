@@ -17,7 +17,29 @@ abstract final class EntityTypes {
   /// Настройки пользователя — одна сущность [settingsEntityId] без таблицы:
   /// поля читаются из `field_versions` (SYNC_DESIGN «Специальные случаи»).
   static const String settings = 'settings';
+
+  /// Выполненное вхождение повторяющейся задачи с id [completionId].
+  static const String completion = 'completion';
 }
+
+/// Типы сущностей, которые не дают конфликтов: спор о выполнении вхождения и
+/// так виден конфликтом поля `due` задачи (решение 3 плана M3).
+const Set<String> silentEntityTypes = {EntityTypes.completion};
+
+/// Id записи о выполнении вхождения [dueWas] задачи [taskId]: один и тот же
+/// на всех устройствах. Два устройства, отметившие одно вхождение офлайн,
+/// пишут одну запись, а «Отменить» её удаляет (SYNC_DESIGN «Специальные
+/// случаи»). [dueWas] — только из [dueWasOf].
+String completionId(String taskId, String dueWas) =>
+    uuidV8([EntityTypes.completion, taskId, dueWas]);
+
+/// Срок вхождения для [completionId] и поля `due_was`: `YYYY-MM-DD` или
+/// `YYYY-MM-DDTHH:MM` у срока со временем — иначе два вхождения одного дня
+/// (`every hour`) дали бы одну запись. Пояс не входит: вхождения одной
+/// задачи различаются стенным временем. Строка — часть id, менять формат
+/// нельзя: записи одного вхождения на разных версиях раздвоились бы.
+String dueWasOf(String date, String? time) =>
+    time == null ? date : '${date}T$time';
 
 /// Id сущности настроек — один на всех устройствах, как [inboxProjectId]:
 /// иначе каждое устройство завело бы свои настройки, и они бы не сошлись.
@@ -67,11 +89,19 @@ const Set<String> silentFields = {
 
 /// Поля-объекты и ключи, которые знает эта версия приложения. При правке
 /// известные ключи заменяются новым значением, а незнакомые сохраняются из
-/// текущего: так не теряется, например, правило повторения от более новой
-/// версии. Новый ключ срока (правило повторения, M3) — добавить сюда (docs/OBLIGATIONS.md, О-7).
+/// текущего: так не теряются ключи от более новой версии. Правило повторения
+/// — известный ключ: команда, пишущая срок, передаёт его явно, а срок без
+/// правила снимает повторение (решение 1 плана M3).
 const Map<String, Map<String, Set<String>>> mergedObjectFields = {
   EntityTypes.task: {
-    TaskFields.due: {DueKeys.date, DueKeys.time, DueKeys.tz},
+    TaskFields.due: {
+      DueKeys.date,
+      DueKeys.time,
+      DueKeys.tz,
+      DueKeys.string,
+      DueKeys.lang,
+      DueKeys.rule,
+    },
     TaskFields.deadline: {DeadlineKeys.date},
     TaskFields.duration: {DurationKeys.amount, DurationKeys.unit},
   },
@@ -105,12 +135,35 @@ abstract final class TaskFields {
   static const String deleted = Op.deletedField;
 }
 
-/// Ключи объекта срока. Остальные ключи (например, правило повторения)
-/// хранятся в op и `field_versions` как есть.
+/// Ключи объекта срока. Незнакомые ключи (от более новой версии) хранятся в
+/// op и `field_versions` как есть.
 abstract final class DueKeys {
   static const String date = 'date';
   static const String time = 'time';
   static const String tz = 'tz';
+
+  /// Срок текстом, как его ввёл пользователь («каждый пн»), — как `string`
+  /// в Todoist API; нужен экспорту CSV (M11).
+  static const String string = 'string';
+
+  /// Язык, на котором разобран [string] (`ru`, `en`).
+  static const String lang = 'lang';
+
+  /// Объект [RuleKeys]; есть — задача повторяющаяся. `is_recurring` Todoist
+  /// не пишется: это «правило есть».
+  static const String rule = 'rule';
+}
+
+/// Ключи правила повторения в сроке. Набор закрыт: правило заменяется
+/// целиком, и ключ, добавленный сюда более новой версией, эта стёрла бы —
+/// расширения только новыми ключами [DueKeys] (SYNC_DESIGN «Проекции»).
+abstract final class RuleKeys {
+  /// Непустой список строк RRULE (RFC 5545) без DTSTART; конец серии —
+  /// `UNTIL`. Несколько правил — для форм вроде `every 14 jan, 14 apr`.
+  static const String rrule = 'rrule';
+
+  /// `every!`: следующее вхождение считается от даты выполнения.
+  static const String fromCompletion = 'from_completion';
 }
 
 /// Ключи объекта дедлайна.
@@ -167,6 +220,29 @@ abstract final class SettingsFields {
 
   /// Внешний вид: `light`, `dark` или `system`.
   static const String themeAppearance = 'theme_appearance';
+
+  /// «Умное распознавание дат» в быстром добавлении; поля нет — включено,
+  /// как у нового аккаунта Todoist. Имени в Todoist API не нашли — своё.
+  static const String smartDateRecognition = 'smart_date_recognition';
+
+  /// «Сбрасывать подзадачи» повторяющейся задачи — имя как
+  /// `reset_recurring_subtasks` в Todoist API (импорт M11); поля нет —
+  /// включено (допущение О-57, решение 6 плана M3).
+  static const String resetRecurringSubtasks = 'reset_recurring_subtasks';
+}
+
+/// Поля записи о выполнении вхождения.
+abstract final class CompletionFields {
+  static const String taskId = 'task_id';
+
+  /// Срок выполненного вхождения — ключ [completionId].
+  static const String dueWas = 'due_was';
+
+  /// Момент выполнения, UTC ISO-8601.
+  static const String completedAt = TaskFields.completedAt;
+
+  /// «Отменить» в тосте — tombstone записи.
+  static const String deleted = Op.deletedField;
 }
 
 /// Поля связи «задача — метка».

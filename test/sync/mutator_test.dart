@@ -57,12 +57,18 @@ void main() {
   });
 
   group('срок (due) — слияние объекта', () {
-    // Повторение появится в M5; до тех пор его ключи для этой версии
-    // приложения незнакомые — как поля от более новой версии.
+    // `string`, `lang`, `rule` эта версия знает; `is_recurring` и `rule_v2`
+    // — нет, как ключи от более новой версии.
+    const rule = {
+      'rrule': ['FREQ=WEEKLY;BYDAY=MO'],
+      'from_completion': false,
+    };
     const recurring = {
       'date': '2026-10-26',
       'time': '10:00',
       'string': 'каждый пн',
+      'lang': 'ru',
+      'rule': rule,
       'is_recurring': true,
       'rule_v2': {'freq': 'weekly', 'by_day': 'MO'},
     };
@@ -73,22 +79,51 @@ void main() {
           TaskFields.due: due,
         });
 
-    test('новый срок сохраняет незнакомые ключи и заменяет известные — '
-        'дата без времени убирает время', () async {
-      final id = await taskWithDue(recurring);
-      await dev.services.mutator.update(EntityTypes.task, id, {
-        TaskFields.due: {'date': '2026-11-02'},
-      });
+    test(
+      'новый срок сохраняет незнакомые ключи и заменяет известные — '
+      'дата без времени и без правила убирает время и повтор (О-7)',
+      () async {
+        final id = await taskWithDue(recurring);
+        await dev.services.mutator.update(EntityTypes.task, id, {
+          TaskFields.due: {'date': '2026-11-02'},
+        });
 
-      expect((await dev.entity(EntityTypes.task, id))?[TaskFields.due], {
-        'date': '2026-11-02',
-        'string': 'каждый пн',
-        'is_recurring': true,
-        'rule_v2': {'freq': 'weekly', 'by_day': 'MO'},
-      });
-      final row = await dev.taskRow(id);
-      expect((row?.dueDate, row?.dueTime), ('2026-11-02', null));
-    });
+        expect((await dev.entity(EntityTypes.task, id))?[TaskFields.due], {
+          'date': '2026-11-02',
+          'is_recurring': true,
+          'rule_v2': {'freq': 'weekly', 'by_day': 'MO'},
+        });
+        final row = await dev.taskRow(id);
+        expect((row?.dueDate, row?.dueTime), ('2026-11-02', null));
+        expect((row?.dueRule, row?.dueIsRecurring), (null, false));
+      },
+    );
+
+    test(
+      'новая дата с правилом — правило, текст и язык сохраняются (О-7)',
+      () async {
+        final id = await taskWithDue(recurring);
+        await dev.services.mutator.update(EntityTypes.task, id, {
+          TaskFields.due: {
+            'date': '2026-11-02',
+            'time': '10:00',
+            'string': 'каждый пн',
+            'lang': 'ru',
+            'rule': rule,
+          },
+        });
+
+        expect(
+          (await dev.entity(EntityTypes.task, id))?[TaskFields.due],
+          recurring.map(
+            (key, value) => MapEntry(key, key == 'date' ? '2026-11-02' : value),
+          ),
+        );
+        final row = await dev.taskRow(id);
+        expect(row?.dueIsRecurring, isTrue);
+        expect(row?.dueString, 'каждый пн');
+      },
+    );
 
     test('ключ со значением null не записывается', () async {
       final id = await taskWithDue({'date': '2026-10-26'});

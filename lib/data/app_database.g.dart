@@ -2530,6 +2530,54 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dueStringMeta = const VerificationMeta(
+    'dueString',
+  );
+  @override
+  late final GeneratedColumn<String> dueString = GeneratedColumn<String>(
+    'due_string',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dueLangMeta = const VerificationMeta(
+    'dueLang',
+  );
+  @override
+  late final GeneratedColumn<String> dueLang = GeneratedColumn<String>(
+    'due_lang',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dueRuleMeta = const VerificationMeta(
+    'dueRule',
+  );
+  @override
+  late final GeneratedColumn<String> dueRule = GeneratedColumn<String>(
+    'due_rule',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dueIsRecurringMeta = const VerificationMeta(
+    'dueIsRecurring',
+  );
+  @override
+  late final GeneratedColumn<bool> dueIsRecurring = GeneratedColumn<bool>(
+    'due_is_recurring',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("due_is_recurring" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _deadlineDateMeta = const VerificationMeta(
     'deadlineDate',
   );
@@ -2643,6 +2691,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     dueDate,
     dueTime,
     dueTz,
+    dueString,
+    dueLang,
+    dueRule,
+    dueIsRecurring,
     deadlineDate,
     durationAmount,
     durationUnit,
@@ -2730,6 +2782,33 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       context.handle(
         _dueTzMeta,
         dueTz.isAcceptableOrUnknown(data['due_tz']!, _dueTzMeta),
+      );
+    }
+    if (data.containsKey('due_string')) {
+      context.handle(
+        _dueStringMeta,
+        dueString.isAcceptableOrUnknown(data['due_string']!, _dueStringMeta),
+      );
+    }
+    if (data.containsKey('due_lang')) {
+      context.handle(
+        _dueLangMeta,
+        dueLang.isAcceptableOrUnknown(data['due_lang']!, _dueLangMeta),
+      );
+    }
+    if (data.containsKey('due_rule')) {
+      context.handle(
+        _dueRuleMeta,
+        dueRule.isAcceptableOrUnknown(data['due_rule']!, _dueRuleMeta),
+      );
+    }
+    if (data.containsKey('due_is_recurring')) {
+      context.handle(
+        _dueIsRecurringMeta,
+        dueIsRecurring.isAcceptableOrUnknown(
+          data['due_is_recurring']!,
+          _dueIsRecurringMeta,
+        ),
       );
     }
     if (data.containsKey('deadline_date')) {
@@ -2851,6 +2930,22 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.string,
         data['${effectivePrefix}due_tz'],
       ),
+      dueString: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_string'],
+      ),
+      dueLang: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_lang'],
+      ),
+      dueRule: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_rule'],
+      ),
+      dueIsRecurring: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}due_is_recurring'],
+      )!,
       deadlineDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}deadline_date'],
@@ -2911,6 +3006,18 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final String? dueTime;
   final String? dueTz;
 
+  /// Срок текстом, как его ввёл пользователь, и язык разбора (`ru`, `en`).
+  final String? dueString;
+  final String? dueLang;
+
+  /// Правило повторения — JSON `{"rrule": [...], "from_completion": bool}`;
+  /// `null` — срок не повторяется или правило не разобрано.
+  final String? dueRule;
+
+  /// Есть правило [dueRule] — значок повтора и фильтр `recurring` (M5) без
+  /// разбора JSON.
+  final bool dueIsRecurring;
+
   /// Дедлайн — отдельная от срока дата `YYYY-MM-DD`, без времени.
   final String? deadlineDate;
 
@@ -2938,6 +3045,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     this.dueDate,
     this.dueTime,
     this.dueTz,
+    this.dueString,
+    this.dueLang,
+    this.dueRule,
+    required this.dueIsRecurring,
     this.deadlineDate,
     this.durationAmount,
     this.durationUnit,
@@ -2973,6 +3084,16 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     if (!nullToAbsent || dueTz != null) {
       map['due_tz'] = Variable<String>(dueTz);
     }
+    if (!nullToAbsent || dueString != null) {
+      map['due_string'] = Variable<String>(dueString);
+    }
+    if (!nullToAbsent || dueLang != null) {
+      map['due_lang'] = Variable<String>(dueLang);
+    }
+    if (!nullToAbsent || dueRule != null) {
+      map['due_rule'] = Variable<String>(dueRule);
+    }
+    map['due_is_recurring'] = Variable<bool>(dueIsRecurring);
     if (!nullToAbsent || deadlineDate != null) {
       map['deadline_date'] = Variable<String>(deadlineDate);
     }
@@ -3019,6 +3140,16 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dueTz: dueTz == null && nullToAbsent
           ? const Value.absent()
           : Value(dueTz),
+      dueString: dueString == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueString),
+      dueLang: dueLang == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueLang),
+      dueRule: dueRule == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueRule),
+      dueIsRecurring: Value(dueIsRecurring),
       deadlineDate: deadlineDate == null && nullToAbsent
           ? const Value.absent()
           : Value(deadlineDate),
@@ -3057,6 +3188,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dueDate: serializer.fromJson<String?>(json['dueDate']),
       dueTime: serializer.fromJson<String?>(json['dueTime']),
       dueTz: serializer.fromJson<String?>(json['dueTz']),
+      dueString: serializer.fromJson<String?>(json['dueString']),
+      dueLang: serializer.fromJson<String?>(json['dueLang']),
+      dueRule: serializer.fromJson<String?>(json['dueRule']),
+      dueIsRecurring: serializer.fromJson<bool>(json['dueIsRecurring']),
       deadlineDate: serializer.fromJson<String?>(json['deadlineDate']),
       durationAmount: serializer.fromJson<int?>(json['durationAmount']),
       durationUnit: serializer.fromJson<String?>(json['durationUnit']),
@@ -3082,6 +3217,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'dueDate': serializer.toJson<String?>(dueDate),
       'dueTime': serializer.toJson<String?>(dueTime),
       'dueTz': serializer.toJson<String?>(dueTz),
+      'dueString': serializer.toJson<String?>(dueString),
+      'dueLang': serializer.toJson<String?>(dueLang),
+      'dueRule': serializer.toJson<String?>(dueRule),
+      'dueIsRecurring': serializer.toJson<bool>(dueIsRecurring),
       'deadlineDate': serializer.toJson<String?>(deadlineDate),
       'durationAmount': serializer.toJson<int?>(durationAmount),
       'durationUnit': serializer.toJson<String?>(durationUnit),
@@ -3105,6 +3244,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     Value<String?> dueDate = const Value.absent(),
     Value<String?> dueTime = const Value.absent(),
     Value<String?> dueTz = const Value.absent(),
+    Value<String?> dueString = const Value.absent(),
+    Value<String?> dueLang = const Value.absent(),
+    Value<String?> dueRule = const Value.absent(),
+    bool? dueIsRecurring,
     Value<String?> deadlineDate = const Value.absent(),
     Value<int?> durationAmount = const Value.absent(),
     Value<String?> durationUnit = const Value.absent(),
@@ -3125,6 +3268,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     dueDate: dueDate.present ? dueDate.value : this.dueDate,
     dueTime: dueTime.present ? dueTime.value : this.dueTime,
     dueTz: dueTz.present ? dueTz.value : this.dueTz,
+    dueString: dueString.present ? dueString.value : this.dueString,
+    dueLang: dueLang.present ? dueLang.value : this.dueLang,
+    dueRule: dueRule.present ? dueRule.value : this.dueRule,
+    dueIsRecurring: dueIsRecurring ?? this.dueIsRecurring,
     deadlineDate: deadlineDate.present ? deadlineDate.value : this.deadlineDate,
     durationAmount: durationAmount.present
         ? durationAmount.value
@@ -3151,6 +3298,12 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       dueTime: data.dueTime.present ? data.dueTime.value : this.dueTime,
       dueTz: data.dueTz.present ? data.dueTz.value : this.dueTz,
+      dueString: data.dueString.present ? data.dueString.value : this.dueString,
+      dueLang: data.dueLang.present ? data.dueLang.value : this.dueLang,
+      dueRule: data.dueRule.present ? data.dueRule.value : this.dueRule,
+      dueIsRecurring: data.dueIsRecurring.present
+          ? data.dueIsRecurring.value
+          : this.dueIsRecurring,
       deadlineDate: data.deadlineDate.present
           ? data.deadlineDate.value
           : this.deadlineDate,
@@ -3188,6 +3341,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('dueDate: $dueDate, ')
           ..write('dueTime: $dueTime, ')
           ..write('dueTz: $dueTz, ')
+          ..write('dueString: $dueString, ')
+          ..write('dueLang: $dueLang, ')
+          ..write('dueRule: $dueRule, ')
+          ..write('dueIsRecurring: $dueIsRecurring, ')
           ..write('deadlineDate: $deadlineDate, ')
           ..write('durationAmount: $durationAmount, ')
           ..write('durationUnit: $durationUnit, ')
@@ -3201,7 +3358,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     content,
     description,
@@ -3213,6 +3370,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     dueDate,
     dueTime,
     dueTz,
+    dueString,
+    dueLang,
+    dueRule,
+    dueIsRecurring,
     deadlineDate,
     durationAmount,
     durationUnit,
@@ -3221,7 +3382,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     completedAt,
     addedAt,
     deleted,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3237,6 +3398,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.dueDate == this.dueDate &&
           other.dueTime == this.dueTime &&
           other.dueTz == this.dueTz &&
+          other.dueString == this.dueString &&
+          other.dueLang == this.dueLang &&
+          other.dueRule == this.dueRule &&
+          other.dueIsRecurring == this.dueIsRecurring &&
           other.deadlineDate == this.deadlineDate &&
           other.durationAmount == this.durationAmount &&
           other.durationUnit == this.durationUnit &&
@@ -3259,6 +3424,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<String?> dueDate;
   final Value<String?> dueTime;
   final Value<String?> dueTz;
+  final Value<String?> dueString;
+  final Value<String?> dueLang;
+  final Value<String?> dueRule;
+  final Value<bool> dueIsRecurring;
   final Value<String?> deadlineDate;
   final Value<int?> durationAmount;
   final Value<String?> durationUnit;
@@ -3280,6 +3449,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.dueDate = const Value.absent(),
     this.dueTime = const Value.absent(),
     this.dueTz = const Value.absent(),
+    this.dueString = const Value.absent(),
+    this.dueLang = const Value.absent(),
+    this.dueRule = const Value.absent(),
+    this.dueIsRecurring = const Value.absent(),
     this.deadlineDate = const Value.absent(),
     this.durationAmount = const Value.absent(),
     this.durationUnit = const Value.absent(),
@@ -3302,6 +3475,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.dueDate = const Value.absent(),
     this.dueTime = const Value.absent(),
     this.dueTz = const Value.absent(),
+    this.dueString = const Value.absent(),
+    this.dueLang = const Value.absent(),
+    this.dueRule = const Value.absent(),
+    this.dueIsRecurring = const Value.absent(),
     this.deadlineDate = const Value.absent(),
     this.durationAmount = const Value.absent(),
     this.durationUnit = const Value.absent(),
@@ -3324,6 +3501,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<String>? dueDate,
     Expression<String>? dueTime,
     Expression<String>? dueTz,
+    Expression<String>? dueString,
+    Expression<String>? dueLang,
+    Expression<String>? dueRule,
+    Expression<bool>? dueIsRecurring,
     Expression<String>? deadlineDate,
     Expression<int>? durationAmount,
     Expression<String>? durationUnit,
@@ -3346,6 +3527,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (dueDate != null) 'due_date': dueDate,
       if (dueTime != null) 'due_time': dueTime,
       if (dueTz != null) 'due_tz': dueTz,
+      if (dueString != null) 'due_string': dueString,
+      if (dueLang != null) 'due_lang': dueLang,
+      if (dueRule != null) 'due_rule': dueRule,
+      if (dueIsRecurring != null) 'due_is_recurring': dueIsRecurring,
       if (deadlineDate != null) 'deadline_date': deadlineDate,
       if (durationAmount != null) 'duration_amount': durationAmount,
       if (durationUnit != null) 'duration_unit': durationUnit,
@@ -3370,6 +3555,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<String?>? dueDate,
     Value<String?>? dueTime,
     Value<String?>? dueTz,
+    Value<String?>? dueString,
+    Value<String?>? dueLang,
+    Value<String?>? dueRule,
+    Value<bool>? dueIsRecurring,
     Value<String?>? deadlineDate,
     Value<int?>? durationAmount,
     Value<String?>? durationUnit,
@@ -3392,6 +3581,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       dueDate: dueDate ?? this.dueDate,
       dueTime: dueTime ?? this.dueTime,
       dueTz: dueTz ?? this.dueTz,
+      dueString: dueString ?? this.dueString,
+      dueLang: dueLang ?? this.dueLang,
+      dueRule: dueRule ?? this.dueRule,
+      dueIsRecurring: dueIsRecurring ?? this.dueIsRecurring,
       deadlineDate: deadlineDate ?? this.deadlineDate,
       durationAmount: durationAmount ?? this.durationAmount,
       durationUnit: durationUnit ?? this.durationUnit,
@@ -3440,6 +3633,18 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (dueTz.present) {
       map['due_tz'] = Variable<String>(dueTz.value);
     }
+    if (dueString.present) {
+      map['due_string'] = Variable<String>(dueString.value);
+    }
+    if (dueLang.present) {
+      map['due_lang'] = Variable<String>(dueLang.value);
+    }
+    if (dueRule.present) {
+      map['due_rule'] = Variable<String>(dueRule.value);
+    }
+    if (dueIsRecurring.present) {
+      map['due_is_recurring'] = Variable<bool>(dueIsRecurring.value);
+    }
     if (deadlineDate.present) {
       map['deadline_date'] = Variable<String>(deadlineDate.value);
     }
@@ -3484,6 +3689,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('dueDate: $dueDate, ')
           ..write('dueTime: $dueTime, ')
           ..write('dueTz: $dueTz, ')
+          ..write('dueString: $dueString, ')
+          ..write('dueLang: $dueLang, ')
+          ..write('dueRule: $dueRule, ')
+          ..write('dueIsRecurring: $dueIsRecurring, ')
           ..write('deadlineDate: $deadlineDate, ')
           ..write('durationAmount: $durationAmount, ')
           ..write('durationUnit: $durationUnit, ')
@@ -4683,6 +4892,377 @@ class TaskLabelsCompanion extends UpdateCompanion<TaskLabelRow> {
   }
 }
 
+class $CompletionsTable extends Completions
+    with TableInfo<$CompletionsTable, CompletionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CompletionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<String> taskId = GeneratedColumn<String>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dueWasMeta = const VerificationMeta('dueWas');
+  @override
+  late final GeneratedColumn<String> dueWas = GeneratedColumn<String>(
+    'due_was',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<String> completedAt = GeneratedColumn<String>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    taskId,
+    dueWas,
+    completedAt,
+    deleted,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'completions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CompletionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('due_was')) {
+      context.handle(
+        _dueWasMeta,
+        dueWas.isAcceptableOrUnknown(data['due_was']!, _dueWasMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CompletionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CompletionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_id'],
+      ),
+      dueWas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_was'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_at'],
+      ),
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+    );
+  }
+
+  @override
+  $CompletionsTable createAlias(String alias) {
+    return $CompletionsTable(attachedDatabase, alias);
+  }
+}
+
+class CompletionRow extends DataClass implements Insertable<CompletionRow> {
+  final String id;
+  final String? taskId;
+
+  /// Срок вхождения: `YYYY-MM-DD` или `YYYY-MM-DDTHH:MM`.
+  final String? dueWas;
+
+  /// UTC ISO-8601.
+  final String? completedAt;
+  final bool deleted;
+  const CompletionRow({
+    required this.id,
+    this.taskId,
+    this.dueWas,
+    this.completedAt,
+    required this.deleted,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<String>(taskId);
+    }
+    if (!nullToAbsent || dueWas != null) {
+      map['due_was'] = Variable<String>(dueWas);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<String>(completedAt);
+    }
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  CompletionsCompanion toCompanion(bool nullToAbsent) {
+    return CompletionsCompanion(
+      id: Value(id),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      dueWas: dueWas == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueWas),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory CompletionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CompletionRow(
+      id: serializer.fromJson<String>(json['id']),
+      taskId: serializer.fromJson<String?>(json['taskId']),
+      dueWas: serializer.fromJson<String?>(json['dueWas']),
+      completedAt: serializer.fromJson<String?>(json['completedAt']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'taskId': serializer.toJson<String?>(taskId),
+      'dueWas': serializer.toJson<String?>(dueWas),
+      'completedAt': serializer.toJson<String?>(completedAt),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  CompletionRow copyWith({
+    String? id,
+    Value<String?> taskId = const Value.absent(),
+    Value<String?> dueWas = const Value.absent(),
+    Value<String?> completedAt = const Value.absent(),
+    bool? deleted,
+  }) => CompletionRow(
+    id: id ?? this.id,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    dueWas: dueWas.present ? dueWas.value : this.dueWas,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    deleted: deleted ?? this.deleted,
+  );
+  CompletionRow copyWithCompanion(CompletionsCompanion data) {
+    return CompletionRow(
+      id: data.id.present ? data.id.value : this.id,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      dueWas: data.dueWas.present ? data.dueWas.value : this.dueWas,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompletionRow(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('dueWas: $dueWas, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, taskId, dueWas, completedAt, deleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CompletionRow &&
+          other.id == this.id &&
+          other.taskId == this.taskId &&
+          other.dueWas == this.dueWas &&
+          other.completedAt == this.completedAt &&
+          other.deleted == this.deleted);
+}
+
+class CompletionsCompanion extends UpdateCompanion<CompletionRow> {
+  final Value<String> id;
+  final Value<String?> taskId;
+  final Value<String?> dueWas;
+  final Value<String?> completedAt;
+  final Value<bool> deleted;
+  final Value<int> rowid;
+  const CompletionsCompanion({
+    this.id = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.dueWas = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CompletionsCompanion.insert({
+    required String id,
+    this.taskId = const Value.absent(),
+    this.dueWas = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<CompletionRow> custom({
+    Expression<String>? id,
+    Expression<String>? taskId,
+    Expression<String>? dueWas,
+    Expression<String>? completedAt,
+    Expression<bool>? deleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (taskId != null) 'task_id': taskId,
+      if (dueWas != null) 'due_was': dueWas,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (deleted != null) 'deleted': deleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CompletionsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? taskId,
+    Value<String?>? dueWas,
+    Value<String?>? completedAt,
+    Value<bool>? deleted,
+    Value<int>? rowid,
+  }) {
+    return CompletionsCompanion(
+      id: id ?? this.id,
+      taskId: taskId ?? this.taskId,
+      dueWas: dueWas ?? this.dueWas,
+      completedAt: completedAt ?? this.completedAt,
+      deleted: deleted ?? this.deleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<String>(taskId.value);
+    }
+    if (dueWas.present) {
+      map['due_was'] = Variable<String>(dueWas.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<String>(completedAt.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CompletionsCompanion(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('dueWas: $dueWas, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('deleted: $deleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4696,6 +5276,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SectionsTable sections = $SectionsTable(this);
   late final $LabelsTable labels = $LabelsTable(this);
   late final $TaskLabelsTable taskLabels = $TaskLabelsTable(this);
+  late final $CompletionsTable completions = $CompletionsTable(this);
   late final Index opsByField = Index(
     'ops_by_field',
     'CREATE INDEX ops_by_field ON ops (entity_type, entity_id, field)',
@@ -4728,6 +5309,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'task_labels_by_label',
     'CREATE INDEX task_labels_by_label ON task_labels (label_id)',
   );
+  late final Index completionsByTask = Index(
+    'completions_by_task',
+    'CREATE INDEX completions_by_task ON completions (task_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4743,6 +5328,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sections,
     labels,
     taskLabels,
+    completions,
     opsByField,
     opsByNodeHlc,
     tasksByProject,
@@ -4751,6 +5337,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sectionsByProject,
     taskLabelsByTask,
     taskLabelsByLabel,
+    completionsByTask,
   ];
 }
 
@@ -6082,6 +6669,10 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> dueDate,
   Value<String?> dueTime,
   Value<String?> dueTz,
+  Value<String?> dueString,
+  Value<String?> dueLang,
+  Value<String?> dueRule,
+  Value<bool> dueIsRecurring,
   Value<String?> deadlineDate,
   Value<int?> durationAmount,
   Value<String?> durationUnit,
@@ -6104,6 +6695,10 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> dueDate,
   Value<String?> dueTime,
   Value<String?> dueTz,
+  Value<String?> dueString,
+  Value<String?> dueLang,
+  Value<String?> dueRule,
+  Value<bool> dueIsRecurring,
   Value<String?> deadlineDate,
   Value<int?> durationAmount,
   Value<String?> durationUnit,
@@ -6175,6 +6770,26 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get dueTz => $composableBuilder(
     column: $table.dueTz,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueString => $composableBuilder(
+    column: $table.dueString,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueLang => $composableBuilder(
+    column: $table.dueLang,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueRule => $composableBuilder(
+    column: $table.dueRule,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dueIsRecurring => $composableBuilder(
+    column: $table.dueIsRecurring,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6283,6 +6898,26 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get dueString => $composableBuilder(
+    column: $table.dueString,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dueLang => $composableBuilder(
+    column: $table.dueLang,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dueRule => $composableBuilder(
+    column: $table.dueRule,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dueIsRecurring => $composableBuilder(
+    column: $table.dueIsRecurring,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get deadlineDate => $composableBuilder(
     column: $table.deadlineDate,
     builder: (column) => ColumnOrderings(column),
@@ -6368,6 +7003,20 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<String> get dueTz =>
       $composableBuilder(column: $table.dueTz, builder: (column) => column);
 
+  GeneratedColumn<String> get dueString =>
+      $composableBuilder(column: $table.dueString, builder: (column) => column);
+
+  GeneratedColumn<String> get dueLang =>
+      $composableBuilder(column: $table.dueLang, builder: (column) => column);
+
+  GeneratedColumn<String> get dueRule =>
+      $composableBuilder(column: $table.dueRule, builder: (column) => column);
+
+  GeneratedColumn<bool> get dueIsRecurring => $composableBuilder(
+    column: $table.dueIsRecurring,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get deadlineDate => $composableBuilder(
     column: $table.deadlineDate,
     builder: (column) => column,
@@ -6444,6 +7093,10 @@ class $$TasksTableTableManager
                 Value<String?> dueDate = const Value.absent(),
                 Value<String?> dueTime = const Value.absent(),
                 Value<String?> dueTz = const Value.absent(),
+                Value<String?> dueString = const Value.absent(),
+                Value<String?> dueLang = const Value.absent(),
+                Value<String?> dueRule = const Value.absent(),
+                Value<bool> dueIsRecurring = const Value.absent(),
                 Value<String?> deadlineDate = const Value.absent(),
                 Value<int?> durationAmount = const Value.absent(),
                 Value<String?> durationUnit = const Value.absent(),
@@ -6465,6 +7118,10 @@ class $$TasksTableTableManager
                 dueDate: dueDate,
                 dueTime: dueTime,
                 dueTz: dueTz,
+                dueString: dueString,
+                dueLang: dueLang,
+                dueRule: dueRule,
+                dueIsRecurring: dueIsRecurring,
                 deadlineDate: deadlineDate,
                 durationAmount: durationAmount,
                 durationUnit: durationUnit,
@@ -6488,6 +7145,10 @@ class $$TasksTableTableManager
                 Value<String?> dueDate = const Value.absent(),
                 Value<String?> dueTime = const Value.absent(),
                 Value<String?> dueTz = const Value.absent(),
+                Value<String?> dueString = const Value.absent(),
+                Value<String?> dueLang = const Value.absent(),
+                Value<String?> dueRule = const Value.absent(),
+                Value<bool> dueIsRecurring = const Value.absent(),
                 Value<String?> deadlineDate = const Value.absent(),
                 Value<int?> durationAmount = const Value.absent(),
                 Value<String?> durationUnit = const Value.absent(),
@@ -6509,6 +7170,10 @@ class $$TasksTableTableManager
                 dueDate: dueDate,
                 dueTime: dueTime,
                 dueTz: dueTz,
+                dueString: dueString,
+                dueLang: dueLang,
+                dueRule: dueRule,
+                dueIsRecurring: dueIsRecurring,
                 deadlineDate: deadlineDate,
                 durationAmount: durationAmount,
                 durationUnit: durationUnit,
@@ -7206,6 +7871,217 @@ typedef $$TaskLabelsTableProcessedTableManager =
       TaskLabelRow,
       PrefetchHooks Function()
     >;
+typedef $$CompletionsTableCreateCompanionBuilder =
+    CompletionsCompanion Function({
+      required String id,
+      Value<String?> taskId,
+      Value<String?> dueWas,
+      Value<String?> completedAt,
+      Value<bool> deleted,
+      Value<int> rowid,
+    });
+typedef $$CompletionsTableUpdateCompanionBuilder =
+    CompletionsCompanion Function({
+      Value<String> id,
+      Value<String?> taskId,
+      Value<String?> dueWas,
+      Value<String?> completedAt,
+      Value<bool> deleted,
+      Value<int> rowid,
+    });
+
+class $$CompletionsTableFilterComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueWas => $composableBuilder(
+    column: $table.dueWas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CompletionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taskId => $composableBuilder(
+    column: $table.taskId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dueWas => $composableBuilder(
+    column: $table.dueWas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CompletionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CompletionsTable> {
+  $$CompletionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get taskId =>
+      $composableBuilder(column: $table.taskId, builder: (column) => column);
+
+  GeneratedColumn<String> get dueWas =>
+      $composableBuilder(column: $table.dueWas, builder: (column) => column);
+
+  GeneratedColumn<String> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$CompletionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CompletionsTable,
+          CompletionRow,
+          $$CompletionsTableFilterComposer,
+          $$CompletionsTableOrderingComposer,
+          $$CompletionsTableAnnotationComposer,
+          $$CompletionsTableCreateCompanionBuilder,
+          $$CompletionsTableUpdateCompanionBuilder,
+          (
+            CompletionRow,
+            BaseReferences<_$AppDatabase, $CompletionsTable, CompletionRow>,
+          ),
+          CompletionRow,
+          PrefetchHooks Function()
+        > {
+  $$CompletionsTableTableManager(_$AppDatabase db, $CompletionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CompletionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CompletionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CompletionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> dueWas = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompletionsCompanion(
+                id: id,
+                taskId: taskId,
+                dueWas: dueWas,
+                completedAt: completedAt,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> taskId = const Value.absent(),
+                Value<String?> dueWas = const Value.absent(),
+                Value<String?> completedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CompletionsCompanion.insert(
+                id: id,
+                taskId: taskId,
+                dueWas: dueWas,
+                completedAt: completedAt,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CompletionsTable, CompletionRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CompletionsTable,
+                    CompletionRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CompletionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CompletionsTable,
+      CompletionRow,
+      $$CompletionsTableFilterComposer,
+      $$CompletionsTableOrderingComposer,
+      $$CompletionsTableAnnotationComposer,
+      $$CompletionsTableCreateCompanionBuilder,
+      $$CompletionsTableUpdateCompanionBuilder,
+      (
+        CompletionRow,
+        BaseReferences<_$AppDatabase, $CompletionsTable, CompletionRow>,
+      ),
+      CompletionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7229,4 +8105,6 @@ class $AppDatabaseManager {
       $$LabelsTableTableManager(_db, _db.labels);
   $$TaskLabelsTableTableManager get taskLabels =>
       $$TaskLabelsTableTableManager(_db, _db.taskLabels);
+  $$CompletionsTableTableManager get completions =>
+      $$CompletionsTableTableManager(_db, _db.completions);
 }

@@ -3,6 +3,8 @@
 /// проверяются тестами на любой день.
 library;
 
+import '../../../domain/models.dart';
+
 /// Дата `YYYY-MM-DD` — как в поле срока.
 String isoDate(DateTime day) =>
     '${day.year.toString().padLeft(4, '0')}-'
@@ -63,3 +65,19 @@ DueKind dueKind(DateTime due, DateTime today) {
     _ => DueKind.later,
   };
 }
+
+/// Срок [current] на дату [date] — выбор даты в планировщике. Время и пояс
+/// сохраняются (смена даты не делает срок с поясом «плавающим»), правило
+/// повторения — тоже: дата из планировщика переносит только вхождение
+/// (plans/m3 «Сверка с Todoist»).
+Due dueOnDate(Due? current, String date) =>
+    current?.copyWith(
+      date: date,
+      tz: current.time == null ? null : current.tz,
+    ) ??
+    Due(date: date);
+
+/// Срок [current] с временем [time] (`HH:MM`; `null` — убрать время), правило
+/// повторения сохраняется.
+Due dueWithTime(Due current, String? time) =>
+    current.copyWith(time: time, tz: time == null ? null : current.tz);

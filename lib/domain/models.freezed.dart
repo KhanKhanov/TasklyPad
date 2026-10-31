@@ -867,7 +867,10 @@ mixin _$Due {
 
 /// `YYYY-MM-DD`.
  String get date;/// `HH:MM`; `null` — срок без времени («весь день»).
- String? get time; String? get tz;
+ String? get time; String? get tz;/// Срок текстом, как его ввёл пользователь («каждый пн»).
+ String? get string;/// Язык, на котором разобран [string]: `ru` или `en`.
+ String? get lang;/// Правило повторения; `null` — срок не повторяется.
+ RecurrenceRule? get rule;
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -879,20 +882,20 @@ $DueCopyWith<Due> get copyWith => _$DueCopyWithImpl<Due>(this as Due, _$identity
 @override
 bool operator ==(Object other) {
   final _this = this as Due;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Due&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.tz, _this.tz) || other.tz == _this.tz));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Due&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.tz, _this.tz) || other.tz == _this.tz)&&(identical(other.string, _this.string) || other.string == _this.string)&&(identical(other.lang, _this.lang) || other.lang == _this.lang)&&(identical(other.rule, _this.rule) || other.rule == _this.rule));
 }
 
 
 @override
 int get hashCode {
   final _this = this as Due;
-  return Object.hash(runtimeType,_this.date,_this.time,_this.tz);
+  return Object.hash(runtimeType,_this.date,_this.time,_this.tz,_this.string,_this.lang,_this.rule);
 }
 
 @override
 String toString() {
   final _this = this as Due;
-  return 'Due(date: ${_this.date}, time: ${_this.time}, tz: ${_this.tz})';
+  return 'Due(date: ${_this.date}, time: ${_this.time}, tz: ${_this.tz}, string: ${_this.string}, lang: ${_this.lang}, rule: ${_this.rule})';
 }
 
 
@@ -903,11 +906,11 @@ abstract mixin class $DueCopyWith<$Res>  {
   factory $DueCopyWith(Due value, $Res Function(Due) _then) = _$DueCopyWithImpl;
 @useResult
 $Res call({
- String date, String? time, String? tz
+ String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule
 });
 
 
-
+$RecurrenceRuleCopyWith<$Res>? get rule;
 
 }
 /// @nodoc
@@ -920,15 +923,30 @@ class _$DueCopyWithImpl<$Res>
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,}) {
   return _then(Due(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: freezed == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
 as String?,tz: freezed == tz ? _self.tz : tz // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,string: freezed == string ? _self.string : string // ignore: cast_nullable_to_non_nullable
+as String?,lang: freezed == lang ? _self.lang : lang // ignore: cast_nullable_to_non_nullable
+as String?,rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
+as RecurrenceRule?,
   ));
 }
+/// Create a copy of Due
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RecurrenceRuleCopyWith<$Res>? get rule {
+    if (_self.rule == null) {
+    return null;
+  }
 
+  return $RecurrenceRuleCopyWith<$Res>(_self.rule!, (value) {
+    return _then(_self.copyWith(rule: value));
+  });
+}
 }
 
 
@@ -1010,10 +1028,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Due() when $default != null:
-return $default(_that.date,_that.time,_that.tz);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
   return orElse();
 
 }
@@ -1031,10 +1049,10 @@ return $default(_that.date,_that.time,_that.tz);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)  $default,) {final _that = this;
 switch (_that) {
 case _Due():
-return $default(_that.date,_that.time,_that.tz);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1051,10 +1069,10 @@ return $default(_that.date,_that.time,_that.tz);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String? time,  String? tz)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)?  $default,) {final _that = this;
 switch (_that) {
 case _Due() when $default != null:
-return $default(_that.date,_that.time,_that.tz);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
   return null;
 
 }
@@ -1065,8 +1083,8 @@ return $default(_that.date,_that.time,_that.tz);case _:
 /// @nodoc
 
 
-class _Due implements Due {
-  const _Due({required this.date, this.time, this.tz});
+class _Due extends Due {
+  const _Due({required this.date, this.time, this.tz, this.string, this.lang, this.rule}): super._();
   
 
 /// `YYYY-MM-DD`.
@@ -1074,6 +1092,12 @@ class _Due implements Due {
 /// `HH:MM`; `null` — срок без времени («весь день»).
 @override final  String? time;
 @override final  String? tz;
+/// Срок текстом, как его ввёл пользователь («каждый пн»).
+@override final  String? string;
+/// Язык, на котором разобран [string]: `ru` или `en`.
+@override final  String? lang;
+/// Правило повторения; `null` — срок не повторяется.
+@override final  RecurrenceRule? rule;
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
@@ -1085,18 +1109,18 @@ _$DueCopyWith<_Due> get copyWith => __$DueCopyWithImpl<_Due>(this, _$identity);
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Due&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.tz, tz) || other.tz == tz));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Due&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.tz, tz) || other.tz == tz)&&(identical(other.string, string) || other.string == string)&&(identical(other.lang, lang) || other.lang == lang)&&(identical(other.rule, rule) || other.rule == rule));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,date,time,tz);
+    return Object.hash(runtimeType,date,time,tz,string,lang,rule);
 }
 
 @override
 String toString() {
-    return 'Due(date: $date, time: $time, tz: $tz)';
+    return 'Due(date: $date, time: $time, tz: $tz, string: $string, lang: $lang, rule: $rule)';
 }
 
 
@@ -1107,11 +1131,11 @@ abstract mixin class _$DueCopyWith<$Res> implements $DueCopyWith<$Res> {
   factory _$DueCopyWith(_Due value, $Res Function(_Due) _then) = __$DueCopyWithImpl;
 @override @useResult
 $Res call({
- String date, String? time, String? tz
+ String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule
 });
 
 
-
+@override $RecurrenceRuleCopyWith<$Res>? get rule;
 
 }
 /// @nodoc
@@ -1124,12 +1148,308 @@ class __$DueCopyWithImpl<$Res>
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,}) {
   return _then(_Due(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: freezed == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
 as String?,tz: freezed == tz ? _self.tz : tz // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,string: freezed == string ? _self.string : string // ignore: cast_nullable_to_non_nullable
+as String?,lang: freezed == lang ? _self.lang : lang // ignore: cast_nullable_to_non_nullable
+as String?,rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
+as RecurrenceRule?,
+  ));
+}
+
+/// Create a copy of Due
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RecurrenceRuleCopyWith<$Res>? get rule {
+    if (_self.rule == null) {
+    return null;
+  }
+
+  return $RecurrenceRuleCopyWith<$Res>(_self.rule!, (value) {
+    return _then(_self.copyWith(rule: value));
+  });
+}
+}
+
+/// @nodoc
+mixin _$RecurrenceRule {
+
+/// Непустой список строк RRULE (RFC 5545) без DTSTART; конец серии —
+/// `UNTIL`. Несколько правил — следующее вхождение по ближайшему.
+ List<String> get rrule;/// `every!`: следующее вхождение — от даты выполнения, а не от срока.
+ bool get fromCompletion;
+/// Create a copy of RecurrenceRule
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$RecurrenceRuleCopyWith<RecurrenceRule> get copyWith => _$RecurrenceRuleCopyWithImpl<RecurrenceRule>(this as RecurrenceRule, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as RecurrenceRule;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RecurrenceRule&&const DeepCollectionEquality().equals(other.rrule, _this.rrule)&&(identical(other.fromCompletion, _this.fromCompletion) || other.fromCompletion == _this.fromCompletion));
+}
+
+
+@override
+int get hashCode {
+  final _this = this as RecurrenceRule;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.rrule),_this.fromCompletion);
+}
+
+@override
+String toString() {
+  final _this = this as RecurrenceRule;
+  return 'RecurrenceRule(rrule: ${_this.rrule}, fromCompletion: ${_this.fromCompletion})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $RecurrenceRuleCopyWith<$Res>  {
+  factory $RecurrenceRuleCopyWith(RecurrenceRule value, $Res Function(RecurrenceRule) _then) = _$RecurrenceRuleCopyWithImpl;
+@useResult
+$Res call({
+ List<String> rrule, bool fromCompletion
+});
+
+
+
+
+}
+/// @nodoc
+class _$RecurrenceRuleCopyWithImpl<$Res>
+    implements $RecurrenceRuleCopyWith<$Res> {
+  _$RecurrenceRuleCopyWithImpl(this._self, this._then);
+
+  final RecurrenceRule _self;
+  final $Res Function(RecurrenceRule) _then;
+
+/// Create a copy of RecurrenceRule
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? rrule = null,Object? fromCompletion = null,}) {
+  return _then(RecurrenceRule(
+rrule: null == rrule ? _self.rrule : rrule // ignore: cast_nullable_to_non_nullable
+as List<String>,fromCompletion: null == fromCompletion ? _self.fromCompletion : fromCompletion // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [RecurrenceRule].
+extension RecurrenceRulePatterns on RecurrenceRule {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _RecurrenceRule value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _RecurrenceRule() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _RecurrenceRule value)  $default,){
+final _that = this;
+switch (_that) {
+case _RecurrenceRule():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _RecurrenceRule value)?  $default,){
+final _that = this;
+switch (_that) {
+case _RecurrenceRule() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<String> rrule,  bool fromCompletion)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _RecurrenceRule() when $default != null:
+return $default(_that.rrule,_that.fromCompletion);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<String> rrule,  bool fromCompletion)  $default,) {final _that = this;
+switch (_that) {
+case _RecurrenceRule():
+return $default(_that.rrule,_that.fromCompletion);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<String> rrule,  bool fromCompletion)?  $default,) {final _that = this;
+switch (_that) {
+case _RecurrenceRule() when $default != null:
+return $default(_that.rrule,_that.fromCompletion);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _RecurrenceRule implements RecurrenceRule {
+  const _RecurrenceRule({required  List<String> rrule, required this.fromCompletion}): _rrule = rrule;
+  
+
+/// Непустой список строк RRULE (RFC 5545) без DTSTART; конец серии —
+/// `UNTIL`. Несколько правил — следующее вхождение по ближайшему.
+ final  List<String> _rrule;
+/// Непустой список строк RRULE (RFC 5545) без DTSTART; конец серии —
+/// `UNTIL`. Несколько правил — следующее вхождение по ближайшему.
+@override List<String> get rrule {
+  if (_rrule is EqualUnmodifiableListView) return _rrule;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_rrule);
+}
+
+/// `every!`: следующее вхождение — от даты выполнения, а не от срока.
+@override final  bool fromCompletion;
+
+/// Create a copy of RecurrenceRule
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$RecurrenceRuleCopyWith<_RecurrenceRule> get copyWith => __$RecurrenceRuleCopyWithImpl<_RecurrenceRule>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RecurrenceRule&&const DeepCollectionEquality().equals(other.rrule, _rrule)&&(identical(other.fromCompletion, fromCompletion) || other.fromCompletion == fromCompletion));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_rrule),fromCompletion);
+}
+
+@override
+String toString() {
+    return 'RecurrenceRule(rrule: $rrule, fromCompletion: $fromCompletion)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$RecurrenceRuleCopyWith<$Res> implements $RecurrenceRuleCopyWith<$Res> {
+  factory _$RecurrenceRuleCopyWith(_RecurrenceRule value, $Res Function(_RecurrenceRule) _then) = __$RecurrenceRuleCopyWithImpl;
+@override @useResult
+$Res call({
+ List<String> rrule, bool fromCompletion
+});
+
+
+
+
+}
+/// @nodoc
+class __$RecurrenceRuleCopyWithImpl<$Res>
+    implements _$RecurrenceRuleCopyWith<$Res> {
+  __$RecurrenceRuleCopyWithImpl(this._self, this._then);
+
+  final _RecurrenceRule _self;
+  final $Res Function(_RecurrenceRule) _then;
+
+/// Create a copy of RecurrenceRule
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? rrule = null,Object? fromCompletion = null,}) {
+  return _then(_RecurrenceRule(
+rrule: null == rrule ? _self._rrule : rrule // ignore: cast_nullable_to_non_nullable
+as List<String>,fromCompletion: null == fromCompletion ? _self.fromCompletion : fromCompletion // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

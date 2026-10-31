@@ -26,6 +26,7 @@ final class LocalMetaDao {
   static const String lastSyncKey = 'sync.last_ok_ms';
   static const String previousNodeIdsKey = 'node.previous_ids';
   static const String notifiedConflictsKey = 'conflicts.notified';
+  static const String conflictRulesVersionKey = 'conflicts.rules_version';
   static const String themeSyncKey = 'theme.sync';
   static const String themeIdKey = 'theme.id';
   static const String themeAppearanceKey = 'theme.appearance';
@@ -104,6 +105,14 @@ final class LocalMetaDao {
   Future<Hlc?> hlc() async => _parseHlc(await read(hlcKey));
 
   Future<void> setHlc(Hlc value) => write(hlcKey, value.toString());
+
+  /// Версия правил конфликтов пакета (`conflictRulesVersion`), по которой
+  /// посчитана таблица конфликтов этой базы; ключа нет — правилами до M3.1.
+  Future<int?> conflictRulesVersion() async =>
+      int.tryParse(await read(conflictRulesVersionKey) ?? '');
+
+  Future<void> setConflictRulesVersion(int value) =>
+      write(conflictRulesVersionKey, value.toString());
 
   /// Версия реестра проекторов, которой разложены таблицы сущностей.
   Future<int?> projectorVersion() async =>

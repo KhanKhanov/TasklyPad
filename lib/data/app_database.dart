@@ -24,6 +24,7 @@ part 'app_database.g.dart';
     Sections,
     Labels,
     TaskLabels,
+    Completions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -38,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Версия схемы. При изменении таблиц: увеличить, выполнить
   /// `dart run drift_dev make-migrations` и описать шаг в [migration].
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -81,6 +82,18 @@ class AppDatabase extends _$AppDatabase {
       await m.createTable(schema.taskLabels);
       await m.createIndex(schema.taskLabelsByTask);
       await m.createIndex(schema.taskLabelsByLabel);
+    },
+    // M3: правило повторения в сроке и история выполненных вхождений. Старые
+    // задачи получают пустые колонки; ключи `string`, `lang`, `rule`, если
+    // уже пришли от другого устройства, разложит `reproject` (версия
+    // реестра 3).
+    from2To3: (m, schema) async {
+      await m.addColumn(schema.tasks, schema.tasks.dueString);
+      await m.addColumn(schema.tasks, schema.tasks.dueLang);
+      await m.addColumn(schema.tasks, schema.tasks.dueRule);
+      await m.addColumn(schema.tasks, schema.tasks.dueIsRecurring);
+      await m.createTable(schema.completions);
+      await m.createIndex(schema.completionsByTask);
     },
   );
 }

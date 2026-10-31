@@ -63,7 +63,35 @@ abstract class Due with _$Due {
     /// `HH:MM`; `null` — срок без времени («весь день»).
     String? time,
     String? tz,
+
+    /// Срок текстом, как его ввёл пользователь («каждый пн»).
+    String? string,
+
+    /// Язык, на котором разобран [string]: `ru` или `en`.
+    String? lang,
+
+    /// Правило повторения; `null` — срок не повторяется.
+    RecurrenceRule? rule,
   }) = _Due;
+
+  const Due._();
+
+  /// Повторяющийся срок — у него есть правило (как `is_recurring` Todoist).
+  bool get isRecurring => rule != null;
+}
+
+/// Правило повторения срока: следующую дату по нему считает устройство,
+/// отметившее выполнение (решение 1 плана M3).
+@freezed
+abstract class RecurrenceRule with _$RecurrenceRule {
+  const factory RecurrenceRule({
+    /// Непустой список строк RRULE (RFC 5545) без DTSTART; конец серии —
+    /// `UNTIL`. Несколько правил — следующее вхождение по ближайшему.
+    required List<String> rrule,
+
+    /// `every!`: следующее вхождение — от даты выполнения, а не от срока.
+    required bool fromCompletion,
+  }) = _RecurrenceRule;
 }
 
 /// Длительность задачи, как в Todoist: число минут или дней.
