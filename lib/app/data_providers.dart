@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/clock.dart';
+import '../data/repositories/settings_repository.dart';
 import '../data/repositories/theme_settings_repository.dart';
 import '../data/repositories/workspace_repository.dart';
 import '../domain/conflicts.dart';
@@ -42,6 +43,8 @@ TaskCommands taskCommands(Ref ref) {
     mutator: services.mutator,
     read: ref.watch(workspaceRepositoryProvider).load,
     clock: services.clock,
+    resetRecurringSubtasks: SettingsRepository(ref.watch(appDatabaseProvider))
+        .resetRecurringSubtasks,
   );
 }
 

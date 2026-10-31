@@ -177,6 +177,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not found — it may have been deleted on another device';
 
   @override
+  String get rejectNotRecurring => 'This task doesn\'t repeat';
+
+  @override
+  String get rejectBrokenRecurrence =>
+      'The recurrence rule couldn\'t be read — set the date again';
+
+  @override
   String get colorBerryRed => 'Berry Red';
 
   @override

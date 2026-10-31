@@ -177,6 +177,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не найдено — возможно, удалено на другом устройстве';
 
   @override
+  String get rejectNotRecurring => 'Задача не повторяется';
+
+  @override
+  String get rejectBrokenRecurrence =>
+      'Правило повторения не разобрано — задайте срок заново';
+
+  @override
   String get colorBerryRed => 'Ягодный';
 
   @override

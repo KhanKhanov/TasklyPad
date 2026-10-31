@@ -1,3 +1,4 @@
+import 'package:planner/data/repositories/settings_repository.dart';
 import 'package:planner/data/repositories/theme_settings_repository.dart';
 import 'package:planner/data/repositories/workspace_repository.dart';
 import 'package:planner/domain/workspace.dart';
@@ -17,6 +18,8 @@ final class AppCommands {
       mutator: mutator,
       read: repo.load,
       clock: device.clock,
+      resetRecurringSubtasks: SettingsRepository(device.db)
+          .resetRecurringSubtasks,
     );
     projects = ProjectCommands(mutator: mutator, read: repo.load, tasks: tasks);
     sections = SectionCommands(mutator: mutator, read: repo.load, tasks: tasks);
