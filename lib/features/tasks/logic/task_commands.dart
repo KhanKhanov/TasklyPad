@@ -2,9 +2,11 @@ import '../../../core/clock.dart';
 import '../../../core/fractional_index.dart';
 import '../../../data/projection/entity_fields.dart';
 import '../../../domain/models.dart';
+import '../../../domain/recurrence.dart';
 import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
+import 'due_dates.dart';
 
 /// Действия пользователя над задачами — всё через [Mutator].
 ///
@@ -17,11 +19,19 @@ final class TaskCommands {
     required this._mutator,
     required this._read,
     required this._clock,
+    required this._resetRecurringSubtasks,
   });
 
   final Mutator _mutator;
   final Future<Workspace> Function() _read;
   final AppClock _clock;
+
+  /// Настройка «Сбрасывать подзадачи» (синхронизируется в `settings`).
+  final Future<bool> Function() _resetRecurringSubtasks;
+
+  /// Сколько выполненных прямых подзадач возвращает в работу выполнение
+  /// повторяющейся задачи (help «Reset a sub-task»).
+  static const int resetSubtasksLimit = 30;
 
   /// Добавить задачу. Место: подзадача [parentId], иначе раздел [sectionId]
   /// проекта [projectId] (`null` — «Входящие»); внутри — сразу после
@@ -141,15 +151,147 @@ final class TaskCommands {
     });
   }
 
-  /// Завершить задачу вместе с незавершёнными подзадачами.
-  Future<Undo> complete(String id) async {
+  /// Завершить задачу вместе с незавершёнными подзадачами. Повторяющаяся
+  /// задача не завершается, а получает следующий срок ([_completeOccurrence]);
+  /// [resetSubtasks] — «Выполнить и снова добавить подзадачи»: сброс
+  /// подзадач и при выключенной настройке.
+  ///
+  /// Снимок читается внутри транзакции: правка правила, пришедшая
+  /// синхронизацией между чтением и записью, не посчитается по старому.
+  Future<Undo> complete(String id, {bool resetSubtasks = false}) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        final task = await _alive(id, ws);
+        final due = task.due;
+        if (due != null && due.isRecurring && !task.isCompleted) {
+          return _completeOccurrence(ws, task, due, forceReset: resetSubtasks);
+        }
+        return _completeTree(ws, id);
+      });
+
+  /// «Завершить навсегда»: задача завершается вместе с незавершёнными
+  /// подзадачами, срок и правило остаются как были (help «Reset a
+  /// sub-task»). У обычной задачи — то же, что [complete].
+  Future<Undo> completeForever(String id) => _mutator.batch(() async {
     final ws = await _read();
     await _alive(id, ws);
-    final ids = [
-      for (final t in ws.taskSubtree(id))
-        if (!ws.task(t)!.isCompleted) t,
-    ];
-    return markCompleted(ids, completed: true);
+    return _completeTree(ws, id);
+  });
+
+  Future<Undo> _completeTree(Workspace ws, String id) => markCompleted([
+    for (final t in ws.taskSubtree(id))
+      if (!ws.task(t)!.isCompleted) t,
+  ], completed: true);
+
+  /// Выполнение вхождения повторяющейся задачи (решения 3, 6 плана M3):
+  /// запись о выполнении с id из (задача, вхождение) — два устройства пишут
+  /// одну — и следующий срок по правилу; выполненные прямые подзадачи (до
+  /// [resetSubtasksLimit]) возвращаются в работу с удалёнными метками, как
+  /// при [uncomplete], если включено «Сбрасывать подзадачи» или
+  /// [forceReset]; незавершённые остаются как есть (решение 3А «Ход M3.4»,
+  /// допущение О-57). Серия закончилась (`UNTIL` позади) — задача
+  /// завершается навсегда (допущение О-57).
+  ///
+  /// Момент выполнения — стенное время устройства: пояс срока, отличный от
+  /// пояса устройства, не учитывается (решение 1А «Ход M3.4», О-64).
+  Future<Undo> _completeOccurrence(
+    Workspace ws,
+    Task task,
+    Due due, {
+    required bool forceReset,
+  }) async {
+    final next = _next(due, _clock.nowWall());
+    if (next == null) return _completeTree(ws, task.id);
+
+    final dueWas = dueWasOf(due.date, due.time);
+    final record = completionId(task.id, dueWas);
+    final reset = forceReset || await _resetRecurringSubtasks()
+        ? [
+            for (final s in ws.children(task.id))
+              if (s.isCompleted) s.id,
+          ].take(resetSubtasksLimit).toList()
+        : const <String>[];
+    final undo = await _mutator.capture(
+      [
+        _target(task.id, {TaskFields.due}),
+        for (final s in reset)
+          _target(s, {TaskFields.isCompleted, TaskFields.completedAt}),
+      ],
+      // Запись уже есть (пришла с другого устройства) — «Отменить» вернёт
+      // её прежнее время, а не удалит чужое выполнение.
+      created: [
+        (
+          entityType: EntityTypes.completion,
+          entityId: record,
+          fields: {CompletionFields.completedAt},
+        ),
+      ],
+    );
+    await _mutator.update(EntityTypes.completion, record, {
+      CompletionFields.taskId: task.id,
+      CompletionFields.dueWas: dueWas,
+      CompletionFields.completedAt: _now(),
+      // Запись могла быть удалена «Отменить» — выполнение возвращает её.
+      CompletionFields.deleted: false,
+    });
+    await _mutator.update(EntityTypes.task, task.id, {
+      TaskFields.due: _dueValue(next),
+    });
+    for (final s in reset) {
+      await _mutator.update(EntityTypes.task, s, {
+        TaskFields.isCompleted: false,
+        TaskFields.completedAt: null,
+      });
+    }
+    await _reviveLabels(ws, reset);
+    return undo;
+  }
+
+  /// «Отложить» повторяющуюся задачу: на следующее будущее вхождение без
+  /// записи о выполнении; просроченная — на завтра, со временем и правилом
+  /// (help «Introduction to recurring dates»). Серия закончилась (в том числе
+  /// для просроченной) или задача выполнена — срок не меняется. Обычная
+  /// задача — [RejectReason.notRecurring].
+  Future<Undo> postpone(String id) => _mutator.batch(() async {
+    final ws = await _read();
+    final task = await _alive(id, ws);
+    final due = task.due;
+    if (due == null || !due.isRecurring) {
+      throw const CommandRejected(RejectReason.notRecurring);
+    }
+    final now = _clock.nowWall();
+    // Сначала само правило: битое — отказ, закончившаяся серия — без
+    // переноса, даже если задача просрочена.
+    final following = _next(due, now, postpone: true);
+    if (task.isCompleted || following == null) {
+      return _mutator.capture(const []);
+    }
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final dueAt = DateTime.parse('${due.date}T${due.time ?? '00:00'}:00Z');
+    // Срок без времени просрочен со следующего дня, со временем — сразу.
+    final overdue = due.time == null
+        ? dueAt.isBefore(today)
+        : dueAt.isBefore(now);
+    final next = overdue
+        ? due.copyWith(date: isoDate(today.add(const Duration(days: 1))))
+        : following;
+    final undo = await _mutator.capture([
+      _target(id, {TaskFields.due}),
+    ]);
+    await _mutator.update(EntityTypes.task, id, {
+      TaskFields.due: _dueValue(next),
+    });
+    return undo;
+  });
+
+  /// [nextOccurrence] с отказом вместо FormatException: битое правило
+  /// (пришло с другого устройства) — сообщение пользователю, данные целы.
+  static Due? _next(Due due, DateTime now, {bool postpone = false}) {
+    try {
+      return nextOccurrence(due, completedAt: now, postpone: postpone);
+    } on FormatException {
+      throw const CommandRejected(RejectReason.brokenRecurrence);
+    }
   }
 
   /// Вернуть задачу в работу — как `item_uncomplete` в Todoist API: вместе с

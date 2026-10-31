@@ -398,6 +398,18 @@ abstract class AppLocalizations {
   /// **'Не найдено — возможно, удалено на другом устройстве'**
   String get rejectNotFound;
 
+  /// Действие отклонено: «Отложить» только для повторяющейся задачи
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача не повторяется'**
+  String get rejectNotRecurring;
+
+  /// Действие отклонено: правило повторения битое
+  ///
+  /// In ru, this message translates to:
+  /// **'Правило повторения не разобрано — задайте срок заново'**
+  String get rejectBrokenRecurrence;
+
   /// Цвет палитры (русские названия — наш перевод, О-4)
   ///
   /// In ru, this message translates to:

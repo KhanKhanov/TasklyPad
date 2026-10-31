@@ -10,6 +10,11 @@ abstract interface class AppClock {
 
   /// Unix-миллисекунды — формат, который ждёт HLC из oplog_sync.
   int nowMs();
+
+  /// Стенное время устройства («как на часах») в UTC-обёртке: цифры
+  /// местного времени, `isUtc`. Для расчёта повторений
+  /// (lib/domain/recurrence.dart): срок задачи — стенное время.
+  DateTime nowWall();
 }
 
 /// Реальные часы. Внутри — `package:clock`, поэтому в тестах их тоже можно
@@ -22,11 +27,31 @@ final class SystemClock implements AppClock {
 
   @override
   int nowMs() => nowUtc().millisecondsSinceEpoch;
+
+  @override
+  DateTime nowWall() {
+    final l = pkg.clock.now().toLocal();
+    return DateTime.utc(
+      l.year,
+      l.month,
+      l.day,
+      l.hour,
+      l.minute,
+      l.second,
+      l.millisecond,
+    );
+  }
 }
 
 /// Управляемые часы для тестов: стоят, пока не сдвинуть [advance].
+///
+/// [wallOffset] — пояс «устройства» для [nowWall]: явно, чтобы тесты не
+/// зависели от пояса машины, на которой их запускают.
 final class FixedClock implements AppClock {
-  FixedClock(DateTime start) : _now = start.toUtc();
+  FixedClock(DateTime start, {this.wallOffset = Duration.zero})
+    : _now = start.toUtc();
+
+  final Duration wallOffset;
 
   DateTime _now;
 
@@ -39,4 +64,7 @@ final class FixedClock implements AppClock {
 
   @override
   int nowMs() => _now.millisecondsSinceEpoch;
+
+  @override
+  DateTime nowWall() => _now.add(wallOffset);
 }

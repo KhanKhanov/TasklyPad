@@ -243,6 +243,14 @@
   "@rejectNotFound": {
     "description": "Действие отклонено"
   },
+  "rejectNotRecurring": "Задача не повторяется",
+  "@rejectNotRecurring": {
+    "description": "Действие отклонено: «Отложить» только для повторяющейся задачи"
+  },
+  "rejectBrokenRecurrence": "Правило повторения не разобрано — задайте срок заново",
+  "@rejectBrokenRecurrence": {
+    "description": "Действие отклонено: правило повторения битое"
+  },
   "colorBerryRed": "Ягодный",
   "@colorBerryRed": {
     "description": "Цвет палитры (русские названия — наш перевод, О-4)"

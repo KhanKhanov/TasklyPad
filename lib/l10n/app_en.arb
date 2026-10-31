@@ -50,6 +50,8 @@
   "rejectTooManySections": "This project already has 20 sections",
   "rejectDuplicateName": "This name is already taken",
   "rejectNotFound": "Not found — it may have been deleted on another device",
+  "rejectNotRecurring": "This task doesn't repeat",
+  "rejectBrokenRecurrence": "The recurrence rule couldn't be read — set the date again",
   "colorBerryRed": "Berry Red",
   "colorRed": "Red",
   "colorOrange": "Orange",

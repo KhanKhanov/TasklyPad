@@ -165,17 +165,44 @@ final class Mutator {
   /// записывает их обратно новыми ops: удалять ops из журнала нельзя — они
   /// могли уже уйти в папку синхронизации. Поля, которых не было, вернутся
   /// как `null`.
-  Future<Undo> capture(Iterable<UndoTarget> targets) async => Undo._(this, [
-    for (final t in targets)
-      (
-        entityType: t.entityType,
-        entityId: t.entityId,
-        fields: {
-          for (final field in t.fields)
-            field: await _store.fieldValue(t.entityType, t.entityId, field),
-        },
-      ),
-  ]);
+  ///
+  /// [created] — сущности, которые действие создаёт (запись о выполнении
+  /// вхождения с детерминированным id): если её не было или она удалена,
+  /// [Undo] ставит ей tombstone; если она уже есть (пришла с другого
+  /// устройства), [Undo] возвращает её поля `fields`, как у [targets], — чужую
+  /// запись отмена не удаляет.
+  Future<Undo> capture(
+    Iterable<UndoTarget> targets, {
+    Iterable<UndoTarget> created = const [],
+  }) async {
+    final restore = [...targets];
+    final tombstone = <({String entityType, String entityId})>[];
+    for (final c in created) {
+      final deleted = await _store.fieldValue(
+        c.entityType,
+        c.entityId,
+        Op.deletedField,
+      );
+      final alive =
+          await _store.hasEntity(c.entityType, c.entityId) && deleted != true;
+      if (alive) {
+        restore.add(c);
+      } else {
+        tombstone.add((entityType: c.entityType, entityId: c.entityId));
+      }
+    }
+    return Undo._(this, [
+      for (final t in restore)
+        (
+          entityType: t.entityType,
+          entityId: t.entityId,
+          fields: {
+            for (final field in t.fields)
+              field: await _store.fieldValue(t.entityType, t.entityId, field),
+          },
+        ),
+    ], tombstone);
+  }
 
   /// База оказалась копией и узел получил новый id: переиздать от него
   /// невыгруженные (HLC после [uploadedUpTo]) ops прежнего узла, которые ещё
@@ -245,22 +272,26 @@ typedef UndoTarget = ({String entityType, String entityId, Set<String> fields});
 /// Если за время тоста поле изменило другое устройство, отмена — обычная
 /// правка поверх него (последняя по времени).
 final class Undo implements UndoAction {
-  Undo._(this._mutator, this._values);
+  Undo._(this._mutator, this._values, this._created);
 
   final Mutator _mutator;
   final List<
     ({String entityType, String entityId, Map<String, Object?> fields})
   >
   _values;
+  final List<({String entityType, String entityId})> _created;
 
   /// Отменять нечего: действие ничего не изменило (например, задача уже
   /// была выполнена).
   @override
-  bool get isEmpty => _values.isEmpty;
+  bool get isEmpty => _values.isEmpty && _created.isEmpty;
 
-  /// Вернуть прежние значения одной транзакцией.
+  /// Вернуть прежние значения и удалить созданное одной транзакцией.
   @override
   Future<void> call() => _mutator.batch(() async {
+    for (final c in _created) {
+      await _mutator.delete(c.entityType, c.entityId);
+    }
     for (final v in _values) {
       await _mutator.update(v.entityType, v.entityId, v.fields);
     }

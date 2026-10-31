@@ -227,7 +227,7 @@ abstract final class SettingsFields {
 
   /// «Сбрасывать подзадачи» повторяющейся задачи — имя как
   /// `reset_recurring_subtasks` в Todoist API (импорт M11); поля нет —
-  /// включено (допущение О-57, решение 6 плана M3).
+  /// выключено (решение 1А «Ход M3.4», О-57).
   static const String resetRecurringSubtasks = 'reset_recurring_subtasks';
 }
 

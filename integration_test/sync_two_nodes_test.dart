@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:planner/app/bootstrap.dart';
+import 'package:planner/data/repositories/settings_repository.dart';
 import 'package:planner/data/repositories/workspace_repository.dart';
 import 'package:planner/features/labels/logic/label_commands.dart';
 import 'package:planner/features/tasks/logic/task_commands.dart';
@@ -26,6 +27,8 @@ final class _Device {
       mutator: services.mutator,
       read: repo.load,
       clock: services.clock,
+      resetRecurringSubtasks: SettingsRepository(services.db)
+          .resetRecurringSubtasks,
     );
     labels = LabelCommands(mutator: services.mutator, read: repo.load);
   }
