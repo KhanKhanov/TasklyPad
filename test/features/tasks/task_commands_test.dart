@@ -55,6 +55,35 @@ void main() {
     expect(task.labelIds, [label]);
   });
 
+  const weekly = Due(
+    date: '2026-10-26',
+    time: '07:00',
+    string: 'каждый пн в 7:00',
+    lang: 'ru',
+    rule: RecurrenceRule(rrule: ['FREQ=WEEKLY;BYDAY=MO'], fromCompletion: true),
+  );
+
+  test('add — срок с правилом читается обратно целиком, задача '
+      'повторяющаяся; duplicate копирует правило', () async {
+    final id = await app.tasks.add(content: 'Зарядка', due: weekly);
+    final task = (await app.read()).task(id)!;
+    expect(task.due, weekly);
+    expect(task.due!.isRecurring, isTrue);
+
+    final copy = await app.tasks.duplicate(id);
+    expect((await app.read()).task(copy)!.due, weekly);
+  });
+
+  test('setDue — срок без правила снимает повтор, «Отменить» возвращает '
+      'правило', () async {
+    final id = await app.tasks.add(content: 'Зарядка', due: weekly);
+    final undo = await app.tasks.setDue(id, const Due(date: '2026-11-02'));
+    expect((await app.read()).task(id)!.due, const Due(date: '2026-11-02'));
+
+    await undo();
+    expect((await app.read()).task(id)!.due, weekly);
+  });
+
   test('add — пустое название и пятый уровень подзадач отклоняются', () async {
     expect(app.tasks.add(content: '   '), _rejected(RejectReason.emptyName));
     var parent = await app.tasks.add(content: '1');

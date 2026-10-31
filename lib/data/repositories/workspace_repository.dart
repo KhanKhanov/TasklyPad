@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../domain/models.dart';
 import '../../domain/workspace.dart';
 import '../app_database.dart';
+import '../projection/due_rule.dart';
 import '../projection/entity_fields.dart';
 
 /// Чтение данных пользователя одним снимком [Workspace].
@@ -173,7 +176,18 @@ final class WorkspaceRepository {
       priority: r.priority,
       due: dueDate == null
           ? null
-          : Due(date: dueDate, time: r.dueTime, tz: r.dueTz),
+          : Due(
+              date: dueDate,
+              time: r.dueTime,
+              tz: r.dueTz,
+              string: r.dueString,
+              lang: r.dueLang,
+              rule: switch (r.dueRule) {
+                // Колонку пишет только проектор — JSON уже проверен.
+                final String json => recurrenceRuleOf(jsonDecode(json)),
+                null => null,
+              },
+            ),
       deadline: r.deadlineDate,
       duration: amount == null || unit == null
           ? null

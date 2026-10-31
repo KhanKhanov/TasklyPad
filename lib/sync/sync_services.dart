@@ -78,8 +78,9 @@ final class SyncServices {
 ///
 /// Порядок: переложить таблицы, если обновился реестр проекторов → опознать
 /// узел (новая база, та же или копия) → восстановить часы → движок и
-/// [Mutator] → для копии записать заново невыгруженные правки прежнего узла →
-/// создать «Входящие», если их ещё нет.
+/// [Mutator] → пересобрать базу, если конфликты посчитаны прежними правилами
+/// → для копии записать заново невыгруженные правки прежнего узла → создать
+/// «Входящие», если их ещё нет.
 Future<SyncServices> startSync(
   AppDatabase db, {
   required AppClock clock,
@@ -102,9 +103,21 @@ Future<SyncServices> startSync(
     nowMs: clock.nowMs,
     newOpId: ids.next,
     silentFields: silentFields,
+    silentEntityTypes: silentEntityTypes,
     initialClock: await _startClock(identity.nodeId, meta, store),
   );
   final mutator = Mutator(engine: engine, store: store, meta: meta, ids: ids);
+
+  // Конфликты производные: база, посчитанная прежними правилами пакета,
+  // пересобирается из журнала один раз (О-58) — как кнопкой «Пересобрать базу
+  // из журнала». Отметки «разрешён» — ops, пересборка их сохраняет. Сбой
+  // откатывает всё, и следующий запуск повторит.
+  if (await meta.conflictRulesVersion() != conflictRulesVersion) {
+    await store.transaction(() async {
+      await engine.rebuild();
+      await meta.setConflictRulesVersion(conflictRulesVersion);
+    });
+  }
 
   if (identity.isNew) {
     // Одной транзакцией: если запуск оборвётся, база останется со старым id,

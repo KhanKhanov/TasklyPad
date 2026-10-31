@@ -136,40 +136,120 @@ void main() {
     },
   );
 
-  test('оба завершили повторяющуюся задачу офлайн — две completion, срок '
-      'сдвинут один раз, правило повторения цело', () async {
+  const daily = {
+    'rrule': ['FREQ=DAILY'],
+    'from_completion': false,
+  };
+  Map<String, Object?> dailyOn(String date) => {
+    'date': date,
+    'string': 'каждый день',
+    'lang': 'ru',
+    'rule': daily,
+  };
+
+  test('оба отметили одно вхождение офлайн — одна запись выполнения, срок '
+      'сдвинут один раз, правило цело, конфликтов нет, после пересборки так '
+      'же', () async {
     final id = await sharedTask({
       TaskFields.content: 'Зарядка',
-      TaskFields.due: {
-        'date': '2026-10-23',
-        'string': 'каждый день',
-        'is_recurring': true,
-      },
+      TaskFields.due: dailyOn('2026-10-23'),
     });
-    for (final dev in [pc, phone]) {
-      // Завершение повторяющейся = событие completion + новый срок.
-      await dev.services.mutator.create('completion', {
-        'task_id': id,
-        'due_was': '2026-10-23',
-      });
-      await dev.services.mutator.update(EntityTypes.task, id, {
-        TaskFields.due: {'date': '2026-10-24'},
+    for (final (dev, at) in [(pc, 'T07:05:00Z'), (phone, 'T07:40:00Z')]) {
+      // Выполнение вхождения = запись с id из (задача, вхождение) + новый
+      // срок (команда — M3.4); время выполнения у устройств разное.
+      await dev.services.mutator.batch(() async {
+        await dev.services.mutator.update(
+          EntityTypes.completion,
+          completionId(id, '2026-10-23'),
+          {
+            CompletionFields.taskId: id,
+            CompletionFields.dueWas: '2026-10-23',
+            CompletionFields.completedAt: '2026-10-23$at',
+          },
+        );
+        await dev.services.mutator.update(EntityTypes.task, id, {
+          TaskFields.due: dailyOn('2026-10-24'),
+        });
       });
     }
     await syncBoth();
 
     for (final dev in [pc, phone]) {
-      final completions = await (dev.db.select(
-        dev.db.fieldVersions,
-      )..where((t) => t.entityType.equals('completion'))).get();
-      expect(completions.map((r) => r.entityId).toSet(), hasLength(2));
-      expect((await dev.entity(EntityTypes.task, id))?[TaskFields.due], {
-        'date': '2026-10-24',
-        'string': 'каждый день',
-        'is_recurring': true,
-      });
-      expect(await dev.conflicts(), isEmpty, reason: 'сроки одинаковые');
+      final completions = await dev.db.select(dev.db.completions).get();
+      expect(completions.map((c) => (c.id, c.taskId, c.dueWas, c.deleted)), [
+        (completionId(id, '2026-10-23'), id, '2026-10-23', false),
+      ]);
+      final row = await dev.taskRow(id);
+      expect((row?.dueDate, row?.dueIsRecurring), ('2026-10-24', true));
+      expect(await dev.conflicts(), isEmpty);
+      await dev.services.engine.rebuild();
+      expect(await dev.db.select(dev.db.completions).get(), completions);
+      expect(await dev.conflicts(), isEmpty, reason: 'после пересборки');
     }
+  });
+
+  test('«Отменить» выполнения на ПК против выполнения на телефоне — спор '
+      'только о сроке, по записи выполнения карточки нет', () async {
+    final id = await sharedTask({
+      TaskFields.content: 'Зарядка',
+      TaskFields.due: dailyOn('2026-10-23'),
+    });
+    final record = completionId(id, '2026-10-23');
+    for (final dev in [pc, phone]) {
+      await dev.services.mutator.update(EntityTypes.completion, record, {
+        CompletionFields.taskId: id,
+        CompletionFields.dueWas: '2026-10-23',
+        CompletionFields.completedAt: '2026-10-23T07:00:00Z',
+      });
+      await dev.services.mutator.update(EntityTypes.task, id, {
+        TaskFields.due: dailyOn('2026-10-24'),
+      });
+    }
+    // «Отменить» на ПК: прежний срок, запись удалена (команда — M3.4).
+    pc.advance(const Duration(seconds: 1));
+    await pc.services.mutator.delete(EntityTypes.completion, record);
+    await pc.services.mutator.update(EntityTypes.task, id, {
+      TaskFields.due: dailyOn('2026-10-23'),
+    });
+    await syncBoth();
+
+    for (final dev in [pc, phone]) {
+      final conflicts = await dev.conflicts();
+      expect(conflicts.map((c) => (c.entityType, c.field)), [
+        (EntityTypes.task, TaskFields.due),
+      ]);
+      // Удаление записи позже её записи на телефоне — по LWW оно и действует.
+      final completions = await dev.db.select(dev.db.completions).get();
+      expect(completions.map((c) => (c.id, c.deleted)), [(record, true)]);
+    }
+    expect(await phone.conflicts(), await pc.conflicts());
+  });
+
+  test('правка правила на одном, правка даты на другом — один конфликт по '
+      'сроку с одним id на обоих', () async {
+    final id = await sharedTask({
+      TaskFields.content: 'Зарядка',
+      TaskFields.due: dailyOn('2026-10-23'),
+    });
+    await pc.services.mutator.update(EntityTypes.task, id, {
+      TaskFields.due: {
+        ...dailyOn('2026-10-23'),
+        'string': 'каждый будний день',
+        'rule': {
+          'rrule': ['FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR'],
+          'from_completion': false,
+        },
+      },
+    });
+    await phone.services.mutator.update(EntityTypes.task, id, {
+      TaskFields.due: dailyOn('2026-10-25'),
+    });
+    await syncBoth();
+
+    final onPc = await pc.conflicts();
+    expect(onPc.single.field, TaskFields.due);
+    expect(onPc.single.kind, ConflictKind.edit);
+    expect(await phone.conflicts(), onPc);
   });
 
   test('перезапуск телефона между синхронизациями — правки продолжают '

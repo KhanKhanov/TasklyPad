@@ -95,6 +95,114 @@ void main() {
     expect(warnings, isEmpty);
   });
 
+  test('срок с правилом повторения — текст, язык, правило и признак повтора '
+      'в своих колонках', () async {
+    await put(EntityTypes.task, 't1', TaskFields.due, {
+      'date': '2026-10-26',
+      'time': '07:00',
+      'string': 'каждый пн в 7:00',
+      'lang': 'ru',
+      'rule': {
+        'rrule': ['FREQ=WEEKLY;BYDAY=MO'],
+        'from_completion': true,
+        'future_key': 1, // ключ от более новой версии в колонку не идёт
+      },
+    });
+    final row = (await task('t1'))!;
+    expect((row.dueDate, row.dueTime), ('2026-10-26', '07:00'));
+    expect((row.dueString, row.dueLang), ('каждый пн в 7:00', 'ru'));
+    expect(
+      row.dueRule,
+      '{"rrule":["FREQ=WEEKLY;BYDAY=MO"],"from_completion":true}',
+    );
+    expect(row.dueIsRecurring, isTrue);
+    expect(warnings, isEmpty);
+
+    await put(EntityTypes.task, 't1', TaskFields.due, {'date': '2026-10-27'});
+    final plain = (await task('t1'))!;
+    expect((plain.dueString, plain.dueLang, plain.dueRule), (null, null, null));
+    expect(plain.dueIsRecurring, isFalse);
+  });
+
+  for (final (name, rule) in <(String, Object?)>[
+    ('строка вместо объекта', 'FREQ=DAILY'),
+    ('пустой список RRULE', {'rrule': <Object?>[], 'from_completion': false}),
+    (
+      'не строка в RRULE',
+      {
+        'rrule': [1],
+        'from_completion': false,
+      },
+    ),
+    (
+      'нет from_completion',
+      {
+        'rrule': ['FREQ=DAILY'],
+      },
+    ),
+  ]) {
+    test('битое правило ($name) — срок остаётся без повтора, предупреждение, '
+        'значение в field_versions цело', () async {
+      final due = {'date': '2026-10-26', 'string': 'каждый день', 'rule': rule};
+      await put(EntityTypes.task, 't1', TaskFields.due, due);
+      final row = (await task('t1'))!;
+      expect((row.dueDate, row.dueString), ('2026-10-26', 'каждый день'));
+      expect((row.dueRule, row.dueIsRecurring), (null, false));
+      expect(warnings.single, contains('правило повторения не разобрано'));
+      expect(
+        await store.fieldValue(EntityTypes.task, 't1', TaskFields.due),
+        due,
+      );
+    });
+  }
+
+  test(
+    'битые текст и язык срока — дата остаётся, они пустые, предупреждения',
+    () async {
+      await put(EntityTypes.task, 't1', TaskFields.due, {
+        'date': '2026-10-26',
+        'string': 42,
+        'lang': ['ru'],
+      });
+      final row = (await task('t1'))!;
+      expect(
+        (row.dueDate, row.dueString, row.dueLang),
+        ('2026-10-26', null, null),
+      );
+      expect(warnings, hasLength(2));
+    },
+  );
+
+  test('правило без даты — срока нет, задача не повторяющаяся', () async {
+    await put(EntityTypes.task, 't1', TaskFields.due, {
+      'rule': {
+        'rrule': ['FREQ=DAILY'],
+        'from_completion': false,
+      },
+    });
+    final row = (await task('t1'))!;
+    expect((row.dueDate, row.dueRule, row.dueIsRecurring), (null, null, false));
+  });
+
+  test('выполненное вхождение — каждое поле ложится в свою колонку', () async {
+    const fields = {
+      CompletionFields.taskId: 't1',
+      CompletionFields.dueWas: '2026-10-26T07:00',
+      CompletionFields.completedAt: '2026-10-26T04:05:00Z',
+      CompletionFields.deleted: true,
+    };
+    for (final entry in fields.entries) {
+      await put(EntityTypes.completion, 'c1', entry.key, entry.value);
+    }
+    final row = await db.select(db.completions).getSingle();
+    expect(row.id, 'c1');
+    expect(row.taskId, 't1');
+    expect(row.dueWas, '2026-10-26T07:00');
+    expect(row.completedAt, '2026-10-26T04:05:00Z');
+    expect(row.deleted, isTrue);
+    expect(warnings, isEmpty);
+  });
+
   test('проект — каждое поле ложится в свою колонку', () async {
     const fields = {
       ProjectFields.name: 'Дом',
@@ -188,6 +296,29 @@ void main() {
       expect(taskLabelId('t1', 'l2'), isNot(taskLabelId('t2', 'l1')));
     },
   );
+
+  test('dueWasOf и completionId — формат вхождения закреплён, одно вхождение '
+      'на всех устройствах, вхождения одного дня различаются', () {
+    expect(dueWasOf('2026-10-26', null), '2026-10-26');
+    expect(dueWasOf('2026-10-26', '07:00'), '2026-10-26T07:00');
+    expect(
+      completionId('t1', dueWasOf('2026-10-26', '07:00')),
+      completionId('t1', '2026-10-26T07:00'),
+    );
+    expect(
+      completionId('t1', dueWasOf('2026-10-26', '07:00')),
+      isNot(completionId('t1', dueWasOf('2026-10-26', '08:00'))),
+    );
+    expect(
+      completionId('t1', '2026-10-26'),
+      isNot(completionId('t2', '2026-10-26')),
+    );
+    // Эталон: id уже лежат в журналах — другая формула раздвоила бы записи.
+    expect(
+      completionId('t1', '2026-10-26'),
+      uuidV8(['completion', 't1', '2026-10-26']),
+    );
+  });
 
   test('дедлайн и длительность — null очищает колонки', () async {
     await put(EntityTypes.task, 't1', TaskFields.deadline, {

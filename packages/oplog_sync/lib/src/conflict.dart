@@ -7,6 +7,12 @@ import 'op.dart';
 /// Тип сущности конфликта в журнале. Ops этого типа несут только `resolved`.
 const String conflictEntityType = 'conflict';
 
+/// Версия правил [findConflicts]. Увеличивается при каждом изменении того,
+/// какие пары ops — конфликт: записи конфликтов производные, и база,
+/// посчитанная прежними правилами, пересчитывает их из журнала
+/// (`MergeEngine.rebuild`). 2 — «удалили оба» и молчащие типы сущностей.
+const int conflictRulesVersion = 2;
+
 /// Поле конфликта, которое синхронизируется op-ом: `true` — пользователь выбрал вариант.
 const String conflictResolvedField = 'resolved';
 

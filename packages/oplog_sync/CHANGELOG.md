@@ -1,5 +1,10 @@
 ## Не выпущено
 
+- `conflictRulesVersion` — версия правил `findConflicts`: база, посчитанная прежними правилами,
+  пересобирает конфликты из журнала (`MergeEngine.rebuild`).
+- `testing.dart`: `silentEntityTypes` в узлах сценариев через папку; сценарий «оба отметили одно вхождение»
+  — одна запись выполнения с общим id.
+
 - `findConflicts`: правка, записанная одним действием (тот же узел и HLC) с удалением сущности, с чужим
   удалением не спорит — «удалили оба» больше не конфликт `delete`; спор о самом `deleted` остаётся `edit`.
 - «Молчащие» типы сущностей: `silentEntityTypes` в `findConflicts`, `MergeEngine` и `ScenarioNode` — LWW

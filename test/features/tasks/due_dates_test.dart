@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:planner/domain/models.dart';
 import 'package:planner/features/tasks/logic/due_dates.dart';
 
 void main() {
@@ -62,5 +63,40 @@ void main() {
         DueKind.overdueYesterday,
       );
     }
+  });
+
+  const weekly = Due(
+    date: '2026-10-26',
+    time: '07:00',
+    tz: 'Europe/Moscow',
+    string: 'каждый пн в 7:00',
+    lang: 'ru',
+    rule: RecurrenceRule(
+      rrule: ['FREQ=WEEKLY;BYDAY=MO'],
+      fromCompletion: false,
+    ),
+  );
+
+  test('dueOnDate — новая дата, время, пояс и правило сохраняются; без срока — '
+      'только дата', () {
+    expect(
+      dueOnDate(weekly, '2026-10-27'),
+      weekly.copyWith(date: '2026-10-27'),
+    );
+    expect(
+      dueOnDate(
+        const Due(date: '2026-10-26', tz: 'Europe/Moscow'),
+        '2026-10-27',
+      ),
+      const Due(date: '2026-10-27'),
+    );
+    expect(dueOnDate(null, '2026-10-27'), const Due(date: '2026-10-27'));
+  });
+
+  test('dueWithTime — время меняется, правило сохраняется; без времени — без '
+      'пояса', () {
+    expect(dueWithTime(weekly, '09:30'), weekly.copyWith(time: '09:30'));
+    expect(dueWithTime(weekly, null), weekly.copyWith(time: null, tz: null));
+    expect(dueWithTime(weekly, null).isRecurring, isTrue);
   });
 }

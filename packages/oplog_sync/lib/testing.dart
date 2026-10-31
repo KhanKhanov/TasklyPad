@@ -1827,7 +1827,7 @@ Future<void> checkConverged(List<ScenarioPeer> peers) async {
   final first = peers.first.node;
   for (final p in peers.skip(1)) {
     final at = 'узел ${p.engine.nodeId} == ${first.engine.nodeId}';
-    for (final type in const ['task', 'project', 'completion']) {
+    for (final type in const ['task', 'project', 'record']) {
       check(
         await p.node.probe.alive(type),
         await first.probe.alive(type),
@@ -1852,10 +1852,16 @@ final class _FolderRun {
   Future<ScenarioPeer> peer(
     String id, {
     Set<String> silentFields = const {},
+    Set<String> silentEntityTypes = const {},
   }) async {
     final storage = await _env.storage();
     final peer = ScenarioPeer(
-      ScenarioNode(storage.probe, id, silentFields: silentFields),
+      ScenarioNode(
+        storage.probe,
+        id,
+        silentFields: silentFields,
+        silentEntityTypes: silentEntityTypes,
+      ),
       storage.state,
       _env.fs,
     );
@@ -1865,9 +1871,18 @@ final class _FolderRun {
 
   Future<(ScenarioPeer, ScenarioPeer)> ab({
     Set<String> silentFields = const {},
+    Set<String> silentEntityTypes = const {},
   }) async => (
-    await peer('a', silentFields: silentFields),
-    await peer('b', silentFields: silentFields),
+    await peer(
+      'a',
+      silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
+    ),
+    await peer(
+      'b',
+      silentFields: silentFields,
+      silentEntityTypes: silentEntityTypes,
+    ),
   );
 
   Future<void> finish() async {
@@ -2045,39 +2060,38 @@ final List<ContractScenario<FolderSyncEnvFactory>> folderSyncScenarios = [
     await checkConverged([a, b]);
   }),
 
-  _folderScenario('папка: оба завершили повторяющуюся — две completion, один '
-      'срок, правило повторения цело', (run) async {
-    final (a, b) = await run.ab();
-    const due0 = {
-      'date': '2026-10-23',
-      'string': 'каждый день',
-      'is_recurring': true,
+  _folderScenario('папка: оба отметили одно вхождение повторяющейся — одна '
+      'запись выполнения (один id), один срок, правило цело, конфликтов нет', (
+    run,
+  ) async {
+    final (a, b) = await run.ab(silentEntityTypes: {'record'});
+    const rule = {
+      'rrule': ['FREQ=DAILY'],
+      'from_completion': false,
     };
-    const due1 = {
-      'date': '2026-10-24',
-      'string': 'каждый день',
-      'is_recurring': true,
-    };
+    const due0 = {'date': '2026-10-23', 'string': 'каждый день', 'rule': rule};
+    const due1 = {'date': '2026-10-24', 'string': 'каждый день', 'rule': rule};
     await a.engine.mutate('task', 't1', {'content': 'Зарядка', 'due': due0});
     await syncRounds([a, b]);
     a.node.advance(1000);
     b.node.advance(2000);
-    for (final (p, id) in [(a, 'c-a'), (b, 'c-b')]) {
-      // Завершение повторяющейся = событие completion + новый срок.
-      await p.engine.mutate('completion', id, {
+    for (final (p, at) in [(a, 'T09:00:00Z'), (b, 'T10:00:00Z')]) {
+      // Выполнение вхождения = запись с id из (задача, вхождение) + новый
+      // срок; время выполнения у устройств разное.
+      await p.engine.mutate('record', 'c-t1-2026-10-23', {
         'task_id': 't1',
         'due_was': '2026-10-23',
+        'completed_at': '2026-10-23$at',
       });
       await p.engine.mutate('task', 't1', {'due': due1});
     }
     await syncRounds([a, b]);
 
-    check(((await a.node.probe.alive('completion')).keys.toList()..sort()), [
-      'c-a',
-      'c-b',
-    ], 'completion на a');
+    check((await a.node.probe.alive('record')).keys.toList(), [
+      'c-t1-2026-10-23',
+    ], 'записи выполнения на a');
     check(await a.node.taskField('t1', 'due'), due1, 'срок на a');
-    check(await a.node.conflicts(), <Conflict>[], 'конфликты: сроки равны');
+    check(await a.node.conflicts(), <Conflict>[], 'конфликты');
     await checkConverged([a, b]);
   }),
 

@@ -225,6 +225,23 @@ void main() {
     expect(await repoOf(phone).takeUnnotified(), isEmpty);
   });
 
+  test('записанный раньше конфликт по записи о выполнении (молчащий тип) не '
+      'показывается и не уведомляется', () async {
+    await phone.services.store.putConflict(
+      const Conflict(
+        id: 'old-completion',
+        kind: ConflictKind.delete,
+        entityType: EntityTypes.completion,
+        entityId: 'completion',
+        field: CompletionFields.dueWas,
+        olderOpId: 'a',
+        newerOpId: 'b',
+      ),
+    );
+    expect(await repoOf(phone).load(), isEmpty);
+    expect(await repoOf(phone).takeUnnotified(), isEmpty);
+  });
+
   test('«выполнена» против «не выполнена»: выбор проигравшей стороны пишет и '
       'дату выполнения — задача согласована на обоих', () async {
     final task = await onPc.tasks.add(content: 'a');

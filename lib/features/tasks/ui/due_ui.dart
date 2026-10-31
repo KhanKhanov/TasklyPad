@@ -99,7 +99,7 @@ Future<({Due? due})?> pickDue(
   switch (choice) {
     case final QuickDue option:
       final day = quickDueDate(option, today);
-      return (due: _onDate(current, isoDate(day)));
+      return (due: dueOnDate(current, isoDate(day)));
     case 'pick':
       final day = await showDatePicker(
         context: context,
@@ -108,9 +108,9 @@ Future<({Due? due})?> pickDue(
         lastDate: DateTime(today.year + 20),
       );
       if (day == null) return null;
-      return (due: _onDate(current, isoDate(day)));
+      return (due: dueOnDate(current, isoDate(day)));
     case 'time' when current != null:
-      if (current.time != null) return (due: Due(date: current.date));
+      if (current.time != null) return (due: dueWithTime(current, null));
       final time = await showTimePicker(
         context: context,
         initialTime: const TimeOfDay(hour: 9, minute: 0),
@@ -118,7 +118,7 @@ Future<({Due? due})?> pickDue(
       if (time == null) return null;
       final hh = time.hour.toString().padLeft(2, '0');
       final mm = time.minute.toString().padLeft(2, '0');
-      return (due: Due(date: current.date, time: '$hh:$mm', tz: current.tz));
+      return (due: dueWithTime(current, '$hh:$mm'));
     case 'none':
       return (due: null);
   }
@@ -161,11 +161,3 @@ Future<({String? date})?> pickDeadline(
   );
   return day == null ? null : (date: isoDate(day));
 }
-
-/// Срок на другую дату с тем же временем и часовым поясом: смена даты не
-/// делает срок с фиксированным поясом «плавающим».
-Due _onDate(Due? current, String date) => Due(
-  date: date,
-  time: current?.time,
-  tz: current?.time == null ? null : current?.tz,
-);
