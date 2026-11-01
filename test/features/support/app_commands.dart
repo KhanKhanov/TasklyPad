@@ -4,7 +4,9 @@ import 'package:planner/data/repositories/workspace_repository.dart';
 import 'package:planner/domain/workspace.dart';
 import 'package:planner/features/labels/logic/label_commands.dart';
 import 'package:planner/features/projects/logic/project_commands.dart';
+import 'package:planner/features/quick_add/logic/quick_add_commands.dart';
 import 'package:planner/features/sections/logic/section_commands.dart';
+import 'package:planner/features/settings/logic/general_settings_commands.dart';
 import 'package:planner/features/settings/logic/theme_commands.dart';
 import 'package:planner/features/tasks/logic/task_commands.dart';
 
@@ -24,6 +26,15 @@ final class AppCommands {
     projects = ProjectCommands(mutator: mutator, read: repo.load, tasks: tasks);
     sections = SectionCommands(mutator: mutator, read: repo.load, tasks: tasks);
     labels = LabelCommands(mutator: mutator, read: repo.load);
+    quickAdd = QuickAddCommands(
+      mutator: mutator,
+      read: repo.load,
+      tasks: tasks,
+      projects: projects,
+      labels: labels,
+    );
+    settings = SettingsRepository(device.db);
+    general = GeneralSettingsCommands(mutator: mutator);
     themeRepo = ThemeSettingsRepository(device.db);
     theme = ThemeCommands(
       mutator: mutator,
@@ -39,6 +50,9 @@ final class AppCommands {
   late final ProjectCommands projects;
   late final SectionCommands sections;
   late final LabelCommands labels;
+  late final QuickAddCommands quickAdd;
+  late final SettingsRepository settings;
+  late final GeneralSettingsCommands general;
 
   Future<Workspace> read() => repo.load();
 }

@@ -822,4 +822,60 @@ class AppLocalizationsRu extends AppLocalizations {
   String conflictDeleteAgainBody(String entity) {
     return 'Сейчас это не удалено. «$entity» будет удалено вместе со всем, что внутри.';
   }
+
+  @override
+  String get quickAdd => 'Быстрое добавление';
+
+  @override
+  String get quickAddDescription => 'Описание';
+
+  @override
+  String createProject(String name) {
+    return 'Создать проект «$name»';
+  }
+
+  @override
+  String get quickAddTaskAdded => 'Задача добавлена';
+
+  @override
+  String pasteTasksTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавить $count задачи?',
+      many: 'Добавить $count задач?',
+      few: 'Добавить $count задачи?',
+      one: 'Добавить $count задачу?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pasteTasksOne => 'Добавить 1 задачу';
+
+  @override
+  String pasteTasksAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Добавить $count задачи',
+      many: 'Добавить $count задач',
+      few: 'Добавить $count задачи',
+      one: 'Добавить $count задачу',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get generalSection => 'Основное';
+
+  @override
+  String get smartDateRecognition => 'Умное распознавание даты';
+
+  @override
+  String get smartDateRecognitionHint =>
+      'Распознавать сроки в задачах автоматически';
+
+  @override
+  String get settingsUpdate => 'Обновить';
 }

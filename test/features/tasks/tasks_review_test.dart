@@ -10,6 +10,7 @@ import 'package:planner/features/tasks/ui/task_actions.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
 import 'package:planner/l10n/app_localizations.dart';
+import 'package:planner/features/tasks/ui/add_task_editor.dart';
 
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
@@ -337,7 +338,13 @@ void main() {
       await tester.tap(find.text('Work'));
       await settle(tester);
 
-      expect(find.text('Add task'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(AddTaskButton),
+          matching: find.text('Add task'),
+        ),
+        findsNothing,
+      );
       // Раздел: без меню и без переименования по нажатию.
       expect(
         find.descendant(

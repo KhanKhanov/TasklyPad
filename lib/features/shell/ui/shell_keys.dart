@@ -4,19 +4,21 @@ import 'package:flutter/services.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../tasks/ui/task_actions.dart';
 
-/// Хоткеи оболочки, как в Todoist: `m` — сайдбар; `g`, затем буква —
-/// переход: `i` «Входящие», `p` «Мои проекты», `v` и `l` «Фильтры и метки»;
-/// `o` `s` — «Настройки», `o` `t` — «Тема».
+/// Хоткеи оболочки, как в Todoist: `q` и `Ctrl+N` — быстрое добавление; `m` —
+/// сайдбар; `g`, затем буква — переход: `i` «Входящие», `p` «Мои проекты»,
+/// `v` и `l` «Фильтры и метки»; `o` `s` — «Настройки», `o` `t` — «Тема».
 /// Остальные переходы (`h`, `t`, `u`) появятся вместе с их экранами. Пока
 /// печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
     super.key,
     required this.onToggleSidebar,
+    required this.onQuickAdd,
     required this.child,
   });
 
   final VoidCallback onToggleSidebar;
+  final VoidCallback onQuickAdd;
   final Widget child;
 
   @override
@@ -47,10 +49,10 @@ class _ShellKeysState extends State<ShellKeys> {
       LogicalKeyboardKey.keyV: '/filters-labels',
       LogicalKeyboardKey.keyL: '/filters-labels',
     },
-    // `o t` — «Тема»: это первый раздел «Настроек», экран открывается на нём.
+    // `o t` — «Настройки», открытые на «Теме».
     LogicalKeyboardKey.keyO: {
       LogicalKeyboardKey.keyS: '/settings',
-      LogicalKeyboardKey.keyT: '/settings',
+      LogicalKeyboardKey.keyT: '/settings?section=theme',
     },
   };
 
@@ -65,10 +67,20 @@ class _ShellKeysState extends State<ShellKeys> {
       ..reset();
     if (isTypingInTextField()) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
+    final key = event.logicalKey;
+    // `Ctrl+N` — «Открыть быстрое добавление задачи» (help «Use keyboard
+    // shortcuts», Windows).
+    if (key == LogicalKeyboardKey.keyN &&
+        keys.isControlPressed &&
+        !keys.isShiftPressed &&
+        !keys.isAltPressed &&
+        !keys.isMetaPressed) {
+      widget.onQuickAdd();
+      return KeyEventResult.handled;
+    }
     if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {
       return KeyEventResult.ignored;
     }
-    final key = event.logicalKey;
     if (prefix != null) {
       final path = _routes[prefix]?[key];
       if (path == null) return KeyEventResult.ignored;
@@ -82,6 +94,8 @@ class _ShellKeysState extends State<ShellKeys> {
         _sinceGo.start();
       case LogicalKeyboardKey.keyM:
         widget.onToggleSidebar();
+      case LogicalKeyboardKey.keyQ:
+        widget.onQuickAdd();
       default:
         return KeyEventResult.ignored;
     }

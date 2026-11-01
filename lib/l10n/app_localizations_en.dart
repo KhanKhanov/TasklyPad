@@ -820,4 +820,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String conflictDeleteAgainBody(String entity) {
     return 'This is not deleted now. “$entity” will be deleted with everything inside it.';
   }
+
+  @override
+  String get quickAdd => 'Quick Add';
+
+  @override
+  String get quickAddDescription => 'Description';
+
+  @override
+  String createProject(String name) {
+    return 'Create project \"$name\"';
+  }
+
+  @override
+  String get quickAddTaskAdded => 'Task added';
+
+  @override
+  String pasteTasksTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $count tasks?',
+      one: 'Add $count task?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pasteTasksOne => 'Add 1 task';
+
+  @override
+  String pasteTasksAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Add $count tasks',
+      one: 'Add $count task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get generalSection => 'General';
+
+  @override
+  String get smartDateRecognition => 'Smart date recognition';
+
+  @override
+  String get smartDateRecognitionHint =>
+      'Detect due dates in tasks automatically';
+
+  @override
+  String get settingsUpdate => 'Update';
 }

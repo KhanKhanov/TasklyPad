@@ -3,13 +3,45 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
+import 'general_section.dart';
 import 'sync_section.dart';
 import 'theme_section.dart';
 
-/// Экран «Настройки». Разделы Todoist — в его порядке (первая — «Тема»), наша
-/// «Синхронизация» — после них; окно с разделами слева, как в Todoist, — M10.
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+/// Экран «Настройки». Разделы Todoist — в его порядке («Основное», «Тема»),
+/// наша «Синхронизация» — после них; окно с разделами слева, как в Todoist, —
+/// M10. [section] `theme` — экран открывается на «Теме» (`o t`).
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key, this.section});
+
+  final String? section;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final GlobalKey _theme = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollToSection();
+  }
+
+  /// `o t` на уже открытых «Настройках» — тот же экран с новым разделом.
+  @override
+  void didUpdateWidget(SettingsScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.section != old.section) _scrollToSection();
+  }
+
+  void _scrollToSection() {
+    if (widget.section != 'theme') return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _theme.currentContext;
+      if (target != null && target.mounted) Scrollable.ensureVisible(target);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +63,9 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const ThemeSection(),
+            const GeneralSection(),
+            const SizedBox(height: 32),
+            ThemeSection(key: _theme),
             const SizedBox(height: 32),
             const SyncSection(),
           ],

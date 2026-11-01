@@ -10,7 +10,9 @@ import '../domain/workspace.dart';
 import '../features/conflicts/logic/conflict_commands.dart';
 import '../features/labels/logic/label_commands.dart';
 import '../features/projects/logic/project_commands.dart';
+import '../features/quick_add/logic/quick_add_commands.dart';
 import '../features/sections/logic/section_commands.dart';
+import '../features/settings/logic/general_settings_commands.dart';
 import '../features/settings/logic/theme_commands.dart';
 import '../features/tasks/logic/task_commands.dart';
 import '../sync/conflict_repository.dart';
@@ -43,10 +45,33 @@ TaskCommands taskCommands(Ref ref) {
     mutator: services.mutator,
     read: ref.watch(workspaceRepositoryProvider).load,
     clock: services.clock,
-    resetRecurringSubtasks: SettingsRepository(ref.watch(appDatabaseProvider))
+    resetRecurringSubtasks: ref
+        .watch(settingsRepositoryProvider)
         .resetRecurringSubtasks,
   );
 }
+
+@Riverpod(keepAlive: true)
+SettingsRepository settingsRepository(Ref ref) =>
+    SettingsRepository(ref.watch(appDatabaseProvider));
+
+/// «Умное распознавание дат» — своё и пришедшее синхронизацией.
+@Riverpod(keepAlive: true)
+Stream<bool> smartDateRecognition(Ref ref) =>
+    ref.watch(settingsRepositoryProvider).watchSmartDateRecognition();
+
+@Riverpod(keepAlive: true)
+GeneralSettingsCommands generalSettingsCommands(Ref ref) =>
+    GeneralSettingsCommands(mutator: ref.watch(mutatorProvider));
+
+@Riverpod(keepAlive: true)
+QuickAddCommands quickAddCommands(Ref ref) => QuickAddCommands(
+  mutator: ref.watch(mutatorProvider),
+  read: ref.watch(workspaceRepositoryProvider).load,
+  tasks: ref.watch(taskCommandsProvider),
+  projects: ref.watch(projectCommandsProvider),
+  labels: ref.watch(labelCommandsProvider),
+);
 
 @Riverpod(keepAlive: true)
 ProjectCommands projectCommands(Ref ref) => ProjectCommands(

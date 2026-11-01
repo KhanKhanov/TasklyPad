@@ -5,6 +5,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../conflicts/ui/conflict_toast.dart';
+import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
 import '../state/sidebar_state.dart';
 import 'shell_keys.dart';
@@ -41,6 +42,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         // Уведомления о конфликтах — тоже на всё время работы приложения.
         return ConflictNoticeListener(
           child: ShellKeys(
+            onQuickAdd: () => openQuickAdd(context, ref, location),
             onToggleSidebar: () {
               final scaffold = _scaffold.currentState;
               if (wide) {
