@@ -872,4 +872,134 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsUpdate => 'Update';
+
+  @override
+  String get generalAdvanced => 'Advanced';
+
+  @override
+  String get resetSubtasks => 'Reset sub-tasks';
+
+  @override
+  String get resetSubtasksMobile => 'Reset sub-tasks';
+
+  @override
+  String get dueInputHint => 'Type a due date';
+
+  @override
+  String get postpone => 'Postpone';
+
+  @override
+  String get repeat => 'Repeat';
+
+  @override
+  String get repeatDaily => 'Daily';
+
+  @override
+  String repeatWeekly(String day) {
+    return 'Weekly ($day)';
+  }
+
+  @override
+  String repeatMonthly(String day) {
+    return 'Monthly ($day)';
+  }
+
+  @override
+  String repeatYearly(String date) {
+    return 'Yearly ($date)';
+  }
+
+  @override
+  String get repeatRemove => 'Remove recurrence';
+
+  @override
+  String get repeatCustom => 'Custom…';
+
+  @override
+  String get repeatCustomTitle => 'Custom recurrence';
+
+  @override
+  String get repeatBasedOn => 'Based on';
+
+  @override
+  String get repeatFromDue => 'Scheduled date';
+
+  @override
+  String get repeatFromCompletion => 'Completion date';
+
+  @override
+  String get repeatEvery => 'Every';
+
+  @override
+  String repeatUnitDay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'days',
+      one: 'day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'weeks',
+      one: 'week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitMonth(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'months',
+      one: 'month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitYear(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'years',
+      one: 'year',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repeatOn => 'On';
+
+  @override
+  String repeatMonthDate(int day) {
+    return 'Day $day';
+  }
+
+  @override
+  String get repeatEnds => 'Ends';
+
+  @override
+  String get repeatNever => 'Never';
+
+  @override
+  String get repeatEndsOn => 'On date';
+
+  @override
+  String get repeatUnsupported => 'This recurrence isn\'t supported';
+
+  @override
+  String get repeatEndsBeforeStart => 'Ends before it starts';
+
+  @override
+  String get completeForever => 'Complete forever';
+
+  @override
+  String get completeResetSubtasks => 'Complete & reset sub-tasks';
 }

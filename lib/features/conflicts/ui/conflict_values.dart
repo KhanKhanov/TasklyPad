@@ -7,6 +7,8 @@ import '../../../domain/models.dart';
 import '../../../domain/theme_settings.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../domain/sync_status.dart';
+import '../../../nlp/parse_context.dart';
+import '../../../nlp/rule_text.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../common/ui/device_title.dart';
 import '../../settings/ui/theme_texts.dart';
@@ -124,11 +126,20 @@ String _ref(AppLocalizations l10n, ConflictRef ref) {
   return ref.isDeleted ? l10n.valueDeletedRef(name) : name;
 }
 
-/// Срок — абсолютной датой: «Сегодня» во вчерашнем конфликте сбивало бы.
+/// Срок — абсолютной датой: «Сегодня» во вчерашнем конфликте сбивало бы; у
+/// повторяющегося — и правило на языке интерфейса: спор «правило против
+/// даты» иначе выглядел бы как две одинаковые даты.
 String _due(String locale, Due due) {
   final time = due.time;
   final tz = due.tz;
-  return [_date(locale, due.date), ?time, if (tz != null) '($tz)'].join(' ');
+  final date = [_date(locale, due.date), ?time, if (tz != null) '($tz)'];
+  final rule = due.rule;
+  if (rule == null) return date.join(' ');
+  final lang = locale.split(RegExp('[-_]')).first;
+  final text = ParseContext.supportedLanguages.contains(lang)
+      ? ruleText(rule, lang)
+      : null;
+  return '${date.join(' ')} · ${text ?? due.string ?? jsonEncode(rule.rrule)}';
 }
 
 String _date(String locale, String date) {

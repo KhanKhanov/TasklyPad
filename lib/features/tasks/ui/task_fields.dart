@@ -36,7 +36,13 @@ class TaskFields extends ConsumerWidget {
     final project = ws.project(ws.rootProjectOf(task.id));
     final section = ws.rootSectionOf(task.id);
     final due = task.due;
-    final deadline = task.deadline;
+    // Прошедший дедлайн повторяющейся задачи пропадает и из окна задачи
+    // (help: «disappear from the task view», решение 1А «Ход M3.7»); значение
+    // хранится, новый дедлайн его заменяет.
+    final deadline = switch (task.deadline) {
+      final d? when deadlineShown(task, d, today) => d,
+      _ => null,
+    };
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -77,9 +83,35 @@ class TaskFields extends ConsumerWidget {
                         due.time,
                         today,
                       );
-                      return Text(
-                        label.text,
-                        style: TextStyle(color: label.color),
+                      final rule = repeatText(context, due);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label.text,
+                            style: TextStyle(color: label.color),
+                          ),
+                          if (rule != null)
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.repeat,
+                                  size: 14,
+                                  color: palette.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    rule,
+                                    style: TextStyle(
+                                      color: palette.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                       );
                     },
                   ),

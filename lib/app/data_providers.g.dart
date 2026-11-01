@@ -276,6 +276,45 @@ final class SmartDateRecognitionProvider
 String _$smartDateRecognitionHash() =>
     r'dbfbaa73f4fcf3f365bed7ae796be9bd0c67168b';
 
+/// «Добавлять подзадачи снова» — своё и пришедшее синхронизацией.
+
+@ProviderFor(resetRecurringSubtasks)
+final resetRecurringSubtasksProvider = ResetRecurringSubtasksProvider._();
+
+/// «Добавлять подзадачи снова» — своё и пришедшее синхронизацией.
+
+final class ResetRecurringSubtasksProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
+  /// «Добавлять подзадачи снова» — своё и пришедшее синхронизацией.
+  ResetRecurringSubtasksProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'resetRecurringSubtasksProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$resetRecurringSubtasksHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    return resetRecurringSubtasks(ref);
+  }
+}
+
+String _$resetRecurringSubtasksHash() =>
+    r'207e85c0a3843bb6328fbce14011fd6ce5863d5f';
+
 @ProviderFor(generalSettingsCommands)
 final generalSettingsCommandsProvider = GeneralSettingsCommandsProvider._();
 

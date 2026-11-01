@@ -60,6 +60,11 @@ SettingsRepository settingsRepository(Ref ref) =>
 Stream<bool> smartDateRecognition(Ref ref) =>
     ref.watch(settingsRepositoryProvider).watchSmartDateRecognition();
 
+/// «Добавлять подзадачи снова» — своё и пришедшее синхронизацией.
+@Riverpod(keepAlive: true)
+Stream<bool> resetRecurringSubtasks(Ref ref) =>
+    ref.watch(settingsRepositoryProvider).watchResetRecurringSubtasks();
+
 @Riverpod(keepAlive: true)
 GeneralSettingsCommands generalSettingsCommands(Ref ref) =>
     GeneralSettingsCommands(mutator: ref.watch(mutatorProvider));

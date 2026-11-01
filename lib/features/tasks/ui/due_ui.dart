@@ -6,6 +6,8 @@ import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../nlp/parse_context.dart';
+import '../../../nlp/rule_text.dart';
 import '../logic/due_dates.dart';
 
 /// Подпись срока для строки задачи и панели: «Сегодня», «Завтра», день недели
@@ -53,76 +55,26 @@ String _time(BuildContext context, String time) {
   );
 }
 
-/// Выбор срока, как планировщик Todoist: быстрые варианты, своя дата,
-/// время, «Без срока». Возвращает новый срок; `null` у записи — убрать срок;
-/// сам `null` — пользователь закрыл выбор.
-Future<({Due? due})?> pickDue(
-  BuildContext context,
-  WidgetRef ref,
-  Due? current,
-) async {
-  final l10n = AppLocalizations.of(context);
-  final today = ref.read(clockProvider).nowUtc().toLocal();
-  final choice = await showDialog<Object>(
-    context: context,
-    builder: (context) => SimpleDialog(
-      title: Text(l10n.fieldDue),
-      children: [
-        for (final (option, label) in [
-          (QuickDue.today, l10n.dueToday),
-          (QuickDue.tomorrow, l10n.dueTomorrow),
-          (QuickDue.weekend, l10n.dueWeekend),
-          (QuickDue.nextWeek, l10n.dueNextWeek),
-        ])
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, option),
-            child: Text(label),
-          ),
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, 'pick'),
-          child: Text(l10n.pickDate),
-        ),
-        if (current != null)
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'time'),
-            child: Text(current.time == null ? l10n.addTime : l10n.removeTime),
-          ),
-        if (current != null)
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'none'),
-            child: Text(l10n.noDue),
-          ),
-      ],
-    ),
-  );
-  if (choice == null || !context.mounted) return null;
-  switch (choice) {
-    case final QuickDue option:
-      final day = quickDueDate(option, today);
-      return (due: dueOnDate(current, isoDate(day)));
-    case 'pick':
-      final day = await showDatePicker(
-        context: context,
-        initialDate: parseIsoDate(current?.date ?? '') ?? today,
-        firstDate: DateTime(today.year - 5),
-        lastDate: DateTime(today.year + 20),
-      );
-      if (day == null) return null;
-      return (due: dueOnDate(current, isoDate(day)));
-    case 'time' when current != null:
-      if (current.time != null) return (due: dueWithTime(current, null));
-      final time = await showTimePicker(
-        context: context,
-        initialTime: const TimeOfDay(hour: 9, minute: 0),
-      );
-      if (time == null) return null;
-      final hh = time.hour.toString().padLeft(2, '0');
-      final mm = time.minute.toString().padLeft(2, '0');
-      return (due: dueWithTime(current, '$hh:$mm'));
-    case 'none':
-      return (due: null);
-  }
-  return null;
+/// Текст правила повторяющегося [due] на языке интерфейса («каждый пн»);
+/// у правила без текстовой формы — срок текстом, как его ввели. `null` —
+/// срок не повторяется.
+String? repeatText(BuildContext context, Due due) {
+  final rule = due.rule;
+  if (rule == null) return null;
+  final lang = Localizations.localeOf(context).languageCode;
+  final text = ParseContext.supportedLanguages.contains(lang)
+      ? ruleText(rule, lang)
+      : null;
+  return text ?? due.string;
+}
+
+/// Дедлайн [deadline] виден в строке задачи: у повторяющейся задачи после
+/// даты дедлайна он пропадает из вида, срок идёт дальше (help «Complete a
+/// task with a recurring date»; решение 6А «Ход M3.7»).
+bool deadlineShown(Task task, String deadline, DateTime today) {
+  if (!(task.due?.isRecurring ?? false)) return true;
+  final day = parseIsoDate(deadline);
+  return day == null || !day.isBefore(today);
 }
 
 /// Выбор дедлайна: дата или «Без дедлайна». `null` — выбор закрыт.

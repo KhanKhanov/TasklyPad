@@ -1567,6 +1567,186 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Обновить'**
   String get settingsUpdate;
+
+  /// Подраздел «Основное» (help ru «Reset a sub-task»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Дополнительно'**
+  String get generalAdvanced;
+
+  /// Переключатель на компьютере (help ru «Reset a sub-task», Todoist: Reset sub-tasks)
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавлять подзадачи снова'**
+  String get resetSubtasks;
+
+  /// Тот же переключатель на Android (help ru)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить подзадачи'**
+  String get resetSubtasksMobile;
+
+  /// Поле ввода срока текстом в планировщике (подпись — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите срок'**
+  String get dueInputHint;
+
+  /// Перенос повторяющейся задачи на следующее вхождение (help: Postpone; подпись и место — О-56, О-57)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отложить'**
+  String get postpone;
+
+  /// Кнопка планировщика (help ru, веб)
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить'**
+  String get repeat;
+
+  /// Готовый вариант «Повторить» (help: Daily; подпись — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждый день'**
+  String get repeatDaily;
+
+  /// Готовый вариант (help: Weekly); day — день недели даты срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждую неделю ({day})'**
+  String repeatWeekly(String day);
+
+  /// Готовый вариант (help: Monthly); day — число даты срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждый месяц ({day})'**
+  String repeatMonthly(String day);
+
+  /// Готовый вариант (help: Yearly); date — день и месяц срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждый год ({date})'**
+  String repeatYearly(String date);
+
+  /// Значок снятия правила внизу планировщика, дата остаётся (help: dismiss icon; подсказка — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать повтор'**
+  String get repeatRemove;
+
+  /// Своё правило повторения (help ru, веб)
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользовательский…'**
+  String get repeatCustom;
+
+  /// Заголовок окна своего правила (в help не назван — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользовательский повтор'**
+  String get repeatCustomTitle;
+
+  /// Поле окна (help: Based on — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Считать от'**
+  String get repeatBasedOn;
+
+  /// Повтор от запланированной даты (every)
+  ///
+  /// In ru, this message translates to:
+  /// **'Даты срока'**
+  String get repeatFromDue;
+
+  /// Повтор от даты выполнения (every!)
+  ///
+  /// In ru, this message translates to:
+  /// **'Даты выполнения'**
+  String get repeatFromCompletion;
+
+  /// Поле окна (help: Every — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Каждые'**
+  String get repeatEvery;
+
+  /// Единица «Каждые N»
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{день} few{дня} many{дней} other{дня}}'**
+  String repeatUnitDay(int count);
+
+  /// Единица «Каждые N»
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{неделю} few{недели} many{недель} other{недели}}'**
+  String repeatUnitWeek(int count);
+
+  /// Единица «Каждые N»
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{месяц} few{месяца} many{месяцев} other{месяца}}'**
+  String repeatUnitMonth(int count);
+
+  /// Единица «Каждые N»
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{год} few{года} many{лет} other{года}}'**
+  String repeatUnitYear(int count);
+
+  /// Поле окна: дни недели или день месяца (help: On — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'В'**
+  String get repeatOn;
+
+  /// Месяц по числу даты срока
+  ///
+  /// In ru, this message translates to:
+  /// **'{day} числа'**
+  String repeatMonthDate(int day);
+
+  /// Поле окна (help: Ends — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Окончание'**
+  String get repeatEnds;
+
+  /// Серия без окончания
+  ///
+  /// In ru, this message translates to:
+  /// **'Никогда'**
+  String get repeatNever;
+
+  /// Серия до даты
+  ///
+  /// In ru, this message translates to:
+  /// **'Дата'**
+  String get repeatEndsOn;
+
+  /// У правила нет записи текстом (день недели месяца с шагом больше месяца)
+  ///
+  /// In ru, this message translates to:
+  /// **'Такое правило не поддерживается'**
+  String get repeatUnsupported;
+
+  /// Дата окончания раньше первого вхождения
+  ///
+  /// In ru, this message translates to:
+  /// **'Окончание раньше начала'**
+  String get repeatEndsBeforeStart;
+
+  /// Меню «⋯» окна задачи (help ru «Complete a task with a recurring date», Complete forever)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнить окончательно'**
+  String get completeForever;
+
+  /// Меню «⋯» окна задачи (help ru «Reset a sub-task», Complete & reset sub-tasks)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнить и снова добавить подзадачи'**
+  String get completeResetSubtasks;
 }
 
 class _AppLocalizationsDelegate

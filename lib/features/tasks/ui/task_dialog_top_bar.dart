@@ -9,6 +9,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import 'task_actions.dart';
 
+enum _Action { complete, completeForever, completeReset, duplicate, delete }
+
 /// Верх панели: путь «проект › раздел», стрелки к соседним задачам, меню и
 /// закрыть.
 class TaskDialogTopBar extends ConsumerWidget {
@@ -37,6 +39,7 @@ class TaskDialogTopBar extends ConsumerWidget {
     final palette = AppPalette.of(context);
     final project = ws.project(ws.rootProjectOf(task.id));
     final parent = ws.task(ws.taskParent(task.id) ?? '');
+    final recurring = (task.due?.isRecurring ?? false) && !task.isCompleted;
     final path = [
       if (project != null) projectTitle(l10n, project),
       ?ws.rootSectionOf(task.id)?.name,
@@ -64,22 +67,51 @@ class TaskDialogTopBar extends ConsumerWidget {
             onPressed: onNext,
           ),
           if (!readOnly)
-            PopupMenuButton<bool>(
+            PopupMenuButton<_Action>(
               tooltip: l10n.moreActions,
               icon: const Icon(Icons.more_horiz),
-              onSelected: (delete) async {
-                if (delete) {
-                  await deleteTask(context, ref, task);
-                } else {
-                  await runCommand(
-                    context,
-                    () => ref.read(taskCommandsProvider).duplicate(task.id),
-                  );
-                }
+              onSelected: (action) => switch (action) {
+                _Action.complete => toggleComplete(context, ref, task),
+                _Action.completeForever => completeForever(context, ref, task),
+                _Action.completeReset => completeResettingSubtasks(
+                  context,
+                  ref,
+                  task,
+                ),
+                _Action.duplicate => runCommand(
+                  context,
+                  () => ref.read(taskCommandsProvider).duplicate(task.id),
+                ),
+                _Action.delete => deleteTask(context, ref, task),
               },
               itemBuilder: (context) => [
-                PopupMenuItem(value: false, child: Text(l10n.actionDuplicate)),
-                PopupMenuItem(value: true, child: Text(l10n.actionDelete)),
+                // Пункты повторяющейся задачи — в меню «⋯» окна задачи, как
+                // в help (решения 5А и 3А «Ход M3.7»): «Выполнить» — это
+                // вхождение, как кружок.
+                if (recurring) ...[
+                  PopupMenuItem(
+                    value: _Action.complete,
+                    child: Text(l10n.completeTask),
+                  ),
+                  PopupMenuItem(
+                    value: _Action.completeForever,
+                    child: Text(l10n.completeForever),
+                  ),
+                  if (ws.children(task.id).isNotEmpty)
+                    PopupMenuItem(
+                      value: _Action.completeReset,
+                      child: Text(l10n.completeResetSubtasks),
+                    ),
+                  const PopupMenuDivider(),
+                ],
+                PopupMenuItem(
+                  value: _Action.duplicate,
+                  child: Text(l10n.actionDuplicate),
+                ),
+                PopupMenuItem(
+                  value: _Action.delete,
+                  child: Text(l10n.actionDelete),
+                ),
               ],
             ),
           IconButton(
