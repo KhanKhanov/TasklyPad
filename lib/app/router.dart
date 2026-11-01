@@ -41,7 +41,8 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const SettingsScreen(),
+            builder: (context, state) =>
+                SettingsScreen(section: state.uri.queryParameters['section']),
           ),
           GoRoute(
             path: '/filters-labels',

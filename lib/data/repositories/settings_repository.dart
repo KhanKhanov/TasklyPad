@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 import '../app_database.dart';
 import '../projection/entity_fields.dart';
 
-/// Синхронизируемые настройки, которые нужны действиям над задачами: поля
+/// Синхронизируемые настройки задач и быстрого добавления: поля
 /// сущности `settings` из `field_versions` (таблицы у неё нет — SYNC_DESIGN
 /// «Специальные случаи»). Тема — ThemeSettingsRepository.
 final class SettingsRepository {
@@ -18,6 +18,20 @@ final class SettingsRepository {
   /// проверка на живом Todoist — О-57).
   Future<bool> resetRecurringSubtasks() async =>
       await _bool(SettingsFields.resetRecurringSubtasks) ?? false;
+
+  /// «Умное распознавание дат» быстрого добавления; поля нет или оно не
+  /// логическое — включено, как у нового аккаунта Todoist (help «Turn smart
+  /// date recognition on or off»).
+  Future<bool> smartDateRecognition() async =>
+      await _bool(SettingsFields.smartDateRecognition) ?? true;
+
+  /// [smartDateRecognition] сейчас и после каждой правки — своей и пришедшей
+  /// синхронизацией; одинаковые значения отбрасываются.
+  Stream<bool> watchSmartDateRecognition() => _db
+      .customSelect('SELECT 1', readsFrom: {_db.fieldVersions})
+      .watch()
+      .asyncMap((_) => smartDateRecognition())
+      .distinct();
 
   Future<bool?> _bool(String field) async {
     final row =

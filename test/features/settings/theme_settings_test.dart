@@ -5,6 +5,7 @@ import 'package:planner/app/sync_providers.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/theme_settings.dart';
 import 'package:planner/features/settings/ui/settings_screen.dart';
+import 'package:planner/features/settings/ui/theme_section.dart';
 
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
@@ -45,8 +46,15 @@ void main() {
       if (op.entityType == EntityTypes.settings) op.field,
   ];
 
+  /// Внутри раздела «Тема»: у «Основного» свои переключатель и «Update».
+  Finder inTheme(Finder f) =>
+      find.descendant(of: find.byType(ThemeSection), matching: f);
+
   ButtonStyleButton update() =>
-      find.widgetWithText(FilledButton, 'Update').evaluate().single.widget
+      inTheme(find.widgetWithText(FilledButton, 'Update'))
+              .evaluate()
+              .single
+              .widget
           as ButtonStyleButton;
 
   testWidgets('`o` `t` открывает «Настройки»: «Тема» — над «Синхронизацией», '
@@ -61,7 +69,9 @@ void main() {
       );
       expect(segments.selected, {ThemeAppearance.system});
       expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        tester
+            .widget<SwitchListTile>(inTheme(find.byType(SwitchListTile)))
+            .value,
         isTrue,
       );
     });
@@ -76,7 +86,7 @@ void main() {
       expect(brightness(tester), Brightness.light);
       expect(await settingsFields(tester, device), isEmpty);
 
-      await tester.tap(find.text('Update'));
+      await tester.tap(inTheme(find.text('Update')));
       await settle(tester);
       expect(brightness(tester), Brightness.dark);
       expect(update().onPressed, isNull);
@@ -91,14 +101,16 @@ void main() {
       'в журнал ничего', (tester) async {
     await run(tester, (device) async {
       // Два нажатия до перерисовки: второе не теряет первое.
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(inTheme(find.byType(SwitchListTile)));
       await tester.tap(find.text('Dark'));
       await tester.pump();
-      await tester.tap(find.text('Update'));
+      await tester.tap(inTheme(find.text('Update')));
       await settle(tester);
       expect(brightness(tester), Brightness.dark);
       expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        tester
+            .widget<SwitchListTile>(inTheme(find.byType(SwitchListTile)))
+            .value,
         isFalse,
       );
       final saved = (await tester.runAsync(
@@ -140,7 +152,7 @@ void main() {
   testWidgets('Android: два нажатия подряд — оба действуют: синхронизация '
       'выключена, тёмная тема на устройстве, в журнал ничего', (tester) async {
     await run(tester, (device) async {
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(inTheme(find.byType(SwitchListTile)));
       await tester.pump();
       await tester.tap(find.text('Dark'));
       await settle(tester);

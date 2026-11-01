@@ -187,7 +187,188 @@ final class TaskCommandsProvider
   }
 }
 
-String _$taskCommandsHash() => r'cb40b8321fc0d6a92d1f27df269bf035865f037e';
+String _$taskCommandsHash() => r'baf2c263653868e9196dc655c0ad0d63f7894108';
+
+@ProviderFor(settingsRepository)
+final settingsRepositoryProvider = SettingsRepositoryProvider._();
+
+final class SettingsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SettingsRepository,
+          SettingsRepository,
+          SettingsRepository
+        >
+    with $Provider<SettingsRepository> {
+  SettingsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'settingsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$settingsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SettingsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SettingsRepository create(Ref ref) {
+    return settingsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SettingsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SettingsRepository>(value),
+    );
+  }
+}
+
+String _$settingsRepositoryHash() =>
+    r'2de17899c89cd144d3e134172002d79d8b2f2dfd';
+
+/// «Умное распознавание дат» — своё и пришедшее синхронизацией.
+
+@ProviderFor(smartDateRecognition)
+final smartDateRecognitionProvider = SmartDateRecognitionProvider._();
+
+/// «Умное распознавание дат» — своё и пришедшее синхронизацией.
+
+final class SmartDateRecognitionProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
+  /// «Умное распознавание дат» — своё и пришедшее синхронизацией.
+  SmartDateRecognitionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'smartDateRecognitionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$smartDateRecognitionHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    return smartDateRecognition(ref);
+  }
+}
+
+String _$smartDateRecognitionHash() =>
+    r'dbfbaa73f4fcf3f365bed7ae796be9bd0c67168b';
+
+@ProviderFor(generalSettingsCommands)
+final generalSettingsCommandsProvider = GeneralSettingsCommandsProvider._();
+
+final class GeneralSettingsCommandsProvider
+    extends
+        $FunctionalProvider<
+          GeneralSettingsCommands,
+          GeneralSettingsCommands,
+          GeneralSettingsCommands
+        >
+    with $Provider<GeneralSettingsCommands> {
+  GeneralSettingsCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'generalSettingsCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$generalSettingsCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<GeneralSettingsCommands> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GeneralSettingsCommands create(Ref ref) {
+    return generalSettingsCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GeneralSettingsCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GeneralSettingsCommands>(value),
+    );
+  }
+}
+
+String _$generalSettingsCommandsHash() =>
+    r'7691d2e3c6cbf1cca5a114dfc507ba03a3682154';
+
+@ProviderFor(quickAddCommands)
+final quickAddCommandsProvider = QuickAddCommandsProvider._();
+
+final class QuickAddCommandsProvider
+    extends
+        $FunctionalProvider<
+          QuickAddCommands,
+          QuickAddCommands,
+          QuickAddCommands
+        >
+    with $Provider<QuickAddCommands> {
+  QuickAddCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'quickAddCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$quickAddCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<QuickAddCommands> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  QuickAddCommands create(Ref ref) {
+    return quickAddCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(QuickAddCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<QuickAddCommands>(value),
+    );
+  }
+}
+
+String _$quickAddCommandsHash() => r'94be56001bc27dead1915bd7f40f12340123f292';
 
 @ProviderFor(projectCommands)
 final projectCommandsProvider = ProjectCommandsProvider._();

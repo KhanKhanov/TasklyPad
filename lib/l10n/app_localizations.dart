@@ -1501,6 +1501,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Сейчас это не удалено. «{entity}» будет удалено вместе со всем, что внутри.'**
   String conflictDeleteAgainBody(String entity);
+
+  /// Окно `q` и его подпись для чтения с экрана (Todoist: Quick Add; подпись — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Быстрое добавление'**
+  String get quickAdd;
+
+  /// Кнопка «+»: показать поле описания (help «Use Task Quick Add»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Описание'**
+  String get quickAddDescription;
+
+  /// Пункт автодополнения `#` (help: «offers to create it»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Создать проект «{name}»'**
+  String createProject(String name);
+
+  /// Тост после быстрого добавления (допущение О-57)
+  ///
+  /// In ru, this message translates to:
+  /// **'Задача добавлена'**
+  String get quickAddTaskAdded;
+
+  /// Вставка нескольких строк (help «Add or manage multiple tasks»: Add X tasks?; подпись — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Добавить {count} задачу?} few{Добавить {count} задачи?} many{Добавить {count} задач?} other{Добавить {count} задачи?}}'**
+  String pasteTasksTitle(int count);
+
+  /// Все строки — одна задача (help: Add 1 task)
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить 1 задачу'**
+  String get pasteTasksOne;
+
+  /// Каждая строка — задача (help: Add X tasks)
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{Добавить {count} задачу} few{Добавить {count} задачи} many{Добавить {count} задач} other{Добавить {count} задачи}}'**
+  String pasteTasksAll(int count);
+
+  /// Раздел настроек (Todoist: General)
+  ///
+  /// In ru, this message translates to:
+  /// **'Основное'**
+  String get generalSection;
+
+  /// Переключатель «Основное» (Todoist: Smart date recognition; подпись — help ru, сверка по скриншоту — О-56)
+  ///
+  /// In ru, this message translates to:
+  /// **'Умное распознавание даты'**
+  String get smartDateRecognition;
+
+  /// Пояснение переключателя: подпись Android из help ru (Detect due dates in tasks automatically)
+  ///
+  /// In ru, this message translates to:
+  /// **'Распознавать сроки в задачах автоматически'**
+  String get smartDateRecognitionHint;
+
+  /// Кнопка сохранения раздела настроек на компьютере (Todoist: Update)
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить'**
+  String get settingsUpdate;
 }
 
 class _AppLocalizationsDelegate

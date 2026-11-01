@@ -9,12 +9,15 @@ import '../../../l10n/app_localizations.dart';
 import '../../labels/ui/label_tile.dart';
 import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_tile.dart';
+import '../../quick_add/ui/quick_add_dialog.dart';
 import '../state/sidebar_state.dart';
+import 'sidebar_items.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Фильтры и метки», «Избранное»
 /// (проекты и метки), «Мои проекты» деревом. «Конфликты» (нашего дополнения)
-/// видны, только пока есть нерешённые. Пункты «Добавить задачу»,
-/// «Поиск», «Сегодня», «Предстоящее» появляются вместе со своими экранами.
+/// видны, только пока есть нерешённые. «Добавить задачу» открывает окно
+/// быстрого добавления; «Поиск», «Сегодня», «Предстоящее» появятся вместе со
+/// своими экранами.
 class Sidebar extends ConsumerWidget {
   const Sidebar({super.key, required this.location});
 
@@ -86,7 +89,7 @@ class Sidebar extends ConsumerWidget {
               child: WorkspaceView(
                 builder: (context, ws) => ListView(
                   padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
-                  children: _content(context, ws, conflicts),
+                  children: _content(context, ref, ws, conflicts),
                 ),
               ),
             ),
@@ -96,7 +99,12 @@ class Sidebar extends ConsumerWidget {
     );
   }
 
-  List<Widget> _content(BuildContext context, Workspace ws, int conflicts) {
+  List<Widget> _content(
+    BuildContext context,
+    WidgetRef ref,
+    Workspace ws,
+    int conflicts,
+  ) {
     final l10n = AppLocalizations.of(context);
     final inbox = ws.inbox;
     final favorites = ws.favoriteProjects;
@@ -105,15 +113,27 @@ class Sidebar extends ConsumerWidget {
         if (l.isFavorite) l,
     ];
     return [
+      SidebarNavItem(
+        icon: Icons.add_circle,
+        iconColor: AppPalette.of(context).accent,
+        label: l10n.addTask,
+        count: 0,
+        selected: false,
+        onTap: () {
+          final scaffold = Scaffold.maybeOf(context);
+          if (scaffold != null && scaffold.isDrawerOpen) scaffold.closeDrawer();
+          openQuickAdd(context, ref, location);
+        },
+      ),
       if (inbox != null)
-        _NavItem(
+        SidebarNavItem(
           icon: Icons.inbox_outlined,
           label: l10n.inbox,
           count: ws.activeTaskCount(inbox.id),
           selected: location == '/' || location == '/project/${inbox.id}',
           onTap: () => navigate(context, '/'),
         ),
-      _NavItem(
+      SidebarNavItem(
         icon: Icons.grid_view_outlined,
         label: l10n.filtersAndLabels,
         count: 0,
@@ -125,7 +145,7 @@ class Sidebar extends ConsumerWidget {
         onTap: () => navigate(context, '/filters-labels'),
       ),
       if (conflicts > 0)
-        _NavItem(
+        SidebarNavItem(
           icon: Icons.sync_problem_outlined,
           label: l10n.conflicts,
           count: conflicts,
@@ -134,7 +154,7 @@ class Sidebar extends ConsumerWidget {
           onTap: () => navigate(context, '/conflicts'),
         ),
       if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
-        _GroupHeader(label: l10n.favorites),
+        SidebarGroupHeader(label: l10n.favorites),
         for (final p in favorites)
           ProjectTile(
             key: ValueKey('fav-${p.id}'),
@@ -150,7 +170,7 @@ class Sidebar extends ConsumerWidget {
             selected: location == '/label/${l.id}',
           ),
       ],
-      _GroupHeader(
+      SidebarGroupHeader(
         label: l10n.myProjects,
         onTap: () => navigate(context, '/projects'),
         selected: location == '/projects',
@@ -179,113 +199,5 @@ class Sidebar extends ConsumerWidget {
     } else {
       ref.read(sidebarOpenProvider.notifier).toggle();
     }
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.selected,
-    required this.onTap,
-    this.countColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final int count;
-  final bool selected;
-  final VoidCallback onTap;
-
-  /// Цвет числа; по умолчанию — вторичный текст.
-  final Color? countColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final color = selected ? palette.onSelected : palette.textPrimary;
-    return Material(
-      color: selected ? palette.selected : Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: onTap,
-        child: SizedBox(
-          height: 34,
-          child: Row(
-            children: [
-              const SizedBox(width: 8),
-              Icon(icon, size: 20, color: color),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(label, style: TextStyle(color: color)),
-              ),
-              if (count > 0)
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    '$count',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: countColor ?? palette.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader({
-    required this.label,
-    this.onTap,
-    this.trailing,
-    this.selected = false,
-  });
-
-  final String label;
-  final VoidCallback? onTap;
-  final Widget? trailing;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Material(
-        color: selected ? palette.selected : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(6),
-          onTap: onTap,
-          child: SizedBox(
-            height: 34,
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                ?trailing,
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

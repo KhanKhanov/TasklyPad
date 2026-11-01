@@ -8,6 +8,7 @@ import 'package:planner/app/sync_providers.dart';
 import 'package:planner/domain/sync_status.dart';
 import 'package:planner/features/settings/state/sync_controller.dart';
 import 'package:planner/features/settings/ui/settings_screen.dart';
+import 'package:planner/features/settings/ui/sync_section.dart';
 
 import '../../app/support/pump_app.dart';
 import '../support/app_commands.dart';
@@ -21,6 +22,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Settings').last);
     await settle(tester);
+    // «Синхронизация» — после «Основного» и «Темы»: раздел — к верху экрана.
+    await tester.ensureVisible(find.byType(SyncSection));
+    await tester.pumpAndSettle();
   }
 
   testWidgets('расписание: при запуске, через 5 с после своей правки, раз в '

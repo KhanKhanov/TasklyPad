@@ -5,6 +5,7 @@ import 'package:planner/features/projects/ui/projects_screen.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
+import 'package:planner/features/tasks/ui/add_task_editor.dart';
 
 import '../../app/support/pump_app.dart';
 import '../support/app_commands.dart';
@@ -57,7 +58,12 @@ void main() {
   testWidgets('«Add task» → задача в списке, редактор остаётся для '
       'следующей, Esc закрывает', (tester) async {
     await withApp(tester, (device) async {
-      await tester.tap(find.text('Add task'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AddTaskButton),
+          matching: find.text('Add task'),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'Buy milk');
       await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -284,7 +290,13 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
       await settle(tester);
       expect(find.byType(ProjectsScreen), findsNothing);
-      expect(find.text('Add task'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AddTaskButton),
+          matching: find.text('Add task'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
       await settle(tester);
@@ -308,7 +320,14 @@ void main() {
       await settle(tester);
 
       // У раздела своя «Add task»: вторая на экране.
-      await tester.tap(find.text('Add task').last);
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(AddTaskButton),
+              matching: find.text('Add task'),
+            )
+            .last,
+      );
       await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(TextField, 'Task name'),

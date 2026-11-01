@@ -133,9 +133,9 @@ final RegExp _trailingPunctuation = RegExp(r'[,.;:!?]+$');
 /// Разбирает строку быстрого добавления [text].
 ///
 /// [dismissed] — участки, подсветку которых пользователь отменил кликом:
-/// они остаются текстом названия. [smartDates] — «Умное распознавание дат»:
-/// выключено — срок в названии не ищется, токены §1 разбираются (допущение
-/// О-57).
+/// они остаются текстом названия. [smartDates] — «Умное распознавание даты»:
+/// выключено — срок, дедлайн и отрезок времени в названии не ищутся (help),
+/// остальные токены §1 разбираются (допущение О-57).
 QuickAddResult parseQuickAdd(
   String text,
   ParseContext ctx, {
@@ -156,7 +156,9 @@ QuickAddResult parseQuickAdd(
   }
 
   String? deadline;
-  for (final m in _deadline.allMatches(text)) {
+  // Выключенное распознавание — дату и дедлайн ставит только планировщик
+  // (help «Turn smart date recognition on or off»).
+  for (final m in smartDates ? _deadline.allMatches(text) : <RegExpMatch>[]) {
     if (!free(Span(m.start, m.end))) continue;
     final date = parseDueText(m[1]!, ctx)?.due;
     if (date == null || date.rule != null) continue;

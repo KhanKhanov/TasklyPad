@@ -245,5 +245,16 @@
   "conflictThisDevice": "This device",
   "conflictDeleteAgainTitle": "Delete again?",
   "conflictDeleteAgainBody": "This is not deleted now. “{entity}” will be deleted with everything inside it.",
-  "@conflictDeleteAgainBody": {"placeholders": {"entity": {"type": "String"}}}
+  "@conflictDeleteAgainBody": {"placeholders": {"entity": {"type": "String"}}},
+  "quickAdd": "Quick Add",
+  "quickAddDescription": "Description",
+  "createProject": "Create project \"{name}\"",
+  "quickAddTaskAdded": "Task added",
+  "pasteTasksTitle": "{count, plural, one{Add {count} task?} other{Add {count} tasks?}}",
+  "pasteTasksOne": "Add 1 task",
+  "pasteTasksAll": "{count, plural, one{Add {count} task} other{Add {count} tasks}}",
+  "generalSection": "General",
+  "smartDateRecognition": "Smart date recognition",
+  "smartDateRecognitionHint": "Detect due dates in tasks automatically",
+  "settingsUpdate": "Update"
 }

@@ -1,3 +1,4 @@
+import 'package:planner/features/tasks/ui/add_task_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -175,7 +176,13 @@ void main() {
       expect(find.text('Week'), findsOneWidget);
       // У архивного раздела нет «Добавить задачу»: кнопка одна — у задач
       // без раздела.
-      expect(find.text('Add task'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AddTaskButton),
+          matching: find.text('Add task'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byTooltip('More actions').last);
       await tester.pumpAndSettle();
