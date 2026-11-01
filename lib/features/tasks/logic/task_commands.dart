@@ -259,22 +259,9 @@ final class TaskCommands {
     if (due == null || !due.isRecurring) {
       throw const CommandRejected(RejectReason.notRecurring);
     }
-    final now = _clock.nowWall();
-    // Сначала само правило: битое — отказ, закончившаяся серия — без
-    // переноса, даже если задача просрочена.
-    final following = _next(due, now, postpone: true);
-    if (task.isCompleted || following == null) {
-      return _mutator.capture(const []);
-    }
-    final today = DateTime.utc(now.year, now.month, now.day);
-    final dueAt = DateTime.parse('${due.date}T${due.time ?? '00:00'}:00Z');
-    // Срок без времени просрочен со следующего дня, со временем — сразу.
-    final overdue = due.time == null
-        ? dueAt.isBefore(today)
-        : dueAt.isBefore(now);
-    final next = overdue
-        ? due.copyWith(date: isoDate(today.add(const Duration(days: 1))))
-        : following;
+    // Сначала само правило: битое — отказ даже у выполненной задачи.
+    final next = postponedDue(due, _clock.nowWall());
+    if (task.isCompleted || next == null) return _mutator.capture(const []);
     final undo = await _mutator.capture([
       _target(id, {TaskFields.due}),
     ]);
@@ -283,6 +270,25 @@ final class TaskCommands {
     });
     return undo;
   });
+
+  /// Срок повторяющегося [due] после «Отложить» в момент [now] (стенное
+  /// время устройства): следующее будущее вхождение, просроченный — завтра со
+  /// временем и правилом. `null` — серия закончилась, переносить некуда (в
+  /// том числе просроченный). Битое правило — [CommandRejected]. Общая для
+  /// [postpone] и даты у пункта «Отложить» в планировщике.
+  static Due? postponedDue(Due due, DateTime now) {
+    final following = _next(due, now, postpone: true);
+    if (following == null) return null;
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final dueAt = DateTime.parse('${due.date}T${due.time ?? '00:00'}:00Z');
+    // Срок без времени просрочен со следующего дня, со временем — сразу.
+    final overdue = due.time == null
+        ? dueAt.isBefore(today)
+        : dueAt.isBefore(now);
+    return overdue
+        ? due.copyWith(date: isoDate(today.add(const Duration(days: 1))))
+        : following;
+  }
 
   /// [nextOccurrence] с отказом вместо FormatException: битое правило
   /// (пришло с другого устройства) — сообщение пользователю, данные целы.

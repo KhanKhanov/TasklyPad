@@ -27,10 +27,15 @@ final class SettingsRepository {
 
   /// [smartDateRecognition] сейчас и после каждой правки — своей и пришедшей
   /// синхронизацией; одинаковые значения отбрасываются.
-  Stream<bool> watchSmartDateRecognition() => _db
+  Stream<bool> watchSmartDateRecognition() => _watch(smartDateRecognition);
+
+  /// [resetRecurringSubtasks] — так же, как [watchSmartDateRecognition].
+  Stream<bool> watchResetRecurringSubtasks() => _watch(resetRecurringSubtasks);
+
+  Stream<bool> _watch(Future<bool> Function() read) => _db
       .customSelect('SELECT 1', readsFrom: {_db.fieldVersions})
       .watch()
-      .asyncMap((_) => smartDateRecognition())
+      .asyncMap((_) => read())
       .distinct();
 
   Future<bool?> _bool(String field) async {

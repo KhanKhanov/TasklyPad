@@ -114,9 +114,11 @@ class TaskText extends ConsumerWidget {
             icon: Icons.calendar_today_outlined,
             text: label.text,
             color: label.color,
+            // Значок повтора после даты (в help не описан — допущение О-57).
+            trailing: due.isRecurring ? Icons.repeat : null,
           ),
       ],
-      if (deadline != null) ...[
+      if (deadline != null && deadlineShown(task, deadline, today)) ...[
         for (final label in [dueLabel(context, deadline, null, today)])
           _Chip(
             icon: Icons.outlined_flag,
@@ -181,12 +183,16 @@ class _Chip extends StatelessWidget {
     required this.icon,
     required this.text,
     required this.color,
+    this.trailing,
     this.onTap,
   });
 
   final IconData icon;
   final String text;
   final Color color;
+
+  /// Значок после текста (повтор у срока).
+  final IconData? trailing;
   final VoidCallback? onTap;
 
   @override
@@ -197,6 +203,10 @@ class _Chip extends StatelessWidget {
         Icon(icon, size: 13, color: color),
         const SizedBox(width: 3),
         Text(text, style: TextStyle(fontSize: 12, color: color)),
+        if (trailing case final icon?) ...[
+          const SizedBox(width: 3),
+          Icon(icon, size: 13, color: color),
+        ],
       ],
     );
     if (onTap == null) return chip;

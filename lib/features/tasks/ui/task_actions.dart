@@ -128,6 +128,27 @@ Future<void> toggleComplete(BuildContext context, WidgetRef ref, Task task) {
   );
 }
 
+/// «Выполнить окончательно» повторяющуюся задачу — с тостом «Отменить»
+/// (help «Complete a task with a recurring date»).
+Future<void> completeForever(BuildContext context, WidgetRef ref, Task task) =>
+    runWithUndo(
+      context,
+      AppLocalizations.of(context).taskCompleted,
+      () => ref.read(taskCommandsProvider).completeForever(task.id),
+    );
+
+/// «Выполнить и снова добавить подзадачи» — сброс подзадач и при выключенной
+/// настройке (help «Reset a sub-task»), с тостом «Отменить».
+Future<void> completeResettingSubtasks(
+  BuildContext context,
+  WidgetRef ref,
+  Task task,
+) => runWithUndo(
+  context,
+  AppLocalizations.of(context).taskCompleted,
+  () => ref.read(taskCommandsProvider).complete(task.id, resetSubtasks: true),
+);
+
 /// Удалить после подтверждения — без «Отменить», как в Todoist.
 Future<void> deleteTask(BuildContext context, WidgetRef ref, Task task) async {
   final l10n = AppLocalizations.of(context);

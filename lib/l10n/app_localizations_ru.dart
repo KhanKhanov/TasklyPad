@@ -878,4 +878,142 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsUpdate => 'Обновить';
+
+  @override
+  String get generalAdvanced => 'Дополнительно';
+
+  @override
+  String get resetSubtasks => 'Добавлять подзадачи снова';
+
+  @override
+  String get resetSubtasksMobile => 'Сбросить подзадачи';
+
+  @override
+  String get dueInputHint => 'Введите срок';
+
+  @override
+  String get postpone => 'Отложить';
+
+  @override
+  String get repeat => 'Повторить';
+
+  @override
+  String get repeatDaily => 'Каждый день';
+
+  @override
+  String repeatWeekly(String day) {
+    return 'Каждую неделю ($day)';
+  }
+
+  @override
+  String repeatMonthly(String day) {
+    return 'Каждый месяц ($day)';
+  }
+
+  @override
+  String repeatYearly(String date) {
+    return 'Каждый год ($date)';
+  }
+
+  @override
+  String get repeatRemove => 'Убрать повтор';
+
+  @override
+  String get repeatCustom => 'Пользовательский…';
+
+  @override
+  String get repeatCustomTitle => 'Пользовательский повтор';
+
+  @override
+  String get repeatBasedOn => 'Считать от';
+
+  @override
+  String get repeatFromDue => 'Даты срока';
+
+  @override
+  String get repeatFromCompletion => 'Даты выполнения';
+
+  @override
+  String get repeatEvery => 'Каждые';
+
+  @override
+  String repeatUnitDay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'дня',
+      many: 'дней',
+      few: 'дня',
+      one: 'день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'недели',
+      many: 'недель',
+      few: 'недели',
+      one: 'неделю',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitMonth(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'месяца',
+      many: 'месяцев',
+      few: 'месяца',
+      one: 'месяц',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String repeatUnitYear(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'года',
+      many: 'лет',
+      few: 'года',
+      one: 'год',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repeatOn => 'В';
+
+  @override
+  String repeatMonthDate(int day) {
+    return '$day числа';
+  }
+
+  @override
+  String get repeatEnds => 'Окончание';
+
+  @override
+  String get repeatNever => 'Никогда';
+
+  @override
+  String get repeatEndsOn => 'Дата';
+
+  @override
+  String get repeatUnsupported => 'Такое правило не поддерживается';
+
+  @override
+  String get repeatEndsBeforeStart => 'Окончание раньше начала';
+
+  @override
+  String get completeForever => 'Выполнить окончательно';
+
+  @override
+  String get completeResetSubtasks => 'Выполнить и снова добавить подзадачи';
 }

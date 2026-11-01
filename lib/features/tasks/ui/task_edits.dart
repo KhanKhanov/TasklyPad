@@ -6,21 +6,29 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
-import 'due_ui.dart';
+import 'scheduler_dialog.dart';
 import 'task_actions.dart';
 import 'task_pickers.dart';
 
 // Правки задачи с выбором значения — общие для полей панели и клавиш строки
 // (`t`, `Shift+T`, `v`, `l`, `y`; help «Use keyboard shortcuts»).
 
-/// Срок: выбрать; смена — с тостом «Отменить».
+/// Срок: выбрать в планировщике; смена и «Отложить» — с тостом «Отменить».
 Future<void> editDue(BuildContext context, WidgetRef ref, Task task) async {
-  final picked = await pickDue(context, ref, task.due);
+  final picked = await pickDue(
+    context,
+    ref,
+    task.due,
+    canPostpone: !task.isCompleted,
+  );
   if (picked == null || !context.mounted) return;
+  final commands = ref.read(taskCommandsProvider);
   await runWithUndo(
     context,
     AppLocalizations.of(context).dueChanged,
-    () => ref.read(taskCommandsProvider).setDue(task.id, picked.due),
+    () => picked.postpone
+        ? commands.postpone(task.id)
+        : commands.setDue(task.id, picked.due),
   );
 }
 

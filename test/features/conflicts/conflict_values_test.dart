@@ -56,6 +56,38 @@ void main() {
         ),
         '28 окт. 2026 г. 09:30 (Europe/Moscow)',
       ),
+      // Повторяющийся срок — с правилом на языке интерфейса, а не тем, на
+      // котором его ввели: спор «правило против даты» виден текстом.
+      (
+        text(
+          ConflictField.due,
+          const Due(
+            date: '2026-10-26',
+            string: 'every mon',
+            lang: 'en',
+            rule: RecurrenceRule(
+              rrule: ['FREQ=WEEKLY;BYDAY=MO'],
+              fromCompletion: false,
+            ),
+          ),
+        ),
+        '26 окт. 2026 г. · каждый пн',
+      ),
+      // Правило без текстовой формы — срок текстом, как его ввели.
+      (
+        text(
+          ConflictField.due,
+          const Due(
+            date: '2026-10-26',
+            string: 'каждые 2 месяца в 4 пн',
+            rule: RecurrenceRule(
+              rrule: ['FREQ=MONTHLY;INTERVAL=2;BYDAY=4MO'],
+              fromCompletion: false,
+            ),
+          ),
+        ),
+        '26 окт. 2026 г. · каждые 2 месяца в 4 пн',
+      ),
       (text(ConflictField.deadline, '2026-11-01'), '1 нояб. 2026 г.'),
       (text(ConflictField.deadline, null), 'Без дедлайна'),
       (
