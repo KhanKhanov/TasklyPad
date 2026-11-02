@@ -28,6 +28,7 @@ window_manager + tray_manager + hotkey_manager. Назначение и слои
 flutter pub get
 dart run build_runner build -d        # codegen: drift, freezed, riverpod, json
 flutter analyze                       # 0 warnings — обязательно
+dart analyze                          # плагины анализатора (riverpod_lint): flutter analyze их не показывает
 dart format .
 flutter test                          # unit + widget приложения
 dart test                             # из packages/oplog_sync — ядро синхронизации
@@ -95,7 +96,7 @@ IMPORTANT: терминал пользователя — Windows PowerShell 5.1 
   чтение), `/sync-check`, `/obligations конец этапа`.
 Найденное исправь в той же задаче и повтори проверки; выходящее за границы — в OBLIGATIONS со сроком.
 
-«Готово» = `flutter analyze` чистый, `dart format`, тесты зелёные; при изменениях слоя данных —
+«Готово» = `flutter analyze` и `dart analyze` чистые, `dart format`, тесты зелёные; при изменениях слоя данных —
 `/sync-check`; для UI — запуск на Windows и скриншот; ревью пройдены; отложенное записано в
 OBLIGATIONS, закрытое — с доказательством; новые термины в глоссарии. Показывай вывод команд, а не
 утверждай успех. Ошибка повторяется — значит, плохо сформулировано правило: поправь документ.

@@ -39,7 +39,7 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
-          flutter-version: 3.47.7
+          flutter-version: 3.47.8
           cache: true
 
       - name: Версии
@@ -62,6 +62,11 @@ jobs:
 
       - name: Анализ (0 warnings)
         run: flutter analyze
+
+      # Плагины анализатора (riverpod_lint из `plugins:` в analysis_options.yaml)
+      # показывает только dart analyze: flutter analyze их диагностику не выводит.
+      - name: Анализ плагинами (riverpod_lint)
+        run: dart analyze
 
       - name: Тесты приложения
         run: flutter test
@@ -92,7 +97,7 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
-          flutter-version: 3.47.7
+          flutter-version: 3.47.8
           cache: true
 
       - run: flutter pub get

@@ -189,6 +189,18 @@ Flutter/Dart и дата проверки; `sdk:` в pubspec.yaml, если см
 riverpod_lint ловит временное нарушение, `missing_provider_scope` не срабатывает ложно. Новые
 предупреждения анализатора исправляются в этом же коммите.
 
+### Ход M4.0
+- riverpod_lint на 3.47.8: временное нарушение `missing_provider_scope` (`runApp` без `ProviderScope`)
+  ловит `dart analyze`, а `flutter analyze` — нет: диагностику плагинов анализатора он не выводит. Поэтому
+  правила riverpod_lint в CI не проверялись. В CI добавлен шаг `dart analyze`, в «Готово» — оба анализа
+  (GLOSSARY «Плагин анализатора»). `dart analyze` по проекту чистый: ложного `missing_provider_scope` нет.
+- `flutter test` на Windows падал в 3 прогонах из 6 — каждый раз на уборке временной папки
+  (`deleteSync`: «Папка не пуста», errno 145), сами проверки проходили. Только что записанный файл держит
+  антивирус или индексатор. `tempDir` (test/sync/support/devices.dart) повторяет удаление 5 раз с паузой,
+  потом бросает ошибку; после правки 5 прогонов из 5 зелёные. Отдельный коммит `test:`.
+  Удаления папки внутри сценариев (test/sync/sync_runner_test.dart — «папку удалили») не тронуты: падений
+  на них не было.
+
 ## M4.1 — схема v5 (решения 1, 3, 4, 5)
 Без UI. Файлы: lib/data/tables/entity_tables.dart (колонки, таблица `ViewOptions`); lib/data/app_database.dart
 (`currentSchemaVersion = 5`, `from4To5`); drift_schemas и test/data/migrations/…/schema_v5.dart
