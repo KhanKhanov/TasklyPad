@@ -61,9 +61,6 @@ String isoDate(DateTime day) =>
     '${day.month.toString().padLeft(2, '0')}-'
     '${day.day.toString().padLeft(2, '0')}';
 
-/// `YYYYMMDD` — дата `UNTIL` правила.
-String untilDate(DateTime day) => isoDate(day).replaceAll('-', '');
-
 /// `HH:MM` из минут от полуночи.
 String hhmm(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:'

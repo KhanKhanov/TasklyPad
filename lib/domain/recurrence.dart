@@ -1,6 +1,7 @@
 import 'package:rrule/rrule.dart' as rfc;
 
 import 'models.dart';
+import 'rrule_parts.dart';
 
 // Следующее вхождение повторяющегося срока. Расчёт по RFC 5545 делает пакет
 // `rrule` (решение 2 плана M3); здесь — правила Todoist поверх него: от
@@ -245,10 +246,7 @@ const Map<String, Set<String>> _partFrequencies = {
   'BYSETPOS': {'MONTHLY'},
 };
 
-const List<String> _weekDays = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-
 final RegExp _byDayEntry = RegExp(r'^([+-]?\d{1,2})?(MO|TU|WE|TH|FR|SA|SU)$');
-final RegExp _untilDate = RegExp(r'^(\d{4})(\d{2})(\d{2})$');
 final RegExp _untilDateTime = RegExp(
   r'^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$',
 );
@@ -384,7 +382,9 @@ rfc.RecurrenceRule _parseRule(String line) {
     if (dayEntries.isEmpty || ordinals.isNotEmpty) {
       fail('BYSETPOS — только с днями недели без номеров');
     }
-    final days = {for (final m in dayEntries) _weekDays.indexOf(m.group(2)!)};
+    final days = {
+      for (final m in dayEntries) rruleWeekDays.indexOf(m.group(2)!),
+    };
     // При INTERVAL > 1 серия может попадать только в короткие месяцы, где
     // каждого дня недели ровно 4.
     final limit = interval > 1 ? 4 * days.length : _maxWeekdaysInMonth(days);
@@ -419,10 +419,15 @@ rfc.RecurrenceRule _parseRule(String line) {
 /// `UNTIL` правила в UTC-обёртке: дата — конец дня; `null` — нет такой даты
 /// или времени (31 ноября пакет молча перенёс бы на 1 декабря).
 DateTime? _untilValue(String value) {
-  final date = _untilDate.firstMatch(value);
-  final m = date ?? _untilDateTime.firstMatch(value);
-  if (m == null) return null;
-  final n = [for (var i = 1; i <= m.groupCount; i++) int.parse(m.group(i)!)];
+  final date = rruleUntilDay(value);
+  final List<int> n;
+  if (date != null) {
+    n = [date.year, date.month, date.day];
+  } else {
+    final m = _untilDateTime.firstMatch(value);
+    if (m == null) return null;
+    n = [for (var i = 1; i <= m.groupCount; i++) int.parse(m.group(i)!)];
+  }
   final time = date == null ? n.sublist(3) : const [0, 0, 0];
   final at = DateTime.utc(n[0], n[1], n[2], time[0], time[1], time[2]);
   final exists =
