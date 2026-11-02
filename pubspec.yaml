@@ -26,7 +26,7 @@ dependencies:
   drift: ^2.35.3
   drift_flutter: ^0.3.1
   # Прямой доступ к соединению SQLite до миграций (версия схемы, VACUUM INTO).
-  sqlite3: ^3.7.1
+  sqlite3: ^3.8.0
 
   # Модели и сериализация
   freezed_annotation: ^3.1.0
