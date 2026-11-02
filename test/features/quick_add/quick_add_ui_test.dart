@@ -364,6 +364,38 @@ void main() {
     });
   });
 
+  testWidgets('«Remove time» у повторяющегося срока в окне быстрого добавления '
+      '— у всей серии: у задачи ещё нет вхождений (решение А по О-65)', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      await openQuickAdd(tester);
+      await type(tester, 'Gym');
+      final dialog = find.byType(Dialog).first;
+      await tester.tap(
+        find.descendant(of: dialog, matching: find.text('Date')),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Type a due date'),
+        'every day at 7am',
+      );
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: dialog, matching: find.byIcon(Icons.repeat)),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove time'));
+      await tester.pumpAndSettle();
+      await press(tester, LogicalKeyboardKey.enter);
+
+      final due = (await read(tester, device)).children(null).single.due!;
+      expect((due.isRecurring, due.time, due.seriesTime), (true, null, null));
+    });
+  });
+
   testWidgets('выбор чипом без токенов в тексте — чипы показывают значение '
       'сразу, без клика в поле', (tester) async {
     await withApp(tester, (device) async {

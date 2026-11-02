@@ -99,8 +99,29 @@ void main() {
         'ru';
     final title = ru ? 'Зарядка' : 'Workout';
 
+    // База работает в фоновом изоляте, и `pumpAndSettle` её не ждёт: пока
+    // экран не загрузил данные, фокус — на области маршрута, а не на экране.
+    // Ждём настоящим временем: сначала экран, после `q` — само окно.
+    Future<void> until(String what, bool Function() ready) async {
+      for (var i = 0; i < 100 && !ready(); i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(ready(), isTrue, reason: 'не дождались: $what');
+    }
+
+    await until('экран загружен', () {
+      final focus = FocusManager.instance.primaryFocus;
+      return focus != null && focus is! FocusScopeNode;
+    });
     await tester.sendKeyEvent(LogicalKeyboardKey.keyQ);
-    await tester.pumpAndSettle();
+    await until(
+      'окно быстрого добавления',
+      () => find.byType(QuickAddField).evaluate().isNotEmpty,
+    );
     await tester.enterText(
       find.descendant(
         of: find.byType(QuickAddField),
@@ -110,11 +131,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
     final row = find.ancestor(
       of: find.text(title),
       matching: find.byType(TaskRow),
     );
+    await until('строка задачи', () => row.evaluate().isNotEmpty);
     expect(
       find.descendant(of: row, matching: find.byIcon(Icons.repeat)),
       findsOneWidget,

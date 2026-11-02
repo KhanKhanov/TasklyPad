@@ -35,28 +35,35 @@ String conflictEntityTitle(AppLocalizations l10n, ConflictCard card) {
   };
 }
 
-/// Подпись поля; незнакомое поле — его имя в журнале.
-String conflictFieldTitle(AppLocalizations l10n, ConflictValue value) =>
-    switch (value.field) {
-      ConflictField.name || ConflictField.content => l10n.fieldName,
-      ConflictField.description => l10n.fieldDescription,
-      ConflictField.project => l10n.fieldProject,
-      ConflictField.section => l10n.fieldSection,
-      ConflictField.parentTask => l10n.fieldParentTask,
-      ConflictField.parentProject => l10n.fieldParent,
-      ConflictField.priority => l10n.fieldPriority,
-      ConflictField.due => l10n.fieldDue,
-      ConflictField.deadline => l10n.fieldDeadline,
-      ConflictField.duration => l10n.fieldDuration,
-      ConflictField.completed => l10n.fieldCompleted,
-      ConflictField.color => l10n.fieldColor,
-      ConflictField.favorite => l10n.fieldInFavorites,
-      ConflictField.archived => l10n.fieldArchived,
-      ConflictField.viewStyle => l10n.fieldViewStyle,
-      ConflictField.theme => l10n.themeSection,
-      ConflictField.appearance => l10n.themeAppearance,
-      ConflictField.deleted || ConflictField.other => value.key,
-    };
+/// Подпись поля; незнакомое поле — его имя в журнале. [mobile] — подпись
+/// настройки, как в «Основном» на телефоне.
+String conflictFieldTitle(
+  AppLocalizations l10n,
+  ConflictValue value, {
+  required bool mobile,
+}) => switch (value.field) {
+  ConflictField.name || ConflictField.content => l10n.fieldName,
+  ConflictField.description => l10n.fieldDescription,
+  ConflictField.project => l10n.fieldProject,
+  ConflictField.section => l10n.fieldSection,
+  ConflictField.parentTask => l10n.fieldParentTask,
+  ConflictField.parentProject => l10n.fieldParent,
+  ConflictField.priority => l10n.fieldPriority,
+  ConflictField.due => l10n.fieldDue,
+  ConflictField.deadline => l10n.fieldDeadline,
+  ConflictField.duration => l10n.fieldDuration,
+  ConflictField.completed => l10n.fieldCompleted,
+  ConflictField.color => l10n.fieldColor,
+  ConflictField.favorite => l10n.fieldInFavorites,
+  ConflictField.archived => l10n.fieldArchived,
+  ConflictField.viewStyle => l10n.fieldViewStyle,
+  ConflictField.theme => l10n.themeSection,
+  ConflictField.appearance => l10n.themeAppearance,
+  ConflictField.smartDateRecognition => l10n.smartDateRecognition,
+  ConflictField.resetRecurringSubtasks =>
+    mobile ? l10n.resetSubtasksMobile : l10n.resetSubtasks,
+  ConflictField.deleted || ConflictField.other => value.key,
+};
 
 /// Значение поля текстом. Значение неожиданного вида (поле от более новой
 /// версии, повреждённая запись) — его JSON: показать честно лучше, чем упасть.
@@ -115,6 +122,12 @@ String conflictValueText(
         final ThemeAppearance a => appearanceTitle(l10n, a),
         null => null,
       },
+    (
+      ConflictField.smartDateRecognition ||
+          ConflictField.resetRecurringSubtasks,
+      final bool on,
+    ) =>
+      on ? l10n.valueOn : l10n.valueOff,
     _ => null,
   };
   return text ?? (v == null ? l10n.valueEmpty : jsonEncode(v));
@@ -148,14 +161,19 @@ String _date(String locale, String date) {
 String? _nonEmpty(String? s) => s == null || s.trim().isEmpty ? null : s;
 
 /// Текст уведомления о новых карточках: одна — что и какое поле, несколько —
-/// сколько.
-String conflictNoticeText(AppLocalizations l10n, List<ConflictCard> cards) {
+/// сколько; [mobile] — как у [conflictFieldTitle].
+String conflictNoticeText(
+  AppLocalizations l10n,
+  List<ConflictCard> cards, {
+  required bool mobile,
+}) {
   if (cards.length != 1) return l10n.conflictToastMany(cards.length);
   final card = cards.single;
   final entity = conflictEntityTitle(l10n, card);
   if (card.isDelete) return l10n.conflictToastDeleted(entity);
   final fields = {
-    for (final v in card.newer.values) conflictFieldTitle(l10n, v),
+    for (final v in card.newer.values)
+      conflictFieldTitle(l10n, v, mobile: mobile),
   };
   return l10n.conflictToastOne(entity, fields.join(', '), fields.length);
 }

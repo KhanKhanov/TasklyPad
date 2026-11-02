@@ -1,12 +1,10 @@
 import '../domain/models.dart';
+import '../domain/rrule_parts.dart';
 
 // Текст правила повторения на языке интерфейса: «каждый пн, пт», `every 3rd
 // fri`. Текст разбирается обратно в то же правило (тест «туда и обратно»,
 // test/nlp/recurrence_test.dart), поэтому формы — из docs/TODOIST_SYNTAX.md
 // §3.
-
-const List<String> _rfcDays = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-const String _workdays = 'MO,TU,WE,TH,FR';
 
 /// Слова языка.
 final class _Words {
@@ -135,7 +133,7 @@ String? ruleText(RecurrenceRule rule, String lang) {
     _ => throw ArgumentError.value(lang, 'lang', 'язык — ru или en'),
   };
   if (rule.rrule.isEmpty) return null;
-  final lines = [for (final line in rule.rrule) _parts(line)];
+  final lines = [for (final line in rule.rrule) rruleParts(line)];
   if (lines.any((l) => l == null)) return null;
   final until = lines.first!.remove('UNTIL');
   for (final l in lines.skip(1)) {
@@ -162,19 +160,6 @@ String? ruleText(RecurrenceRule rule, String lang) {
   return '$head$bang $body$end';
 }
 
-/// Части строки RRULE; `null` — повтор части.
-Map<String, String>? _parts(String line) {
-  final parts = <String, String>{};
-  for (final part in line.split(';')) {
-    final eq = part.indexOf('=');
-    if (eq < 1) return null;
-    final key = part.substring(0, eq);
-    if (parts.containsKey(key)) return null;
-    parts[key] = part.substring(eq + 1);
-  }
-  return parts;
-}
-
 /// Тело одной строки правила и форма «каждого» перед ним.
 (String, _Form)? _single(Map<String, String> p, _Words w) {
   final freq = p.remove('FREQ');
@@ -197,7 +182,7 @@ Map<String, String>? _parts(String line) {
   }
   if (freq == 'WEEKLY' && byDay != null && byMonthDay == null) {
     if (bySetPos != null || byMonth != null) return null;
-    if (byDay == _workdays && interval == 1) {
+    if (byDay == rruleWorkdays && interval == 1) {
       return (w == _ru ? 'рабочий день' : 'workday', _Form.masculine);
     }
     final days = _dayNames(byDay, w);
@@ -226,7 +211,7 @@ Map<String, String>? _parts(String line) {
       final form = byMonthDay == '-1' ? _Form.masculine : _Form.neuter;
       return (days.join(', '), form);
     }
-    if (byDay == _workdays && bySetPos != null && byMonthDay == null) {
+    if (byDay == rruleWorkdays && bySetPos != null && byMonthDay == null) {
       final workday = w == _ru ? 'рабочий день' : 'workday';
       final items = [
         for (final s in bySetPos.split(','))
@@ -280,7 +265,7 @@ String? _nthDay(String entry, _Words w) {
   final m = RegExp(r'^(-?\d)(MO|TU|WE|TH|FR|SA|SU)$').firstMatch(entry);
   if (m == null) return null;
   final n = int.parse(m[1]!);
-  final day = w.days[_rfcDays.indexOf(m[2]!)];
+  final day = w.days[rruleWeekDays.indexOf(m[2]!)];
   final ordinal = n == -1 && w == _ru ? 'последнюю' : w.ordinal(n);
   return '$ordinal $day';
 }
@@ -289,7 +274,7 @@ String? _nthDay(String entry, _Words w) {
 String? _dayNames(String byDay, _Words w) {
   final names = <String>[];
   for (final code in byDay.split(',')) {
-    final i = _rfcDays.indexOf(code);
+    final i = rruleWeekDays.indexOf(code);
     if (i < 0) return null;
     names.add(w.days[i]);
   }
@@ -298,10 +283,10 @@ String? _dayNames(String byDay, _Words w) {
 
 /// ` until jan 14 2027`, « до 14 янв 2027»; `UNTIL` с временем — пусто.
 String _untilText(String until, _Words w) {
-  final m = RegExp(r'^(\d{4})(\d{2})(\d{2})$').firstMatch(until);
-  if (m == null) return '';
-  final month = w.months[int.parse(m[2]!) - 1];
-  final day = int.parse(m[3]!);
-  final date = w == _ru ? '$day $month ${m[1]}' : '$month $day ${m[1]}';
+  final d = rruleUntilDay(until);
+  if (d == null) return '';
+  final month = w.months[d.month - 1];
+  final year = d.year.toString().padLeft(4, '0');
+  final date = w == _ru ? '${d.day} $month $year' : '$month ${d.day} $year';
   return ' ${w.until} $date';
 }

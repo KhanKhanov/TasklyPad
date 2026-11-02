@@ -20,6 +20,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.textPrimary,
     required this.textSecondary,
     required this.dateToday,
+    required this.dateTomorrow,
+    required this.dateNextWeek,
     required this.danger,
     required this.priority,
   });
@@ -49,6 +51,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Срок «сегодня».
   final Color dateToday;
 
+  /// Срок «завтра» (коричневый) и через 2–7 дней (фиолетовый) — help
+  /// «Introduction to dates and time».
+  final Color dateTomorrow;
+  final Color dateNextWeek;
+
   /// Опасное действие: удаление.
   final Color danger;
 
@@ -77,6 +84,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       textPrimary: c(textPrimary, other.textPrimary),
       textSecondary: c(textSecondary, other.textSecondary),
       dateToday: c(dateToday, other.dateToday),
+      dateTomorrow: c(dateTomorrow, other.dateTomorrow),
+      dateNextWeek: c(dateNextWeek, other.dateNextWeek),
       danger: c(danger, other.danger),
       priority: [
         for (var i = 0; i < priority.length; i++)

@@ -69,6 +69,10 @@ class Tasks extends Table {
   BoolColumn get dueIsRecurring =>
       boolean().withDefault(const Constant(false))();
 
+  /// Время серии повторяющегося срока ([DueKeys.seriesTime]): `HH:MM`, пустая
+  /// строка — серия без времени, `null` — время серии равно [dueTime].
+  TextColumn get dueSeriesTime => text().nullable()();
+
   /// Дедлайн — отдельная от срока дата `YYYY-MM-DD`, без времени.
   TextColumn get deadlineDate => text().nullable()();
 

@@ -781,6 +781,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get valueNotArchived => 'Не в архиве';
 
   @override
+  String get valueOn => 'Включено';
+
+  @override
+  String get valueOff => 'Выключено';
+
+  @override
   String get valueDeleted => 'Удалено';
 
   @override

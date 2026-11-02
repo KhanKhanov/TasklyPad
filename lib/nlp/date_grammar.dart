@@ -1,5 +1,6 @@
 import '../domain/models.dart';
 import '../domain/recurrence.dart';
+import '../domain/rrule_parts.dart';
 import 'calendar.dart';
 import 'lexicon.dart';
 import 'parse_context.dart';
@@ -115,9 +116,6 @@ final class _DateItem extends _RuleItem {
 final class _Unsupported implements Exception {
   const _Unsupported();
 }
-
-const List<String> _rfcDays = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-const String _workdays = 'MO,TU,WE,TH,FR';
 
 final RegExp _isoPattern = RegExp(r'^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$');
 final RegExp _numericDate = RegExp(
@@ -814,7 +812,7 @@ final class DateGrammar {
     final until = ending?.until(from);
     final lines = [
       for (final line in body.lines)
-        until == null ? line : '$line;UNTIL=${untilDate(until)}',
+        until == null ? line : '$line;UNTIL=${rruleUntilDate(until)}',
     ];
     minutes ??= timeHint;
     if (lines.first.startsWith('FREQ=HOURLY')) minutes ??= ctx.nowMinutes;
@@ -863,12 +861,10 @@ final class DateGrammar {
     final lex = _lex(k);
     if (lex is WorkdayLex && !lex.plural) {
       final end = _unit(k + 1) == Unit.day ? k + 2 : k + 1;
-      return _Body(end, ['FREQ=WEEKLY;BYDAY=$_workdays']);
+      return _Body(end, ['FREQ=WEEKLY;BYDAY=$rruleWorkdays']);
     }
     if (_key(k) == Key.weekend) {
-      return _Body(k + 1, [
-        'FREQ=WEEKLY;BYDAY=${_rfcDays[ctx.weekendDay - 1]}',
-      ]);
+      return _Body(k + 1, ['FREQ=WEEKLY;BYDAY=${rruleDay(ctx.weekendDay)}']);
     }
     final part = _dayPart(k);
     if (part != null) return _Body(k + 1, ['FREQ=DAILY'], minutes: part);
@@ -900,7 +896,7 @@ final class DateGrammar {
   (int, List<String>)? _weekdayList(int k) {
     final first = _weekday(k);
     if (first == null) return null;
-    final days = [_rfcDays[first - 1]];
+    final days = [rruleDay(first)];
     var end = k + 1;
     for (;;) {
       var j = end;
@@ -908,7 +904,7 @@ final class DateGrammar {
       if (_key(j) == Key.and) j++;
       final next = _weekday(j);
       if (j == end || next == null) break;
-      final code = _rfcDays[next - 1];
+      final code = rruleDay(next);
       if (!days.contains(code)) days.add(code);
       end = j + 1;
     }
@@ -949,13 +945,13 @@ final class DateGrammar {
     if (items.every((e) => e is _SetPosItem)) {
       final positions = [for (final e in items) (e as _SetPosItem).n];
       return _Body(end, [
-        'FREQ=MONTHLY;BYDAY=$_workdays;BYSETPOS=${positions.join(',')}',
+        'FREQ=MONTHLY;BYDAY=$rruleWorkdays;BYSETPOS=${positions.join(',')}',
       ]);
     }
     if (items.every((e) => e is _WeekdayItem && e.month == null)) {
       final days = [
         for (final e in items.cast<_WeekdayItem>())
-          '${e.n}${_rfcDays[e.weekday - 1]}',
+          '${e.n}${rruleDay(e.weekday)}',
       ];
       return _Body(end, ['FREQ=MONTHLY;BYDAY=${days.join(',')}']);
     }
@@ -965,9 +961,7 @@ final class DateGrammar {
         case _DateItem(:final month, :final day):
           lines.add('FREQ=YEARLY;BYMONTH=$month;BYMONTHDAY=$day');
         case _WeekdayItem(:final n, :final weekday, month: final month?):
-          lines.add(
-            'FREQ=YEARLY;BYMONTH=$month;BYDAY=$n${_rfcDays[weekday - 1]}',
-          );
+          lines.add('FREQ=YEARLY;BYMONTH=$month;BYDAY=$n${rruleDay(weekday)}');
         default:
           return null;
       }

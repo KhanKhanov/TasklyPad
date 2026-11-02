@@ -376,7 +376,10 @@ void main() {
     });
   });
 
-  testWidgets('Alt+E и Alt+1 на строке — не хоткеи', (tester) async {
+  // `Alt+E` в help — «Редактировать» на Windows (TODOIST_PARITY §10), а не
+  // «Выполнить», как `e`; `Alt+1` — не приоритет.
+  testWidgets('Alt+E и Alt+1 на строке — не выполняют задачу и не меняют '
+      'приоритет', (tester) async {
     await withApp(tester, (device) async {
       final app = AppCommands(device);
       final id = await addTask(tester, app, 'Buy milk');

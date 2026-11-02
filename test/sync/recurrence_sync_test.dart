@@ -3,6 +3,7 @@ import 'package:planner/core/clock.dart';
 import 'package:planner/data/app_database.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/models.dart';
+import 'package:planner/features/tasks/logic/due_dates.dart';
 import 'package:planner/sync/io_sync_fs.dart';
 
 import '../features/support/app_commands.dart';
@@ -99,6 +100,92 @@ void main() {
     expect((await completionsOf(pc)).single.id, completionId(id, '2026-10-26'));
     expect(await pc.conflicts(), isEmpty);
     expect((await onPc.read()).task(id)!.due!.date, '2026-10-27');
+    await expectConverged(id);
+  });
+
+  group('«Время» переносит только вхождение (О-65)', () {
+    final at7 = _daily('2026-10-27').copyWith(time: '07:00');
+
+    test('«Время» на ПК, затем выполнение на телефоне — следующее вхождение '
+        'во время серии, конфликтов нет', () async {
+      final id = await sharedTask(at7);
+      await onPc.tasks.setDue(id, dueWithTime(at7, '09:30'));
+      await syncBoth();
+      expect((await onPhone.read()).task(id)!.due!.seriesTime, '07:00');
+
+      await onPhone.tasks.complete(id);
+      await syncBoth();
+      final due = (await onPc.read()).task(id)!.due!;
+      expect(
+        (due.date, due.time, due.seriesTime),
+        ('2026-10-28', '07:00', null),
+      );
+      expect(await pc.conflicts(), isEmpty);
+      await expectConverged(id);
+    });
+
+    test('«Время» на ПК против выполнения на телефоне — один конфликт по '
+        'сроку с одним id', () async {
+      final id = await sharedTask(at7);
+      await onPc.tasks.setDue(id, dueWithTime(at7, '09:30'));
+      await onPhone.tasks.complete(id);
+      await syncBoth();
+
+      final conflicts = await pc.conflicts();
+      expect([for (final c in conflicts) c.field], [TaskFields.due]);
+      expect(await phone.conflicts(), conflicts);
+      await expectConverged(id);
+
+      // Выбор стороны ПК («Время» 9:30, серия в 7:00) закрывает на обоих.
+      final pcSide = (await pc.ownOps()).lastWhere(
+        (op) => op.field == TaskFields.due,
+      );
+      await pc.services.mutator.resolveConflict(conflicts.single.id, {
+        TaskFields.due: pcSide.value,
+      });
+      await syncBoth();
+      for (final app in [onPc, onPhone]) {
+        final due = (await app.read()).task(id)!.due!;
+        expect((due.time, due.seriesTime), ('09:30', '07:00'));
+      }
+      expect((await phone.conflicts()).single.resolved, isTrue);
+      await expectConverged(id);
+    });
+  });
+
+  test('дата в названии на ПК против смены срока на телефоне — название с ПК, '
+      'один конфликт по сроку с одним id, выбор закрывает на обоих', () async {
+    final id = await sharedTask(_daily('2026-10-26'));
+    const weekly = Due(
+      date: '2026-11-02',
+      string: 'каждый пн',
+      lang: 'ru',
+      rule: RecurrenceRule(
+        rrule: ['FREQ=WEEKLY;BYDAY=MO'],
+        fromCompletion: false,
+      ),
+    );
+    await onPc.tasks.renameWithDue(id, 'Зарядка утром', weekly);
+    await onPhone.tasks.setDue(id, const Due(date: '2026-10-28'));
+    await syncBoth();
+
+    for (final app in [onPc, onPhone]) {
+      expect((await app.read()).task(id)!.content, 'Зарядка утром');
+    }
+    final conflict = (await pc.conflicts()).single;
+    expect(conflict.field, TaskFields.due);
+    expect([for (final c in await phone.conflicts()) c.id], [conflict.id]);
+    await expectConverged(id);
+
+    await pc.services.mutator.resolveConflict(conflict.id, {
+      TaskFields.due: await pc.services.store.fieldValue(
+        EntityTypes.task,
+        id,
+        TaskFields.due,
+      ),
+    });
+    await syncBoth();
+    expect((await phone.conflicts()).single.resolved, isTrue);
     await expectConverged(id);
   });
 

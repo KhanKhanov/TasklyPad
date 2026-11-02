@@ -78,12 +78,7 @@ class TaskFields extends ConsumerWidget {
                   )
                 : Builder(
                     builder: (context) {
-                      final label = dueLabel(
-                        context,
-                        due.date,
-                        due.time,
-                        today,
-                      );
+                      final label = dueLabelOf(context, ref, due, today);
                       final rule = repeatText(context, due);
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +136,7 @@ class TaskFields extends ConsumerWidget {
                   )
                 : Builder(
                     builder: (context) {
-                      final label = dueLabel(context, deadline, null, today);
+                      final label = deadlineLabel(context, deadline, today);
                       return Text(
                         label.text,
                         style: TextStyle(color: label.color),

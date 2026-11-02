@@ -81,6 +81,23 @@ void main() {
         ),
       );
     });
+
+    test('у вхождения с перенесённым «Временем» новая серия — от видимого '
+        'времени, прежнее время серии забыто (О-65)', () {
+      final moved = Due(
+        date: '2026-11-03',
+        time: '09:30',
+        rule: rule('FREQ=DAILY'),
+        seriesTime: '07:00',
+      );
+      final due = dueWithRule(
+        moved,
+        presetRule(RepeatPreset.weekly, DateTime(2026, 11, 3)),
+        lang: 'ru',
+        now: now,
+      )!;
+      expect((due.time, due.seriesTime), ('09:30', null));
+    });
   });
 
   group('«Отложить» — TaskCommands.postponedDue', () {

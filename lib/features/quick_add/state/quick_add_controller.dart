@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../app/theme/app_palette.dart';
 import '../../../core/clock.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
@@ -11,6 +10,7 @@ import '../logic/quick_add_draft.dart';
 import '../logic/spans.dart';
 import '../logic/suggestions.dart';
 import 'edit_range.dart';
+import 'highlight_text.dart';
 
 /// Черновик быстрого добавления — поле названия вместе с разбором: текст,
 /// участки, разбор которых пользователь отменил, выбор «Создать …» в
@@ -115,34 +115,12 @@ class QuickAddController extends TextEditingController {
   /// полуночи, после неё — уже другой день.
   void refresh() => _resolved = _resolve(text, _dismissed);
 
-  /// Help «Turn smart date recognition on or off»: Backspace сразу после
-  /// распознанной даты (Delete — перед ней) превращает её в текст, а не
-  /// стирает знак. Участок даты или `null` — правка обычная.
-  Span? _dismissOnDelete(TextEditingValue old, TextEditingValue next) {
-    final cursor = old.selection;
-    // Пока IME собирает слово, подсветки на экране нет ([buildTextSpan]) —
-    // Backspace стирает знак, как обычно.
-    if (old.composing.isValid ||
-        !cursor.isCollapsed ||
-        next.text.length != old.text.length - 1) {
-      return null;
-    }
-    final c = cursor.baseOffset;
-    for (final h in highlights) {
-      if (h.kind != HighlightKind.due) continue;
-      final backspace =
-          h.end == c &&
-          c > 0 &&
-          next.text == old.text.replaceRange(c - 1, c, '') &&
-          next.selection.baseOffset == c - 1;
-      final delete =
-          h.start == c &&
-          c < old.text.length &&
-          next.text == old.text.replaceRange(c, c + 1, '');
-      if (backspace || delete) return h.span;
-    }
-    return null;
-  }
+  /// Backspace после даты или Delete перед ней — [dateDismissedByDelete].
+  Span? _dismissOnDelete(TextEditingValue old, TextEditingValue next) =>
+      dateDismissedByDelete(old, next, [
+        for (final h in highlights)
+          if (h.kind == HighlightKind.due) h.span,
+      ]);
 
   /// Подсветка под позицией [offset] (знак внутри участка) или `null`.
   Highlight? highlightAt(int offset) {
@@ -330,26 +308,8 @@ class QuickAddController extends TextEditingController {
         withComposing: withComposing,
       );
     }
-    final palette = AppPalette.of(context);
-    final marked = style?.merge(
-      TextStyle(
-        color: palette.accent,
-        backgroundColor: palette.accent.withValues(alpha: 0.14),
-      ),
-    );
-    final children = <TextSpan>[];
-    var at = 0;
-    for (final h in highlights) {
-      if (h.start < at || h.end > text.length) continue;
-      if (h.start > at) {
-        children.add(TextSpan(text: text.substring(at, h.start)));
-      }
-      children.add(
-        TextSpan(text: text.substring(h.start, h.end), style: marked),
-      );
-      at = h.end;
-    }
-    if (at < text.length) children.add(TextSpan(text: text.substring(at)));
-    return TextSpan(style: style, children: children);
+    return highlightedTextSpan(context, text, [
+      for (final h in highlights) h.span,
+    ], style);
   }
 }

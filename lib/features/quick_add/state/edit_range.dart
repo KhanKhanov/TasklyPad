@@ -34,3 +34,35 @@ Span? editRange(TextEditingValue old, TextEditingValue next) {
   }
   return null;
 }
+
+/// Help «Turn smart date recognition on or off»: Backspace сразу после
+/// распознанной даты (Delete — перед ней) превращает её в текст, а не
+/// стирает знак. Участок даты из [dates] или `null` — правка обычная.
+Span? dateDismissedByDelete(
+  TextEditingValue old,
+  TextEditingValue next,
+  Iterable<Span> dates,
+) {
+  final cursor = old.selection;
+  // Пока IME собирает слово, подсветки на экране нет — Backspace стирает
+  // знак, как обычно.
+  if (old.composing.isValid ||
+      !cursor.isCollapsed ||
+      next.text.length != old.text.length - 1) {
+    return null;
+  }
+  final c = cursor.baseOffset;
+  for (final s in dates) {
+    final backspace =
+        s.end == c &&
+        c > 0 &&
+        next.text == old.text.replaceRange(c - 1, c, '') &&
+        next.selection.baseOffset == c - 1;
+    final delete =
+        s.start == c &&
+        c < old.text.length &&
+        next.text == old.text.replaceRange(c, c + 1, '');
+    if (backspace || delete) return s;
+  }
+  return null;
+}

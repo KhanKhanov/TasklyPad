@@ -182,6 +182,7 @@ final class WorkspaceRepository {
               tz: r.dueTz,
               string: r.dueString,
               lang: r.dueLang,
+              seriesTime: r.dueSeriesTime,
               rule: switch (r.dueRule) {
                 // Колонку пишет только проектор — JSON уже проверен.
                 final String json => recurrenceRuleOf(jsonDecode(json)),

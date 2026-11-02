@@ -5,6 +5,7 @@ library;
 
 import '../../../domain/models.dart';
 import '../../../domain/recurrence.dart';
+import '../../../domain/rrule_parts.dart';
 import '../../../nlp/parse_context.dart';
 import '../../../nlp/quick_add.dart';
 import '../../../nlp/rule_text.dart';
@@ -25,7 +26,7 @@ RecurrenceRule presetRule(RepeatPreset preset, DateTime anchor) =>
         switch (preset) {
           RepeatPreset.daily => 'FREQ=DAILY',
           RepeatPreset.weekly =>
-            'FREQ=WEEKLY;BYDAY=${_rfcDays[anchor.weekday - 1]}',
+            'FREQ=WEEKLY;BYDAY=${rruleDay(anchor.weekday)}',
           RepeatPreset.monthly => 'FREQ=MONTHLY;BYMONTHDAY=${anchor.day}',
           RepeatPreset.yearly =>
             'FREQ=YEARLY;BYMONTH=${anchor.month};BYMONTHDAY=${anchor.day}',
@@ -83,8 +84,6 @@ final class CustomRepeat {
   );
 }
 
-const List<String> _rfcDays = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
-
 const Map<RepeatUnit, String> _freq = {
   RepeatUnit.day: 'DAILY',
   RepeatUnit.week: 'WEEKLY',
@@ -115,16 +114,14 @@ RecurrenceRule customRule(CustomRepeat c, DateTime anchor) {
     case RepeatUnit.week when c.interval <= 2:
       final days = c.weekdays.isEmpty ? {anchor.weekday} : c.weekdays;
       parts.add(
-        'BYDAY=${[for (final d in days.toList()..sort()) _rfcDays[d - 1]].join(',')}',
+        'BYDAY=${[for (final d in days.toList()..sort()) rruleDay(d)].join(',')}',
       );
     case RepeatUnit.month when c.monthDay == MonthDay.weekday:
-      parts.add(
-        'BYDAY=${weekdayOrdinal(anchor)}${_rfcDays[anchor.weekday - 1]}',
-      );
+      parts.add('BYDAY=${weekdayOrdinal(anchor)}${rruleDay(anchor.weekday)}');
     default:
   }
   if (c.until case final u?) {
-    parts.add('UNTIL=${isoDate(u).replaceAll('-', '')}');
+    parts.add('UNTIL=${rruleUntilDate(u)}');
   }
   return RecurrenceRule(
     rrule: [parts.join(';')],
@@ -138,25 +135,20 @@ RecurrenceRule customRule(CustomRepeat c, DateTime anchor) {
 CustomRepeat customFromRule(RecurrenceRule? rule, DateTime anchor) {
   final fallback = CustomRepeat(weekdays: {anchor.weekday});
   if (rule == null || rule.rrule.length != 1) return fallback;
-  final parts = <String, String>{};
-  for (final part in rule.rrule.single.split(';')) {
-    final eq = part.indexOf('=');
-    if (eq < 1) return fallback;
-    parts[part.substring(0, eq)] = part.substring(eq + 1);
-  }
+  // Повтор части расчёт отвергает ([nextOccurrence]) — окно такого правила
+  // не выражает.
+  final parts = rruleParts(rule.rrule.single);
+  if (parts == null) return fallback;
   final unit = {
     for (final e in _freq.entries) e.value: e.key,
   }[parts.remove('FREQ')];
   final interval = int.tryParse(parts.remove('INTERVAL') ?? '1');
   // Окончание с временем окно не выражает — как и прочие формы.
   final rawUntil = parts.remove('UNTIL');
-  final until = rawUntil != null && RegExp(r'^\d{8}$').hasMatch(rawUntil)
-      ? DateTime(
-          int.parse(rawUntil.substring(0, 4)),
-          int.parse(rawUntil.substring(4, 6)),
-          int.parse(rawUntil.substring(6)),
-        )
-      : null;
+  final until = switch (rawUntil == null ? null : rruleUntilDay(rawUntil)) {
+    final d? => DateTime(d.year, d.month, d.day),
+    null => null,
+  };
   final byDay = parts.remove('BYDAY');
   if (unit == null ||
       interval == null ||
@@ -169,10 +161,10 @@ CustomRepeat customFromRule(RecurrenceRule? rule, DateTime anchor) {
   var monthDay = MonthDay.date;
   if (byDay != null) {
     final codes = byDay.split(',');
-    if (unit == RepeatUnit.week && codes.every(_rfcDays.contains)) {
-      weekdays = {for (final c in codes) _rfcDays.indexOf(c) + 1};
+    if (unit == RepeatUnit.week && codes.every(rruleWeekDays.contains)) {
+      weekdays = {for (final c in codes) rruleWeekDays.indexOf(c) + 1};
     } else if (unit == RepeatUnit.month &&
-        byDay == '${weekdayOrdinal(anchor)}${_rfcDays[anchor.weekday - 1]}') {
+        byDay == '${weekdayOrdinal(anchor)}${rruleDay(anchor.weekday)}') {
       // Окно выражает только день недели даты срока: у перенесённого
       // вхождения («4-я пт» на вт 03.11) другой — «Сохранить» не должен
       // молча превратить серию в «1-й вт».
@@ -194,8 +186,10 @@ CustomRepeat customFromRule(RecurrenceRule? rule, DateTime anchor) {
 }
 
 /// Срок с правилом [rule]: дата — первое вхождение не раньше даты [current]
-/// (без срока — сегодня), время и пояс прежние, текст правила — на языке
-/// [lang]. [now] — стенное время устройства в UTC-обёртке.
+/// (без срока — сегодня), время и пояс прежние — новая серия идёт от
+/// видимого времени, перенесённое время прежней серии забывается ([Due.seriesTime]);
+/// текст правила — на языке [lang]. [now] — стенное время устройства в
+/// UTC-обёртке.
 ///
 /// `null` — правило нельзя записать: у него нет текста, который разбирается
 /// обратно в то же правило (Todoist хранит повторение строкой, и его окно
@@ -224,6 +218,7 @@ Due? dueWithRule(
     string: text,
     lang: lang,
     rule: rule,
+    seriesTime: null,
   );
   try {
     nextOccurrence(due, completedAt: now);
@@ -238,7 +233,9 @@ Due? dueWithRule(
 DateTime _firstDay(String line, DateTime anchor) {
   final byDay = RegExp(r'(?:^|;)BYDAY=([A-Z,]+)(?:;|$)').firstMatch(line);
   if (!line.startsWith('FREQ=WEEKLY') || byDay == null) return anchor;
-  final days = {for (final c in byDay[1]!.split(',')) _rfcDays.indexOf(c) + 1};
+  final days = {
+    for (final c in byDay[1]!.split(',')) rruleWeekDays.indexOf(c) + 1,
+  };
   for (var i = 0; i < 7; i++) {
     final day = DateTime(anchor.year, anchor.month, anchor.day + i);
     if (days.contains(day.weekday)) return day;

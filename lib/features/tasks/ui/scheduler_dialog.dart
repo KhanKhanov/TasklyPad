@@ -30,16 +30,26 @@ Future<DuePick?> pickDue(
   WidgetRef ref,
   Due? current, {
   bool canPostpone = false,
+  bool newTask = false,
 }) => showDialog<DuePick>(
   context: context,
-  builder: (_) => _Scheduler(current: current, canPostpone: canPostpone),
+  builder: (_) =>
+      _Scheduler(current: current, canPostpone: canPostpone, newTask: newTask),
 );
 
 class _Scheduler extends ConsumerStatefulWidget {
-  const _Scheduler({required this.current, required this.canPostpone});
+  const _Scheduler({
+    required this.current,
+    required this.canPostpone,
+    required this.newTask,
+  });
 
   final Due? current;
   final bool canPostpone;
+
+  /// Срок задачи, которой ещё нет (быстрое добавление): «Время» задаёт время
+  /// всей серии.
+  final bool newTask;
 
   @override
   ConsumerState<_Scheduler> createState() => _SchedulerState();
@@ -154,6 +164,7 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
         current: current,
         lang: _lang,
         now: now,
+        wholeSeries: widget.newTask,
         onDone: _done,
       ),
     );

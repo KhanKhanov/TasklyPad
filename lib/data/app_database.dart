@@ -39,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Версия схемы. При изменении таблиц: увеличить, выполнить
   /// `dart run drift_dev make-migrations` и описать шаг в [migration].
-  static const int currentSchemaVersion = 3;
+  static const int currentSchemaVersion = 4;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -94,6 +94,11 @@ class AppDatabase extends _$AppDatabase {
       await m.addColumn(schema.tasks, schema.tasks.dueIsRecurring);
       await m.createTable(schema.completions);
       await m.createIndex(schema.completionsByTask);
+    },
+    // M3.8: время серии повторяющегося срока (О-65). Ключ `series_time`, если
+    // уже пришёл от другого устройства, разложит `reproject` (версия реестра 4).
+    from3To4: (m, schema) async {
+      await m.addColumn(schema.tasks, schema.tasks.dueSeriesTime);
     },
   );
 }

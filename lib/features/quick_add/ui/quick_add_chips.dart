@@ -28,9 +28,7 @@ class QuickAddChips extends ConsumerWidget {
     final today = ref.watch(todayProvider);
     final d = controller.draft;
     final due = d?.due;
-    final dueText = due == null
-        ? null
-        : dueLabel(context, due.date, due.time, today);
+    final dueText = due == null ? null : dueLabelOf(context, ref, due, today);
     final deadline = d?.deadline;
     final labelNames = [
       for (final id in d?.labelIds ?? const <String>{})
@@ -47,7 +45,7 @@ class QuickAddChips extends ConsumerWidget {
           text: dueText?.text ?? l10n.fieldDue,
           color: dueText?.color,
           onTap: () async {
-            final picked = await pickDue(context, ref, due);
+            final picked = await pickDue(context, ref, due, newTask: true);
             if (picked != null) controller.pickDue(picked.due);
           },
         ),
@@ -85,7 +83,7 @@ class QuickAddChips extends ConsumerWidget {
           icon: Icons.outlined_flag,
           text: deadline == null
               ? l10n.fieldDeadline
-              : dueLabel(context, deadline, null, today).text,
+              : deadlineLabel(context, deadline, today).text,
           onTap: () async {
             final picked = await pickDeadline(context, ref, deadline);
             if (picked != null) controller.pickDeadline(picked.date);

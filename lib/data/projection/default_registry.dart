@@ -10,7 +10,7 @@ import 'projector.dart';
 
 /// Версия набора полей [defaultRegistry]. Увеличивать при каждом изменении
 /// полей или колонок проекторов: база переложит `field_versions` заново.
-const int projectorVersion = 3;
+const int projectorVersion = 4;
 
 final Logger _logger = Logger();
 
@@ -67,10 +67,10 @@ TableProjector<$TasksTable, TaskRow> taskProjector(
   },
 );
 
-/// Срок — объект {date, time?, tz?, string?, lang?, rule?}; `null` — срока
-/// нет. Неразобранные правило, текст или язык не отменяют дату: срок
-/// остаётся, без них, и [warn] сообщает об этом; само значение остаётся в
-/// `field_versions`. Повтор — только у срока с датой.
+/// Срок — объект {date, time?, tz?, string?, lang?, rule?, series_time?};
+/// `null` — срока нет. Неразобранные правило, текст, язык или время серии не
+/// отменяют дату: срок остаётся, без них, и [warn] сообщает об этом; само
+/// значение остаётся в `field_versions`. Повтор — только у срока с датой.
 TasksCompanion _due(
   String id,
   Object? value,
@@ -87,6 +87,7 @@ TasksCompanion _due(
         dueLang: const Value(null),
         dueRule: const Value(null),
         dueIsRecurring: const Value(false),
+        dueSeriesTime: const Value(null),
       );
     case final Map<String, Object?> due:
       final date = textOrNull(due[DueKeys.date]);
@@ -119,10 +120,31 @@ TasksCompanion _due(
                 }),
         ),
         dueIsRecurring: Value(rule != null),
+        // Время серии — только у повторяющегося срока и только `HH:MM` или
+        // пустая строка: испорченное значение подвесило бы выполнение.
+        dueSeriesTime: Value(rule == null ? null : _seriesTime(id, due, warn)),
       );
     default:
       throw ProjectionTypeError('объект срока', value);
   }
+}
+
+final RegExp _hhmm = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$');
+
+/// Время серии срока [due]: `HH:MM`, пустая строка (серия без времени) или
+/// `null` — ключа нет или значение испорчено ([warn] сообщает).
+String? _seriesTime(
+  String id,
+  Map<String, Object?> due,
+  void Function(String message) warn,
+) {
+  final value = due[DueKeys.seriesTime];
+  if (value == null) return null;
+  if (value is String && (value.isEmpty || _hhmm.hasMatch(value))) {
+    return value;
+  }
+  warn('task/$id.due.series_time: ожидалось HH:MM, пришло $value');
+  return null;
 }
 
 /// Дедлайн — объект {date}; `null` — дедлайна нет.

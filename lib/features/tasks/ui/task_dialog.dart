@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
@@ -8,10 +7,12 @@ import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../state/title_date_controller.dart';
 import 'task_dialog_layout.dart';
 import 'task_dialog_top_bar.dart';
 import 'task_fields.dart';
 import 'task_subtasks.dart';
+import 'task_title_field.dart';
 import 'task_row_parts.dart';
 
 /// Панель задачи, как в Todoist: слева путь «проект › раздел», название,
@@ -37,7 +38,9 @@ class TaskDialog extends ConsumerStatefulWidget {
 }
 
 class _TaskDialogState extends ConsumerState<TaskDialog> {
-  final TextEditingController _content = TextEditingController();
+  late final TitleDateController _content = TitleDateController(
+    clock: ref.read(clockProvider),
+  );
   final TextEditingController _description = TextEditingController();
   final FocusNode _contentFocus = FocusNode();
   final FocusNode _descriptionFocus = FocusNode();
@@ -80,7 +83,43 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     action,
   );
 
-  Future<void> _saveContent() => _save(
+  /// Название; набранная в нём дата — новый срок той же правкой (решение 1А
+  /// конца M3). Название из одной даты — пустое: вернётся прежнее.
+  ///
+  /// Enter сначала снимает фокус, потом вызывает `onSubmitted` — запись того
+  /// же текста, пока первая идёт, пропускается ([_savingText]).
+  Future<void> _saveContent() async {
+    _content.refresh();
+    final date = _content.parsed;
+    if (date == null) return _saveName();
+    final task = _task();
+    final title = date.title.trim();
+    if (task == null || title.isEmpty) return _resync();
+    final submitted = _content.text;
+    if (submitted == _savingText) return;
+    _savingText = submitted;
+    final base = _contentBase;
+    _contentBase = title;
+    try {
+      final ok = await _write(
+        () => ref
+            .read(taskCommandsProvider)
+            .renameWithDue(task.id, title, date.due),
+      );
+      if (!ok) _contentBase = base;
+      // Окно закрыто или перешло к соседней задаче, пока шла запись, или в
+      // поле уже набирают дальше — поле не трогаем.
+      if (!mounted || _content.text != submitted) return;
+      ok ? _content.reset(title) : _resync();
+    } finally {
+      _savingText = null;
+    }
+  }
+
+  /// Текст названия с датой, который сейчас записывается.
+  String? _savingText;
+
+  Future<void> _saveName() => _save(
     _content.text.trim(),
     _contentBase,
     (v) => _contentBase = v,
@@ -128,7 +167,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void _sync(Task task) {
     if (!_contentFocus.hasFocus) {
       _contentBase = task.content;
-      if (_content.text != task.content) _content.text = task.content;
+      if (_content.text != task.content) _content.reset(task.content);
     }
     if (!_descriptionFocus.hasFocus) {
       _descriptionBase = task.description;
@@ -151,6 +190,10 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         }
         return const SizedBox.shrink();
       }
+      _content.configure(
+        lang: Localizations.localeOf(context).languageCode,
+        smartDates: ref.watch(smartDateRecognitionProvider).value ?? true,
+      );
       _sync(task);
       // Проект в архиве — только просмотр (допущение О-24).
       final readOnly = ws.isProjectArchived(ws.rootProjectOf(task.id));
@@ -190,34 +233,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 TaskCheckCircle(task: task, enabled: !readOnly),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: TextField(
+                  child: TaskTitleField(
                     controller: _content,
                     focusNode: _contentFocus,
                     readOnly: readOnly,
-                    maxLines: null,
-                    // Название — одна строка, как в Todoist: Enter сохраняет,
-                    // вставленный перевод строки становится пробелом. Длинное
-                    // название переносится только на экране.
-                    textInputAction: TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.deny(
-                        RegExp(r'[\r\n]+'),
-                        replacementString: ' ',
-                      ),
-                    ],
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                    ),
-                    style: TextStyle(
-                      color: palette.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      decoration: task.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                    onSubmitted: (_) => _saveContent(),
+                    completed: task.isCompleted,
+                    onSubmitted: _saveContent,
                   ),
                 ),
               ],

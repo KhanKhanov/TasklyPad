@@ -870,7 +870,11 @@ mixin _$Due {
  String? get time; String? get tz;/// Срок текстом, как его ввёл пользователь («каждый пн»).
  String? get string;/// Язык, на котором разобран [string]: `ru` или `en`.
  String? get lang;/// Правило повторения; `null` — срок не повторяется.
- RecurrenceRule? get rule;
+ RecurrenceRule? get rule;/// Время серии, когда «Время» планировщика перенесло только ближайшее
+/// вхождение (help «Introduction to recurring dates», решение 1А по О-65):
+/// `HH:MM`; пустая строка — серия без времени; `null` — время серии
+/// равно [time].
+ String? get seriesTime;
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -882,20 +886,20 @@ $DueCopyWith<Due> get copyWith => _$DueCopyWithImpl<Due>(this as Due, _$identity
 @override
 bool operator ==(Object other) {
   final _this = this as Due;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Due&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.tz, _this.tz) || other.tz == _this.tz)&&(identical(other.string, _this.string) || other.string == _this.string)&&(identical(other.lang, _this.lang) || other.lang == _this.lang)&&(identical(other.rule, _this.rule) || other.rule == _this.rule));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Due&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.time, _this.time) || other.time == _this.time)&&(identical(other.tz, _this.tz) || other.tz == _this.tz)&&(identical(other.string, _this.string) || other.string == _this.string)&&(identical(other.lang, _this.lang) || other.lang == _this.lang)&&(identical(other.rule, _this.rule) || other.rule == _this.rule)&&(identical(other.seriesTime, _this.seriesTime) || other.seriesTime == _this.seriesTime));
 }
 
 
 @override
 int get hashCode {
   final _this = this as Due;
-  return Object.hash(runtimeType,_this.date,_this.time,_this.tz,_this.string,_this.lang,_this.rule);
+  return Object.hash(runtimeType,_this.date,_this.time,_this.tz,_this.string,_this.lang,_this.rule,_this.seriesTime);
 }
 
 @override
 String toString() {
   final _this = this as Due;
-  return 'Due(date: ${_this.date}, time: ${_this.time}, tz: ${_this.tz}, string: ${_this.string}, lang: ${_this.lang}, rule: ${_this.rule})';
+  return 'Due(date: ${_this.date}, time: ${_this.time}, tz: ${_this.tz}, string: ${_this.string}, lang: ${_this.lang}, rule: ${_this.rule}, seriesTime: ${_this.seriesTime})';
 }
 
 
@@ -906,7 +910,7 @@ abstract mixin class $DueCopyWith<$Res>  {
   factory $DueCopyWith(Due value, $Res Function(Due) _then) = _$DueCopyWithImpl;
 @useResult
 $Res call({
- String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule
+ String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule, String? seriesTime
 });
 
 
@@ -923,7 +927,7 @@ class _$DueCopyWithImpl<$Res>
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,Object? seriesTime = freezed,}) {
   return _then(Due(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: freezed == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
@@ -931,7 +935,8 @@ as String?,tz: freezed == tz ? _self.tz : tz // ignore: cast_nullable_to_non_nul
 as String?,string: freezed == string ? _self.string : string // ignore: cast_nullable_to_non_nullable
 as String?,lang: freezed == lang ? _self.lang : lang // ignore: cast_nullable_to_non_nullable
 as String?,rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
-as RecurrenceRule?,
+as RecurrenceRule?,seriesTime: freezed == seriesTime ? _self.seriesTime : seriesTime // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of Due
@@ -1028,10 +1033,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule,  String? seriesTime)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Due() when $default != null:
-return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule,_that.seriesTime);case _:
   return orElse();
 
 }
@@ -1049,10 +1054,10 @@ return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rul
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule,  String? seriesTime)  $default,) {final _that = this;
 switch (_that) {
 case _Due():
-return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule,_that.seriesTime);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1069,10 +1074,10 @@ return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rul
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  String? time,  String? tz,  String? string,  String? lang,  RecurrenceRule? rule,  String? seriesTime)?  $default,) {final _that = this;
 switch (_that) {
 case _Due() when $default != null:
-return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule);case _:
+return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rule,_that.seriesTime);case _:
   return null;
 
 }
@@ -1084,7 +1089,7 @@ return $default(_that.date,_that.time,_that.tz,_that.string,_that.lang,_that.rul
 
 
 class _Due extends Due {
-  const _Due({required this.date, this.time, this.tz, this.string, this.lang, this.rule}): super._();
+  const _Due({required this.date, this.time, this.tz, this.string, this.lang, this.rule, this.seriesTime}): super._();
   
 
 /// `YYYY-MM-DD`.
@@ -1098,6 +1103,11 @@ class _Due extends Due {
 @override final  String? lang;
 /// Правило повторения; `null` — срок не повторяется.
 @override final  RecurrenceRule? rule;
+/// Время серии, когда «Время» планировщика перенесло только ближайшее
+/// вхождение (help «Introduction to recurring dates», решение 1А по О-65):
+/// `HH:MM`; пустая строка — серия без времени; `null` — время серии
+/// равно [time].
+@override final  String? seriesTime;
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
@@ -1109,18 +1119,18 @@ _$DueCopyWith<_Due> get copyWith => __$DueCopyWithImpl<_Due>(this, _$identity);
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Due&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.tz, tz) || other.tz == tz)&&(identical(other.string, string) || other.string == string)&&(identical(other.lang, lang) || other.lang == lang)&&(identical(other.rule, rule) || other.rule == rule));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Due&&(identical(other.date, date) || other.date == date)&&(identical(other.time, time) || other.time == time)&&(identical(other.tz, tz) || other.tz == tz)&&(identical(other.string, string) || other.string == string)&&(identical(other.lang, lang) || other.lang == lang)&&(identical(other.rule, rule) || other.rule == rule)&&(identical(other.seriesTime, seriesTime) || other.seriesTime == seriesTime));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,date,time,tz,string,lang,rule);
+    return Object.hash(runtimeType,date,time,tz,string,lang,rule,seriesTime);
 }
 
 @override
 String toString() {
-    return 'Due(date: $date, time: $time, tz: $tz, string: $string, lang: $lang, rule: $rule)';
+    return 'Due(date: $date, time: $time, tz: $tz, string: $string, lang: $lang, rule: $rule, seriesTime: $seriesTime)';
 }
 
 
@@ -1131,7 +1141,7 @@ abstract mixin class _$DueCopyWith<$Res> implements $DueCopyWith<$Res> {
   factory _$DueCopyWith(_Due value, $Res Function(_Due) _then) = __$DueCopyWithImpl;
 @override @useResult
 $Res call({
- String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule
+ String date, String? time, String? tz, String? string, String? lang, RecurrenceRule? rule, String? seriesTime
 });
 
 
@@ -1148,7 +1158,7 @@ class __$DueCopyWithImpl<$Res>
 
 /// Create a copy of Due
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? time = freezed,Object? tz = freezed,Object? string = freezed,Object? lang = freezed,Object? rule = freezed,Object? seriesTime = freezed,}) {
   return _then(_Due(
 date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
 as String,time: freezed == time ? _self.time : time // ignore: cast_nullable_to_non_nullable
@@ -1156,7 +1166,8 @@ as String?,tz: freezed == tz ? _self.tz : tz // ignore: cast_nullable_to_non_nul
 as String?,string: freezed == string ? _self.string : string // ignore: cast_nullable_to_non_nullable
 as String?,lang: freezed == lang ? _self.lang : lang // ignore: cast_nullable_to_non_nullable
 as String?,rule: freezed == rule ? _self.rule : rule // ignore: cast_nullable_to_non_nullable
-as RecurrenceRule?,
+as RecurrenceRule?,seriesTime: freezed == seriesTime ? _self.seriesTime : seriesTime // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

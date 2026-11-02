@@ -231,6 +231,8 @@
   "valueNotInFavorites": "Not in favorites",
   "valueArchived": "Archived",
   "valueNotArchived": "Not archived",
+  "valueOn": "On",
+  "valueOff": "Off",
   "valueDeleted": "Deleted",
   "valueRestored": "Restored",
   "valueLabelRemoved": "Label removed",

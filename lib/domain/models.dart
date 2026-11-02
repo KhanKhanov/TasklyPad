@@ -72,12 +72,26 @@ abstract class Due with _$Due {
 
     /// Правило повторения; `null` — срок не повторяется.
     RecurrenceRule? rule,
+
+    /// Время серии, когда «Время» планировщика перенесло только ближайшее
+    /// вхождение (help «Introduction to recurring dates», решение 1А по О-65):
+    /// `HH:MM`; пустая строка — серия без времени; `null` — время серии
+    /// равно [time].
+    String? seriesTime,
   }) = _Due;
 
   const Due._();
 
   /// Повторяющийся срок — у него есть правило (как `is_recurring` Todoist).
   bool get isRecurring => rule != null;
+
+  /// Время серии повторяющегося срока: `HH:MM` или `null` — серия без
+  /// времени.
+  String? get seriesClock => switch (seriesTime) {
+    null => time,
+    '' => null,
+    final t => t,
+  };
 }
 
 /// Правило повторения срока: следующую дату по нему считает устройство,

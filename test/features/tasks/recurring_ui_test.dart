@@ -6,6 +6,7 @@ import 'package:planner/domain/models.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_dialog_top_bar.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
+import 'package:planner/features/tasks/ui/task_row_parts.dart';
 
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
@@ -183,6 +184,31 @@ void main() {
 
       await openScheduler(tester, 'Gym');
       expect(find.text('Remove time'), findsOneWidget);
+    });
+  });
+
+  testWidgets('«Remove time» у повторяющейся — только у вхождения: после '
+      'выполнения следующее снова в 7:00 (О-65, решение 2А)', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(
+        tester,
+        app,
+        'Gym',
+        due: daily.copyWith(time: '07:00'),
+      );
+      await openScheduler(tester, 'Gym');
+      await tester.tap(find.text('Remove time'));
+      await settle(tester);
+      final moved = (await task(tester, app, id)).due!;
+      expect((moved.time, moved.seriesTime), (null, '07:00'));
+
+      await tester.tap(
+        find.descendant(of: row('Gym'), matching: find.byType(TaskCheckCircle)),
+      );
+      await settle(tester);
+      final next = (await task(tester, app, id)).due!;
+      expect((next.date, next.time), ('2026-10-24', '07:00'));
     });
   });
 
@@ -481,4 +507,30 @@ void main() {
       expect(await savedReset(tester, device), isTrue);
     });
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
+
+  testWidgets('Shift+клик по кружку повторяющейся — «Выполнить окончательно»; '
+      'у обычной — выполнить', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final gym = await addTask(tester, app, 'Gym', due: daily);
+      final plain = await addTask(tester, app, 'Plain');
+      Future<void> shiftClick(String content) async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.tap(
+          find.descendant(
+            of: row(content),
+            matching: find.byType(TaskCheckCircle),
+          ),
+        );
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await settle(tester);
+      }
+
+      await shiftClick('Gym');
+      final done = await task(tester, app, gym);
+      expect((done.isCompleted, done.due), (true, daily));
+      await shiftClick('Plain');
+      expect((await task(tester, app, plain)).isCompleted, isTrue);
+    });
+  });
 }

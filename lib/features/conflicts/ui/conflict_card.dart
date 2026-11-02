@@ -240,6 +240,7 @@ class _Values extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final mobile = Theme.of(context).platform == TargetPlatform.android;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,7 +252,7 @@ class _Values extends StatelessWidget {
                 children: [
                   if (v.field != ConflictField.deleted && v.key.isNotEmpty)
                     TextSpan(
-                      text: '${conflictFieldTitle(l10n, v)}: ',
+                      text: '${conflictFieldTitle(l10n, v, mobile: mobile)}: ',
                       style: TextStyle(color: palette.textSecondary),
                     ),
                   TextSpan(

@@ -383,6 +383,10 @@ final class ConflictRepository {
       string: string is String ? string : null,
       lang: lang is String ? lang : null,
       rule: recurrenceRuleOf(raw[DueKeys.rule]),
+      seriesTime: switch (raw[DueKeys.seriesTime]) {
+        final String t => t,
+        _ => null,
+      },
     );
   }
 
@@ -436,6 +440,10 @@ final class ConflictRepository {
     (EntityTypes.settings, SettingsFields.themeId) => ConflictField.theme,
     (EntityTypes.settings, SettingsFields.themeAppearance) =>
       ConflictField.appearance,
+    (EntityTypes.settings, SettingsFields.smartDateRecognition) =>
+      ConflictField.smartDateRecognition,
+    (EntityTypes.settings, SettingsFields.resetRecurringSubtasks) =>
+      ConflictField.resetRecurringSubtasks,
     _ => ConflictField.other,
   };
 }
