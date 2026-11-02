@@ -187,6 +187,51 @@ void main() {
     });
   });
 
+  testWidgets('окончание серии, которого нет (пришло испорченным), — строка и '
+      'окно задачи не падают, в окне срок текстом (решение 1А «Ход M3.8»)', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(
+        tester,
+        app,
+        'Gym',
+        due: Due(
+          date: '2026-10-23',
+          string: 'every day until someday',
+          lang: 'en',
+          rule: rule('FREQ=DAILY;UNTIL=20271301'),
+        ),
+      );
+      expect(
+        find.descendant(of: row('Gym'), matching: find.byIcon(Icons.repeat)),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Gym'));
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      expect(
+        find.descendant(
+          of: find.byType(TaskDialog),
+          matching: find.text('every day until someday'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Close'));
+      await settle(tester);
+
+      // Планировщик и «Пользовательский…» — тоже без падения.
+      await openScheduler(tester, 'Gym');
+      // У повторяющейся на кнопке — текст правила, подсказка — «Repeat».
+      await tester.tap(find.byTooltip('Repeat'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Custom…'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('«Remove time» у повторяющейся — только у вхождения: после '
       'выполнения следующее снова в 7:00 (О-65, решение 2А)', (tester) async {
     await withApp(tester, (device) async {

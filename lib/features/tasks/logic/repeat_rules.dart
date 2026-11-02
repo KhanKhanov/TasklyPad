@@ -143,7 +143,8 @@ CustomRepeat customFromRule(RecurrenceRule? rule, DateTime anchor) {
     for (final e in _freq.entries) e.value: e.key,
   }[parts.remove('FREQ')];
   final interval = int.tryParse(parts.remove('INTERVAL') ?? '1');
-  // Окончание с временем окно не выражает — как и прочие формы.
+  // Окончание с временем или с днём, которого нет, окно не выражает — как и
+  // прочие формы.
   final rawUntil = parts.remove('UNTIL');
   final until = switch (rawUntil == null ? null : rruleUntilDay(rawUntil)) {
     final d? => DateTime(d.year, d.month, d.day),
