@@ -125,6 +125,9 @@ Conventional Commits (feat/fix/refactor/test/docs/chore), одна фича — 
 `git switch main; if ($?) { git pull --ff-only; if ($?) { git switch -c <ветка> } }`. IMPORTANT: в сообщениях коммитов, коде, README и docs/ упоминаний ИИ-инструментов
 нет; всё про них — только в CLAUDE.md и .claude/ (пока отслеживаются git — решение пользователя).
 Памятка пользователю, что делает он на каждом шаге, — .claude/HOW_TO_WORK.md.
+`.claude/agent-memory/` — общая память агентов проекта (заметки сверки с help и т. п.): хранится в git и
+коммитится отдельным коммитом `chore: память агентов`, не вместе с кодом (решение пользователя 02.11.2026).
+Личная память одного компьютера — `.claude/agent-memory-local/`, она в .gitignore.
 
 ## Обучение пользователя (IMPORTANT, подробно в .claude/rules/teaching.md)
 Каждый новый термин или приём — объяснить в 1–3 предложениях и занести в docs/GLOSSARY.md.
