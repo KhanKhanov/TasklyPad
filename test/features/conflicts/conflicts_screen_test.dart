@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planner/app/sync_providers.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/features/conflicts/state/conflict_notices.dart';
+import 'package:planner/features/conflicts/ui/conflict_toast.dart';
 import 'package:planner/features/conflicts/ui/conflicts_screen.dart';
+import 'package:planner/features/projects/ui/projects_screen.dart';
 import 'package:planner/features/settings/state/sync_controller.dart';
+import 'package:planner/features/shell/ui/shell_keys.dart';
 
 import '../../app/support/fake_conflict_notifier.dart';
 import '../../app/support/pump_app.dart';
@@ -134,6 +138,124 @@ void main() {
       notifier.open();
       await settle(tester);
       expect(find.byType(ConflictsScreen), findsOneWidget);
+    });
+  });
+
+  testWidgets('«Конфликты» из сайдбара на экране «Мои проекты» — «Back» и '
+      '`Esc` возвращают на него', (tester) async {
+    await withApp(tester, (device) async {
+      await makeConflict(tester, device);
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/projects');
+      await settle(tester);
+      final item = find.widgetWithText(InkWell, 'Conflicts');
+
+      await tester.tap(item);
+      await settle(tester);
+      expect(find.byType(ConflictsScreen), findsOneWidget);
+      await tester.tap(find.byTooltip('Back'));
+      await settle(tester);
+      expect(find.byType(ConflictsScreen), findsNothing);
+      expect(find.byType(ProjectsScreen), findsOneWidget);
+
+      await tester.tap(item);
+      await settle(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await settle(tester);
+      expect(find.byType(ConflictsScreen), findsNothing);
+      expect(find.byType(ProjectsScreen), findsOneWidget);
+    });
+  });
+
+  testWidgets('«Конфликты» открыты по ссылке без предыдущего экрана — «Back» '
+      'ведёт во «Входящие»', (tester) async {
+    await withApp(tester, (device) async {
+      GoRouter.of(tester.element(find.byType(Scaffold).first)).go('/conflicts');
+      await settle(tester);
+      await tester.tap(find.byTooltip('Back'));
+      await settle(tester);
+      expect(find.byType(ConflictsScreen), findsNothing);
+      expect(find.text('Inbox'), findsWidgets);
+    });
+  });
+
+  testWidgets('тост о конфликте и уведомления ОС убираются, как только '
+      'конфликт решён', (tester) async {
+    final notifier = FakeConflictNotifier();
+    await withApp(tester, notifier: notifier, (device) async {
+      // Запуск без конфликтов уже убрал уведомления прошлого запуска.
+      expect(notifier.clears, 1);
+      await makeConflict(tester, device);
+      await checkNotices(tester);
+      expect(notifier.clears, 1);
+      const toast = 'Conflict: Task “theirs”, field Name';
+      expect(find.text(toast), findsOneWidget);
+      await tester.tap(find.widgetWithText(InkWell, 'Conflicts'));
+      await settle(tester);
+      await tester.tap(find.text('Keep this version').first);
+      await settle(tester);
+      expect(find.text('No conflicts'), findsOneWidget);
+      expect(find.text(toast), findsNothing);
+      expect(notifier.clears, 2);
+    });
+  });
+
+  testWidgets('тост о конфликте с «Open» пропадает сам через 10 с', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      await makeConflict(tester, device);
+      await checkNotices(tester);
+      const toast = 'Conflict: Task “theirs”, field Name';
+      expect(find.text(toast), findsOneWidget);
+      await tester.pump(conflictToastDuration + const Duration(seconds: 1));
+      await settle(tester);
+      expect(find.text(toast), findsNothing);
+    });
+  });
+
+  testWidgets('тост о конфликте в очереди за другим тостом: конфликт решён — '
+      'чужой тост остаётся, тост о конфликте не показывается', (tester) async {
+    await withApp(tester, (device) async {
+      final messenger = ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold).first),
+      );
+      // Как «Отменить» после выполнения задачи.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Other'), duration: Duration(seconds: 5)),
+      );
+      await tester.pumpAndSettle();
+      await makeConflict(tester, device);
+      await checkNotices(tester);
+      const toast = 'Conflict: Task “theirs”, field Name';
+      expect(find.text(toast), findsNothing); // в очереди
+
+      await tester.tap(find.widgetWithText(InkWell, 'Conflicts'));
+      await settle(tester);
+      await tester.tap(find.text('Keep this version').first);
+      await settle(tester);
+      expect(find.text('Other'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 6));
+      await settle(tester);
+      expect(find.text('Other'), findsNothing);
+      expect(find.text(toast), findsNothing);
+    });
+  });
+
+  testWidgets('«Конфликты» поверх списка: `j` не выбирает задачу под ними', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      await makeConflict(tester, device);
+      await tester.tap(find.widgetWithText(InkWell, 'Conflicts'));
+      await settle(tester);
+      expect(find.byType(ConflictsScreen), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(
+        FocusManager.instance.primaryFocus,
+        isNot(isA<ListRowFocusNode>()),
+      );
     });
   });
 

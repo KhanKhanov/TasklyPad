@@ -136,9 +136,7 @@ String _due(String locale, Due due) {
   final rule = due.rule;
   if (rule == null) return date.join(' ');
   final lang = locale.split(RegExp('[-_]')).first;
-  final text = ParseContext.supportedLanguages.contains(lang)
-      ? ruleText(rule, lang)
-      : null;
+  final text = ruleText(rule, ParseContext.languageFor(lang));
   return '${date.join(' ')} · ${text ?? due.string ?? jsonEncode(rule.rrule)}';
 }
 

@@ -472,6 +472,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncNever => 'Not synced yet';
 
   @override
+  String get deadlineInputHint => 'Type a deadline';
+
+  @override
+  String get actionBack => 'Back';
+
+  @override
   String syncIssues(int count) {
     return 'Files from other devices not read yet: $count. The cloud may still be downloading them — I\'ll retry on the next sync.';
   }

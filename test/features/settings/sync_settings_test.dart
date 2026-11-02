@@ -402,6 +402,78 @@ void main() {
     );
   });
 
+  testWidgets('меню под названием: «Sync now» с временем синхронизации — '
+      'синхронизирует; `Ctrl+S` — тоже', (tester) async {
+    final runner = FakeSyncRunner(folder: 'C:/OneDrive');
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await settle(tester);
+        final before = runner.syncs;
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Last synced: '), findsOneWidget);
+        await tester.tap(find.text('Sync now'));
+        await settle(tester);
+        expect(runner.syncs, before + 1);
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await settle(tester);
+        expect(runner.syncs, before + 2);
+      },
+    );
+  });
+
+  testWidgets('кнопка «Settings» справа вверху открывает «Настройки» — и с '
+      'экрана проекта', (tester) async {
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(FakeSyncRunner())],
+      (_) async {
+        await tester.tap(find.widgetWithText(TextButton, 'Settings').first);
+        await settle(tester);
+        expect(find.byType(SettingsScreen), findsOneWidget);
+      },
+    );
+  });
+
+  testWidgets('меню под названием без папки: «Sync now» открывает '
+      '«Настройки»', (tester) async {
+    final runner = FakeSyncRunner();
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sync now'));
+        await settle(tester);
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(runner.syncs, 0);
+      },
+    );
+  });
+
+  testWidgets('`Ctrl+S` без папки — как «Sync now» в меню: открывает '
+      '«Настройки»', (tester) async {
+    final runner = FakeSyncRunner();
+    await withApp(
+      tester,
+      overrides: [syncRunnerProvider.overrideWithValue(runner)],
+      (_) async {
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await settle(tester);
+        expect(find.byType(SettingsScreen), findsOneWidget);
+        expect(runner.syncs, 0);
+      },
+    );
+  });
+
   testWidgets('смена папки не удалась → на экране прежняя сохранённая папка '
       'и текст ошибки, без второго тоста', (tester) async {
     final runner = FakeSyncRunner(folder: 'C:/Old')

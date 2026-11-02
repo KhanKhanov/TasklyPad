@@ -44,6 +44,61 @@ void main() {
   String titleText(WidgetTester tester) =>
       tester.widget<TextField>(panelTitle()).controller!.text;
 
+  bool focused(WidgetTester tester, String content) => tester
+      .widget<Focus>(
+        find.descendant(of: row(content), matching: find.byType(Focus)).first,
+      )
+      .focusNode!
+      .hasPrimaryFocus;
+
+  testWidgets('ни одна задача не выбрана: `↓` — первая задача, затем `t` — '
+      'выбор срока', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(tester, app, 'First');
+      await addTask(tester, app, 'Second');
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(focused(tester, 'First'), isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Type a due date'), findsOneWidget);
+    });
+  });
+
+  testWidgets('ни одна задача не выбрана: `j` — первая, `k` — последняя', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(tester, app, 'First');
+      await addTask(tester, app, 'Second');
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(focused(tester, 'First'), isTrue);
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.pumpAndSettle();
+      expect(focused(tester, 'Second'), isTrue);
+    });
+  });
+
+  testWidgets('кнопка в фокусе: `↓` не прыгает к задаче — стрелки двигают '
+      'фокус между кнопками', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(tester, app, 'First');
+      Focus.of(tester.element(find.text('Add task').last)).requestFocus();
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(focused(tester, 'First'), isFalse);
+    });
+  });
+
   testWidgets('`t` — выбор срока, `Shift+T` — убрать срок с «Undo»', (
     tester,
   ) async {

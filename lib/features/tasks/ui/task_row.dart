@@ -47,7 +47,7 @@ class TaskRow extends ConsumerStatefulWidget {
 }
 
 class _TaskRowState extends ConsumerState<TaskRow> {
-  final FocusNode _focus = FocusNode();
+  final FocusNode _focus = ListRowFocusNode();
   bool _hover = false;
   bool _focused = false;
   bool _completing = false;

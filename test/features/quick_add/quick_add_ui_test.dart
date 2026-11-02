@@ -364,6 +364,41 @@ void main() {
     });
   });
 
+  testWidgets('выбор чипом без токенов в тексте — чипы показывают значение '
+      'сразу, без клика в поле', (tester) async {
+    await withApp(tester, (device) async {
+      await tester.runAsync(
+        () => AppCommands(device).labels.add(name: 'urgent'),
+      );
+      await settle(tester);
+      await openQuickAdd(tester);
+      await type(tester, 'Buy milk');
+      final dialog = find.byType(Dialog);
+      Finder inDialog(String text) =>
+          find.descendant(of: dialog, matching: find.text(text));
+
+      await tester.tap(inDialog('Priority'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Priority 3').last);
+      await tester.pumpAndSettle();
+      expect(inDialog('Priority 3'), findsOneWidget);
+
+      await tester.tap(inDialog('Labels'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'urgent'));
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(inDialog('urgent'), findsOneWidget);
+
+      await tester.tap(inDialog('Date'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Today'));
+      await tester.pumpAndSettle();
+      expect(inDialog('Today'), findsOneWidget);
+      expect(controller(tester).text, 'Buy milk');
+    });
+  });
+
   testWidgets('«Add sub-task»: тот же разбор, `#` — текст', (tester) async {
     await withApp(tester, (device) async {
       final app = AppCommands(device);
@@ -395,7 +430,7 @@ void main() {
     await withApp(
       tester,
       before: (device) =>
-          AppCommands(device).general.setSmartDateRecognition(false),
+          AppCommands(device).general.save(smartDateRecognition: false),
       (device) async {
         await openQuickAdd(tester);
         await type(tester, 'Pay tomorrow p2');

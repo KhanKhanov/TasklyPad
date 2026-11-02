@@ -8,6 +8,7 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/today.dart';
+import 'deadline_dialog.dart';
 import 'due_ui.dart';
 import 'task_edits.dart';
 

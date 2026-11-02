@@ -128,7 +128,7 @@ void main() {
   group('«Умное распознавание дат»', () {
     test('поля нет — включено; запись — op сущности settings', () async {
       expect(await app.settings.smartDateRecognition(), isTrue);
-      await app.general.setSmartDateRecognition(false);
+      await app.general.save(smartDateRecognition: false);
       expect(await app.settings.smartDateRecognition(), isFalse);
       final ops = await device.ownOps();
       expect(
@@ -146,7 +146,7 @@ void main() {
       final seen = <bool>[];
       final sub = values.listen(seen.add);
       await pumpEventQueue();
-      await app.general.setSmartDateRecognition(false);
+      await app.general.save(smartDateRecognition: false);
       await pumpEventQueue();
       await sub.cancel();
       expect(seen, [true, false]);

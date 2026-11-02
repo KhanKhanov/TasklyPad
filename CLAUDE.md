@@ -36,6 +36,13 @@ flutter run -d windows
 flutter build windows  /  flutter build apk --release
 ```
 Flutter SDK — `C:\src\flutter`; riverpod_lint — через `plugins:` в analysis_options.yaml.
+Кэш пакетов — `PUB_CACHE=C:\src\pub-cache` (переменная пользователя, решение 01.11.2026): команды Claude идут
+из упакованного приложения, и запись в `%LOCALAPPDATA%` виртуализируется, поэтому кэш в AppData у Claude и в
+терминале пользователя расходился, и сборка у пользователя падала. Ошибка «Error when reading …pub-cache…:
+Системе не удается найти указанный путь» — сначала проверить `$env:PUB_CACHE` с обеих сторон.
+Release оставляет в шрифте значков только используемые (tree-shaking), а повторная сборка может не обновить
+`build\flutter_assets`: новый значок в Release пуст при рабочем Debug — удалить `build\flutter_assets` и
+пересобрать (01.11.2026, Flutter 3.47.7).
 
 IMPORTANT: терминал пользователя — Windows PowerShell 5.1 (PowerShell 7 не установлен). Любая команда,
 которую показываешь пользователю, пишется в синтаксисе 5.1: без `&&`, `||`, `?:`, `??`; одна команда

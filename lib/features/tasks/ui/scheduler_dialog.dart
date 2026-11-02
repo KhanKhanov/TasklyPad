@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
@@ -15,6 +12,7 @@ import '../logic/due_dates.dart';
 import '../logic/task_commands.dart';
 import 'due_ui.dart';
 import 'scheduler_bottom_bar.dart';
+import 'scheduler_layout.dart';
 
 /// Выбор в планировщике: новый срок ([due]; `null` — без срока) или
 /// «Отложить» повторяющуюся задачу ([postpone]).
@@ -25,7 +23,8 @@ typedef DuePick = ({Due? due, bool postpone});
 /// повторяющейся задачи при [canPostpone], календарь, «Время», «Повторить»,
 /// «Без срока». Текст в поле заменяет срок вместе с правилом, дата из
 /// календаря и быстрых вариантов переносит только вхождение. `null` —
-/// пользователь закрыл выбор.
+/// пользователь закрыл выбор. Раскладка — [SchedulerLayout]: на компьютере
+/// календарь справа, а не под вариантами (решение 1Б «Ход M3.8»).
 Future<DuePick?> pickDue(
   BuildContext context,
   WidgetRef ref,
@@ -52,9 +51,10 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
   /// Разобранный текст поля; `null` — поле пусто или это не срок.
   ({Due? due})? _typed;
 
-  /// Календарь только что сменил месяц (листание или выбор года) — до
-  /// конца текущего вызова; см. `onDisplayedMonthChanged`.
-  bool _monthChanged = false;
+  /// Одно «сейчас» на окно (стенное время): разбор, «Отложить», быстрые
+  /// варианты, календарь и «Повторить» считают от одной даты, даже если окно
+  /// открыто через полночь.
+  late final DateTime _now = ref.read(clockProvider).nowWall();
 
   @override
   void dispose() {
@@ -63,18 +63,13 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
   }
 
   /// Язык разбора — язык интерфейса (решение 8А плана M3).
-  String get _lang {
-    final code = Localizations.localeOf(context).languageCode;
-    return ParseContext.supportedLanguages.contains(code) ? code : 'en';
-  }
+  String get _lang =>
+      ParseContext.languageFor(Localizations.localeOf(context).languageCode);
 
   void _parse(String text) {
     final match = text.trim().isEmpty
         ? null
-        : parseDueText(
-            text,
-            ParseContext(now: ref.read(clockProvider).nowWall(), lang: _lang),
-          );
+        : parseDueText(text, ParseContext(now: _now, lang: _lang));
     setState(() {
       _typed = match == null || (match.due == null && !match.noDate)
           ? null
@@ -88,153 +83,78 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    // Одно «сейчас» на окно: разбор, «Отложить», быстрые варианты и
-    // календарь считают от одной даты.
-    final now = ref.watch(clockProvider).nowWall();
+    final now = _now;
     final today = DateTime(now.year, now.month, now.day);
     final current = widget.current;
     final typed = _typed;
-    final shown = parseIsoDate(current?.date ?? '') ?? today;
-    // Срок вне обычного диапазона (пришёл синхронизацией или импортом) не
-    // должен ломать календарь: границы расширяются до него.
-    final first = DateTime(today.year - 5);
-    final last = DateTime(today.year + 20);
     final postponed = widget.canPostpone && current != null
         ? _postponed(current, now)
         : null;
-    Widget option(IconData icon, String label, DateTime day, VoidCallback on) =>
-        ListTile(
-          dense: true,
-          leading: Icon(icon, size: 20, color: palette.textSecondary),
-          title: Text(label),
-          trailing: Text(
-            DateFormat.E(locale).format(day),
-            style: TextStyle(color: palette.textSecondary, fontSize: 12),
+    return SchedulerLayout(
+      top: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            controller: _text,
+            autofocus: true,
+            decoration: InputDecoration(hintText: l10n.dueInputHint),
+            onChanged: _parse,
+            // `_typed`, а не значение прошлого кадра: Enter может прийти в
+            // одном кадре с последней правкой.
+            onSubmitted: (_) {
+              if (_typed case final typed?) _done(typed.due);
+            },
           ),
-          onTap: on,
-        );
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 340),
-        // Низ с «Повторить» закреплён: в невысоком окне прокручивается
-        // только верх с календарём, а не прячется под край весь низ.
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                      child: TextField(
-                        controller: _text,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: l10n.dueInputHint,
-                        ),
-                        onChanged: _parse,
-                        // `_typed`, а не значение прошлого кадра: Enter может
-                        // прийти в одном кадре с последней правкой.
-                        onSubmitted: (_) {
-                          if (_typed case final typed?) _done(typed.due);
-                        },
-                      ),
-                    ),
-                    if (typed != null)
-                      ListTile(
-                        dense: true,
-                        leading: Icon(
-                          Icons.event,
-                          size: 20,
-                          color: palette.accent,
-                        ),
-                        title: Text(
-                          typed.due == null
-                              ? l10n.noDue
-                              : dueLabel(
-                                  context,
-                                  typed.due!.date,
-                                  typed.due!.time,
-                                  today,
-                                ).text,
-                        ),
-                        subtitle: switch (typed.due) {
-                          final due? when due.isRecurring => Text(
-                            repeatText(context, due) ?? '',
-                          ),
-                          _ => null,
-                        },
-                        onTap: () => _done(typed.due),
-                      ),
-                    Divider(color: palette.divider, height: 8),
-                    for (final (quick, icon, label) in [
-                      (QuickDue.today, Icons.today_outlined, l10n.dueToday),
-                      (
-                        QuickDue.tomorrow,
-                        Icons.wb_sunny_outlined,
-                        l10n.dueTomorrow,
-                      ),
-                      (
-                        QuickDue.weekend,
-                        Icons.weekend_outlined,
-                        l10n.dueWeekend,
-                      ),
-                      (
-                        QuickDue.nextWeek,
-                        Icons.arrow_forward,
-                        l10n.dueNextWeek,
-                      ),
-                    ])
-                      for (final day in [quickDueDate(quick, today)])
-                        option(
-                          icon,
-                          label,
-                          day,
-                          () => _done(dueOnDate(current, isoDate(day))),
-                        ),
-                    if (postponed != null)
-                      for (final day in [parseIsoDate(postponed.date)!])
-                        option(
-                          Icons.update,
-                          l10n.postpone,
-                          day,
-                          () => Navigator.pop(context, (
-                            due: current,
-                            postpone: true,
-                          )),
-                        ),
-                    Divider(color: palette.divider, height: 8),
-                    CalendarDatePicker(
-                      initialDate: shown,
-                      currentDate: today,
-                      firstDate: shown.isBefore(first) ? shown : first,
-                      lastDate: shown.isAfter(last) ? shown : last,
-                      // Выбор года Flutter сообщает и сменой месяца, и
-                      // «выбранной датой» в том же вызове — это переход по
-                      // календарю, а не новый срок: окно остаётся открытым.
-                      onDisplayedMonthChanged: (_) {
-                        _monthChanged = true;
-                        scheduleMicrotask(() => _monthChanged = false);
-                      },
-                      onDateChanged: (day) {
-                        if (!_monthChanged) {
-                          _done(dueOnDate(current, isoDate(day)));
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Divider(color: palette.divider, height: 8),
-            SchedulerBottomBar(current: current, lang: _lang, onDone: _done),
-          ],
         ),
+        if (typed != null)
+          ListTile(
+            dense: true,
+            leading: Icon(Icons.event, size: 20, color: palette.accent),
+            title: Text(
+              typed.due == null
+                  ? l10n.noDue
+                  : dueLabel(
+                      context,
+                      typed.due!.date,
+                      typed.due!.time,
+                      today,
+                    ).text,
+            ),
+            subtitle: switch (typed.due) {
+              final due? when due.isRecurring => Text(
+                repeatText(context, due) ?? '',
+              ),
+              _ => null,
+            },
+            onTap: () => _done(typed.due),
+          ),
+        Divider(color: palette.divider, height: 8),
+        for (final (quick, icon, label) in quickDueOptions(l10n))
+          for (final day in [quickDueDate(quick, today)])
+            SchedulerOption(
+              icon: icon,
+              label: label,
+              day: day,
+              onTap: () => _done(dueOnDate(current, isoDate(day))),
+            ),
+        if (postponed != null)
+          SchedulerOption(
+            icon: Icons.update,
+            label: l10n.postpone,
+            day: parseIsoDate(postponed.date)!,
+            onTap: () => Navigator.pop(context, (due: current, postpone: true)),
+          ),
+      ],
+      calendar: SchedulerCalendar(
+        shown: parseIsoDate(current?.date ?? '') ?? today,
+        today: today,
+        onPicked: (day) => _done(dueOnDate(current, isoDate(day))),
+      ),
+      bottom: SchedulerBottomBar(
+        current: current,
+        lang: _lang,
+        now: now,
+        onDone: _done,
       ),
     );
   }

@@ -950,6 +950,18 @@ abstract class AppLocalizations {
   /// **'Ещё не синхронизировалось'**
   String get syncNever;
 
+  /// Поле ввода дедлайна текстом в окне выбора дедлайна
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите дедлайн'**
+  String get deadlineInputHint;
+
+  /// Кнопка возврата на предыдущий экран
+  ///
+  /// In ru, this message translates to:
+  /// **'Назад'**
+  String get actionBack;
+
   /// Файлы, не прочитанные в последнем проходе
   ///
   /// In ru, this message translates to:
