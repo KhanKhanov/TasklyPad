@@ -6,6 +6,7 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../tasks/state/today.dart';
+import '../../tasks/ui/deadline_dialog.dart';
 import '../../tasks/ui/due_ui.dart';
 import '../../tasks/ui/scheduler_dialog.dart';
 import '../../tasks/ui/task_pickers.dart';

@@ -99,4 +99,23 @@ void main() {
     expect(dueWithTime(weekly, null), weekly.copyWith(time: null, tz: null));
     expect(dueWithTime(weekly, null).isRecurring, isTrue);
   });
+
+  test('неповторяющийся срок с текстом: новая дата или время — текст и язык '
+      'сбрасываются', () {
+    const typed = Due(
+      date: '2026-10-24',
+      time: '09:00',
+      string: 'завтра в 9',
+      lang: 'ru',
+    );
+    expect(
+      dueOnDate(typed, '2026-10-27'),
+      const Due(date: '2026-10-27', time: '09:00'),
+    );
+    expect(
+      dueWithTime(typed, '10:30'),
+      const Due(date: '2026-10-24', time: '10:30'),
+    );
+    expect(dueWithTime(typed, null), const Due(date: '2026-10-24'));
+  });
 }

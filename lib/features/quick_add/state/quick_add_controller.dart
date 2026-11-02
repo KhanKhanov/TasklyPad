@@ -54,7 +54,7 @@ class QuickAddController extends TextEditingController {
     }
     _ws = ws;
     _clock = clock;
-    _lang = ParseContext.supportedLanguages.contains(lang) ? lang : 'ru';
+    _lang = ParseContext.languageFor(lang);
     _smartDates = smartDates;
     _inboxNames = inboxNames;
     _defaults = defaults;
@@ -222,10 +222,17 @@ class QuickAddController extends TextEditingController {
     _dismissed = removed.dismissed;
     _resolved = _resolve(removed.text, _dismissed);
     _forgetPending(removed.text);
-    super.value = TextEditingValue(
+    final next = TextEditingValue(
       text: removed.text,
       selection: TextSelection.collapsed(offset: removed.text.length),
     );
+    // Текст и курсор могли не измениться (вырезать было нечего), а
+    // `ValueNotifier` молчит при равном значении — чипы ждали бы клика в поле.
+    if (next == value) {
+      notifyListeners();
+    } else {
+      super.value = next;
+    }
   }
 
   /// Задачи из вставленных строк [lines] (решение 3А «Ход M3.6»): каждая

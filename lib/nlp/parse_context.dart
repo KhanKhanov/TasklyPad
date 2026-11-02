@@ -24,6 +24,12 @@ final class ParseContext {
   /// Языки разбора — языки интерфейса (решение 8А плана M3).
   static const Set<String> supportedLanguages = {'ru', 'en'};
 
+  /// Язык разбора для языка интерфейса [code]: он сам, если разбор его знает,
+  /// иначе `en` — как у интерфейса: при незнакомом языке устройства Flutter
+  /// берёт первый из `supportedLocales`, а это `en`.
+  static String languageFor(String code) =>
+      supportedLanguages.contains(code) ? code : 'en';
+
   /// Стенное время устройства в UTC-обёртке (`AppClock.nowWall`), как
   /// момент выполнения у `nextOccurrence`.
   final DateTime now;

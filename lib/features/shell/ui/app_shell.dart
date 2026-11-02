@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
+import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
 import '../state/sidebar_state.dart';
+import 'account_menu.dart';
 import 'shell_keys.dart';
 import 'sidebar.dart';
 
@@ -43,6 +45,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         return ConflictNoticeListener(
           child: ShellKeys(
             onQuickAdd: () => openQuickAdd(context, ref, location),
+            onSync: () => syncFromShell(context, ref),
             onToggleSidebar: () {
               final scaffold = _scaffold.currentState;
               if (wide) {
@@ -89,7 +92,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-/// Верхняя строка контента: кнопка открыть сайдбар, когда он скрыт.
+/// Верхняя строка контента: кнопка открыть сайдбар, когда он скрыт; справа —
+/// «Настройки», как в шапке Todoist (решение пользователя 2А «Ход M3.8»).
 class _TopBar extends ConsumerWidget {
   const _TopBar({required this.showToggle});
 
@@ -98,6 +102,7 @@ class _TopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final palette = AppPalette.of(context);
     return SizedBox(
       height: 48,
       child: Row(
@@ -106,7 +111,7 @@ class _TopBar extends ConsumerWidget {
             IconButton(
               tooltip: l10n.toggleSidebar,
               icon: const Icon(Icons.view_sidebar_outlined, size: 20),
-              color: AppPalette.of(context).textSecondary,
+              color: palette.textSecondary,
               onPressed: () {
                 final scaffold = Scaffold.of(context);
                 if (scaffold.hasDrawer) {
@@ -116,6 +121,18 @@ class _TopBar extends ConsumerWidget {
                 }
               },
             ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: palette.textSecondary,
+              ),
+              icon: const Icon(Icons.settings_outlined, size: 20),
+              label: Text(l10n.settings),
+              onPressed: () => navigate(context, '/settings'),
+            ),
+          ),
         ],
       ),
     );

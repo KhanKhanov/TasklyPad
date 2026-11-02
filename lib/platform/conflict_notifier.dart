@@ -13,6 +13,10 @@ abstract interface class ConflictNotifier {
   /// [opened].
   Future<void> show({required String title, required String body});
 
+  /// Убрать показанные уведомления из центра уведомлений: нерешённых
+  /// конфликтов не осталось (решение 3А «Ход M3.8» плана M3).
+  Future<void> clear();
+
   /// Пользователь открыл уведомление — перейти к «Конфликтам».
   Stream<void> get opened;
 }
@@ -30,6 +34,9 @@ final class InAppConflictNotifier implements ConflictNotifier {
 
   @override
   Future<void> show({required String title, required String body}) async {}
+
+  @override
+  Future<void> clear() async {}
 
   @override
   Stream<void> get opened => const Stream.empty();

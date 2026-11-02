@@ -165,6 +165,27 @@ void main() {
     });
   });
 
+  testWidgets('часовое правило: «Remove time» нет — без времени его не '
+      'посчитать; у дневного со временем — есть', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(
+        tester,
+        app,
+        'Water',
+        due: Due(date: '2026-10-23', time: '10:00', rule: rule('FREQ=HOURLY')),
+      );
+      await addTask(tester, app, 'Gym', due: daily.copyWith(time: '07:00'));
+      await openScheduler(tester, 'Water');
+      expect(find.text('Remove time'), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      await openScheduler(tester, 'Gym');
+      expect(find.text('Remove time'), findsOneWidget);
+    });
+  });
+
   testWidgets('«Postpone» — на следующее вхождение без записи о выполнении, с '
       '«Undo»; у закончившейся серии пункта нет', (tester) async {
     await withApp(tester, (device) async {

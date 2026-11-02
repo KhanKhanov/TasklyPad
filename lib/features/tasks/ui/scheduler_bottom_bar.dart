@@ -1,25 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../logic/due_dates.dart';
 import '../logic/repeat_rules.dart';
+import '../logic/task_commands.dart';
 import 'custom_repeat_dialog.dart';
 import 'due_ui.dart';
 
 /// Низ планировщика: «Время», «Повторить» (готовые варианты и
 /// «Пользовательский…»), значок снятия повтора (help: «dismiss icon at the
 /// bottom of the scheduler») и «Без срока». Выбор отдаёт новый срок в
-/// [onDone].
-class SchedulerBottomBar extends ConsumerWidget {
+/// [onDone]. «Убрать время» нет, когда без времени правило не посчитать
+/// (часовое): [TaskCommands.setDue] такой срок не примет.
+class SchedulerBottomBar extends StatelessWidget {
   const SchedulerBottomBar({
     super.key,
     required this.current,
     required this.lang,
+    required this.now,
     required this.onDone,
   });
 
@@ -27,6 +28,10 @@ class SchedulerBottomBar extends ConsumerWidget {
 
   /// Язык текста правила: `ru` или `en`.
   final String lang;
+
+  /// «Сейчас» окна (стенное время) — то же, что у остальных частей
+  /// планировщика.
+  final DateTime now;
   final ValueChanged<Due?> onDone;
 
   Future<void> _time(BuildContext context, Due current) async {
@@ -41,8 +46,7 @@ class SchedulerBottomBar extends ConsumerWidget {
     onDone(dueWithTime(current, '$hh:$mm'));
   }
 
-  Future<void> _repeat(BuildContext context, WidgetRef ref, Object pick) async {
-    final now = ref.read(clockProvider).nowWall();
+  Future<void> _repeat(BuildContext context, Object pick) async {
     final Due? due = switch (pick) {
       final RepeatPreset preset => dueWithRule(
         current,
@@ -61,11 +65,11 @@ class SchedulerBottomBar extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final anchor = repeatAnchor(current, ref.watch(clockProvider).nowWall());
+    final anchor = repeatAnchor(current, now);
     final due = current;
     final recurring = due?.isRecurring ?? false;
     // Правило без текста (пришло синхронизацией) — подпись «Повторить», но
@@ -77,7 +81,9 @@ class SchedulerBottomBar extends ConsumerWidget {
         spacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          if (due != null)
+          if (due != null &&
+              (due.time == null ||
+                  TaskCommands.acceptsDue(dueWithTime(due, null), now)))
             TextButton.icon(
               icon: const Icon(Icons.schedule, size: 18),
               label: Text(due.time == null ? l10n.addTime : l10n.removeTime),
@@ -85,7 +91,7 @@ class SchedulerBottomBar extends ConsumerWidget {
             ),
           PopupMenuButton<Object>(
             tooltip: l10n.repeat,
-            onSelected: (pick) => _repeat(context, ref, pick),
+            onSelected: (pick) => _repeat(context, pick),
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: RepeatPreset.daily,

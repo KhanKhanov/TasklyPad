@@ -321,6 +321,22 @@ void main() {
       await app.tasks.setDue(id, const Due(date: '2026-10-26'));
       expect((await task(id)).due!.isRecurring, isFalse);
     });
+
+    test('срок, который не примет расчёт (часовое правило без времени, битая '
+        'строка), — отказ до записи, срок прежний', () async {
+      final hourly = _due('2026-10-26', 'FREQ=HOURLY', time: '10:00');
+      final id = await app.tasks.add(content: 'x', due: hourly);
+
+      await expectLater(
+        app.tasks.setDue(id, dueWithTime(hourly, null)),
+        _rejected(RejectReason.brokenRecurrence),
+      );
+      await expectLater(
+        app.tasks.setDue(id, _due('2026-10-26', 'FREQ=SOMETIMES')),
+        _rejected(RejectReason.brokenRecurrence),
+      );
+      expect((await task(id)).due, hourly);
+    });
   });
 
   group('О-19: повторяющаяся задача в группе завершается навсегда', () {

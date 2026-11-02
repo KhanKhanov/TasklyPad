@@ -103,12 +103,13 @@ class _SideView extends ConsumerWidget {
         : side.deletes
         ? l10n.conflictKeepDeleted
         : l10n.conflictRestore;
+    // Обе стороны в одинаковой рамке; действующую отмечает надпись
+    // «Действует сейчас», а не цвет рамки.
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(
-          color: side.isCurrent ? palette.accent : palette.divider,
-        ),
+        color: palette.background,
+        border: Border.all(color: palette.outline),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(

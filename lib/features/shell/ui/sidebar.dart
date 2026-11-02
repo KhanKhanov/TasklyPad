@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflicts_navigation.dart';
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
@@ -11,6 +13,7 @@ import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_tile.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../state/sidebar_state.dart';
+import 'account_menu.dart';
 import 'sidebar_items.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Фильтры и метки», «Избранное»
@@ -40,40 +43,10 @@ class Sidebar extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 8, 10, 4),
               child: Row(
                 children: [
-                  // Меню под названием — как меню аккаунта в Todoist:
-                  // «Настройки» (`o s`).
-                  Expanded(
+                  const Expanded(
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: PopupMenuButton<void>(
-                        tooltip: l10n.settings,
-                        itemBuilder: (context) => [
-                          PopupMenuItem<void>(
-                            onTap: () => navigate(context, '/settings'),
-                            child: Text(l10n.settings),
-                          ),
-                        ],
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                l10n.appTitle,
-                                style: TextStyle(
-                                  color: palette.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              Icon(
-                                Icons.keyboard_arrow_down,
-                                size: 18,
-                                color: palette.textSecondary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      child: AccountMenu(),
                     ),
                   ),
                   IconButton(
@@ -151,7 +124,13 @@ class Sidebar extends ConsumerWidget {
           count: conflicts,
           countColor: AppPalette.of(context).danger,
           selected: location == '/conflicts',
-          onTap: () => navigate(context, '/conflicts'),
+          onTap: () {
+            final scaffold = Scaffold.maybeOf(context);
+            if (scaffold != null && scaffold.isDrawerOpen) {
+              scaffold.closeDrawer();
+            }
+            showConflictsScreen(GoRouter.of(context));
+          },
         ),
       if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
         SidebarGroupHeader(label: l10n.favorites),

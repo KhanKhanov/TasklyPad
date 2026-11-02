@@ -139,6 +139,8 @@
   "chooseFolder": "Choose folder…",
   "changeFolder": "Change folder…",
   "syncNow": "Sync now",
+  "actionBack": "Back",
+  "deadlineInputHint": "Type a deadline",
   "syncRunning": "Syncing…",
   "syncLast": "Last synced: {time}",
   "syncNever": "Not synced yet",

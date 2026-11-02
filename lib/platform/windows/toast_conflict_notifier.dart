@@ -97,6 +97,15 @@ final class ToastConflictNotifier implements ConflictNotifier {
     await _plugin.show(id: _nextId++, title: title, body: body);
   }
 
+  /// Уведомлений ещё не показывали — плагин не трогаем. `cancelAll` снимает
+  /// все уведомления приложения: пока других нет, это только о конфликтах;
+  /// с напоминаниями — снимать свои id (О-37, M7).
+  @override
+  Future<void> clear() async {
+    if (_ready == null || !await _ensurePlugin()) return;
+    await _plugin.cancelAll();
+  }
+
   @override
   Stream<void> get opened => _opened.stream;
 }

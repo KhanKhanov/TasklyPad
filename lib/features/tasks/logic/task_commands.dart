@@ -104,8 +104,12 @@ final class TaskCommands {
     return _update(id, {TaskFields.priority: priority});
   }
 
-  /// Срок; `null` убирает срок.
+  /// Срок; `null` убирает срок. Повторяющийся срок, по которому расчёт не
+  /// найдёт следующее вхождение (часовое правило без времени, битая строка
+  /// правила), — [RejectReason.brokenRecurrence] до записи: иначе выполнение
+  /// такой задачи отказало бы потом.
   Future<Undo> setDue(String id, Due? due) async {
+    if (due != null && due.isRecurring) _next(due, _clock.nowWall());
     await _alive(id);
     final undo = await _mutator.capture([
       _target(id, {TaskFields.due}),
@@ -288,6 +292,19 @@ final class TaskCommands {
     return overdue
         ? due.copyWith(date: isoDate(today.add(const Duration(days: 1))))
         : following;
+  }
+
+  /// Примет ли [setDue] срок [due] в момент [now] (стенное время): планировщик
+  /// не предлагает правку, от которой команда откажет («Убрать время» у
+  /// часового правила).
+  static bool acceptsDue(Due due, DateTime now) {
+    if (!due.isRecurring) return true;
+    try {
+      _next(due, now);
+      return true;
+    } on CommandRejected {
+      return false;
+    }
   }
 
   /// [nextOccurrence] с отказом вместо FormatException: битое правило

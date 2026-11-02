@@ -472,6 +472,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get syncNever => 'Ещё не синхронизировалось';
 
   @override
+  String get deadlineInputHint => 'Введите дедлайн';
+
+  @override
+  String get actionBack => 'Назад';
+
+  @override
   String syncIssues(int count) {
     return 'Пока не прочитано файлов других устройств: $count. Облако могло ещё не докачать их — повторю при следующей синхронизации.';
   }
