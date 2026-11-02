@@ -281,7 +281,8 @@ String? _dayNames(String byDay, _Words w) {
   return names.join(', ');
 }
 
-/// ` until jan 14 2027`, « до 14 янв 2027»; `UNTIL` с временем — пусто.
+/// ` until jan 14 2027`, « до 14 янв 2027»; `UNTIL` с временем или с днём,
+/// которого нет, — пусто.
 String _untilText(String until, _Words w) {
   final d = rruleUntilDay(until);
   if (d == null) return '';

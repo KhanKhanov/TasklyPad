@@ -36,14 +36,19 @@ String rruleUntilDate(DateTime day) =>
 
 final RegExp _untilDay = RegExp(r'^(\d{4})(\d{2})(\d{2})$');
 
-/// Дата `UNTIL` без времени (`YYYYMMDD`) — числа как записаны, без проверки,
-/// что такой день есть; `null` — `UNTIL` с временем или не дата.
+/// Дата `UNTIL` без времени (`YYYYMMDD`); `null` — `UNTIL` с временем, не
+/// дата или дня нет (`20271301`, `20261131`): такая строка могла прийти только
+/// испорченной, и текст правила и окно не должны ни падать, ни сдвигать её на
+/// другой день (решение 1А «Ход M3.8»).
 ({int year, int month, int day})? rruleUntilDay(String value) {
   final m = _untilDay.firstMatch(value);
   if (m == null) return null;
-  return (
-    year: int.parse(m[1]!),
-    month: int.parse(m[2]!),
-    day: int.parse(m[3]!),
+  final (year, month, day) = (
+    int.parse(m[1]!),
+    int.parse(m[2]!),
+    int.parse(m[3]!),
   );
+  final at = DateTime.utc(year, month, day);
+  if (at.year != year || at.month != month || at.day != day) return null;
+  return (year: year, month: month, day: day);
 }
