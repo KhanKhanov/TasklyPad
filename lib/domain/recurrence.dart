@@ -28,6 +28,11 @@ import 'models.dart';
 /// - перенесённое вхождение (решение 10А): серия считается от текущего,
 ///   перенесённого, срока — правило с днями (`every tue`) само возвращается
 ///   к расписанию, интервальное (`every 12 days`) идёт от новой даты;
+/// - время вхождения, перенесённое кнопкой «Время», серию не меняет: расчёт
+///   идёт от времени серии [Due.seriesClock], следующее вхождение — в него
+///   (help «Introduction to recurring dates», решение 1А по О-65); у часового
+///   правила время — начало отсчёта, и «Время» сдвигает всю серию (решение
+///   3А по О-65);
 /// - несколько строк RRULE — ближайшее из их вхождений;
 /// - `UNTIL` включительно; «до 3 ноября» записывается концом дня
 ///   `UNTIL=20261103T235959Z`, иначе срок со временем в последний день не
@@ -42,8 +47,8 @@ import 'models.dart';
 /// Просроченную задачу «Отложить» переносит на завтра (help) — это делает
 /// вызывающий, не эта функция.
 ///
-/// Новый срок — копия [due] с другими датой и временем: текст, язык, правило
-/// и пояс сохраняются.
+/// Новый срок — копия [due] с другими датой и временем и без
+/// [Due.seriesTime]: текст, язык, правило и пояс сохраняются.
 ///
 /// Строка правила проверяется строго ([_parseRule], SYNC_DESIGN «Проекции»):
 /// чужая или битая строка из папки синхронизации не должна ни подвесить
@@ -74,10 +79,12 @@ Due? nextOccurrence(
   }
   final rules = [for (final line in rule.rrule) _parseRule(line)];
   final hourly = rules.any((r) => r.frequency == rfc.Frequency.hourly);
-  final time = due.time;
-  if (hourly && time == null) {
+  if (hourly && due.time == null) {
     throw FormatException('часовое правило у срока без времени', rule.rrule);
   }
+  // Время серии: вхождение, перенесённое «Временем», считается вхождением
+  // серии в тот же день — следующее идёт после него, во время серии.
+  final time = hourly ? due.time : due.seriesClock;
 
   final dueAt = _wallDateTime(due.date, time);
   final now = DateTime.utc(
@@ -127,8 +134,28 @@ Due? nextOccurrence(
   return due.copyWith(
     date: _isoDate(next),
     time: time == null ? null : _hhmm(next),
+    // Серия без времени, а вхождение было со временем — пояс уходит с ним.
+    tz: time == null && due.time != null ? null : due.tz,
+    seriesTime: null,
   );
 }
+
+/// Срок [due] с временем серии вместо перенесённого времени вхождения —
+/// новое вхождение не по расчёту (просроченное «Отложить» — на завтра).
+Due withSeriesTime(Due due) {
+  if (due.seriesTime == null) return due;
+  final time = due.seriesClock;
+  return due.copyWith(
+    time: time,
+    tz: time == null ? null : due.tz,
+    seriesTime: null,
+  );
+}
+
+/// Есть часовое правило (`FREQ=HOURLY`): его время — начало отсчёта серии.
+/// Строка не проверяется — битую отвергнет [nextOccurrence].
+bool hasHourlyRule(RecurrenceRule rule) =>
+    rule.rrule.any((line) => line.split(';').contains('FREQ=HOURLY'));
 
 /// Начало серии [start], сдвинутое целыми периодами (час, день, неделя ×
 /// `INTERVAL`) ближе к [after]: пакет перебирает периоды от начала по одному,

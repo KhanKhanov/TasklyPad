@@ -101,6 +101,7 @@ const Map<String, Map<String, Set<String>>> mergedObjectFields = {
       DueKeys.string,
       DueKeys.lang,
       DueKeys.rule,
+      DueKeys.seriesTime,
     },
     TaskFields.deadline: {DeadlineKeys.date},
     TaskFields.duration: {DurationKeys.amount, DurationKeys.unit},
@@ -152,6 +153,12 @@ abstract final class DueKeys {
   /// Объект [RuleKeys]; есть — задача повторяющаяся. `is_recurring` Todoist
   /// не пишется: это «правило есть».
   static const String rule = 'rule';
+
+  /// Время серии повторяющегося срока, когда «Время» перенесло только
+  /// ближайшее вхождение: `HH:MM`, пустая строка — серия без времени, ключа
+  /// нет — время серии равно [time] (решение 1А по О-65, SYNC_DESIGN
+  /// «Проекции»).
+  static const String seriesTime = 'series_time';
 }
 
 /// Ключи правила повторения в сроке. Набор закрыт: правило заменяется

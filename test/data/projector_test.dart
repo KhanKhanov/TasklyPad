@@ -157,6 +157,36 @@ void main() {
   }
 
   test(
+    'время серии — в своей колонке у повторяющегося срока; у срока без '
+    'правила — пусто; испорченное — пусто с предупреждением (О-65)',
+    () async {
+      const daily = {
+        'rrule': ['FREQ=DAILY'],
+        'from_completion': false,
+      };
+      Future<String?> seriesOf(Map<String, Object?> due) async {
+        await put(EntityTypes.task, 't1', TaskFields.due, due);
+        return (await task('t1'))!.dueSeriesTime;
+      }
+
+      final base = {'date': '2026-10-26', 'time': '10:00', 'rule': daily};
+      expect(await seriesOf({...base, 'series_time': '07:00'}), '07:00');
+      expect(await seriesOf({...base, 'series_time': ''}), '');
+      expect(await seriesOf({...base}), isNull);
+      expect(warnings, isEmpty);
+      expect(
+        await seriesOf({'date': '2026-10-26', 'series_time': '07:00'}),
+        isNull,
+      );
+      for (final bad in ['25:99', '7:00', 700]) {
+        expect(await seriesOf({...base, 'series_time': bad}), isNull);
+      }
+      expect(warnings, hasLength(3));
+      expect(warnings.first, contains('series_time'));
+    },
+  );
+
+  test(
     'битые текст и язык срока — дата остаётся, они пустые, предупреждения',
     () async {
       await put(EntityTypes.task, 't1', TaskFields.due, {

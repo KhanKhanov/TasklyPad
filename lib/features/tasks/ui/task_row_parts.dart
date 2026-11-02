@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
@@ -12,7 +13,9 @@ import 'task_actions.dart';
 
 /// Кружок задачи: обводка цвета приоритета; у выполненной — заливка с
 /// галочкой. Нажатие — выполнить (с «Отменить») или вернуть в работу;
-/// повторное нажатие, пока первое пишется, не действует. [enabled] `false` —
+/// повторное нажатие, пока первое пишется, не действует. Shift+клик по
+/// невыполненной повторяющейся — «Выполнить окончательно» (help «Use keyboard
+/// shortcuts»: «Complete and archive recurring task»). [enabled] `false` —
 /// проект в архиве.
 class TaskCheckCircle extends ConsumerStatefulWidget {
   const TaskCheckCircle({super.key, required this.task, this.enabled = true});
@@ -29,9 +32,16 @@ class _TaskCheckCircleState extends ConsumerState<TaskCheckCircle> {
 
   Future<void> _toggle() async {
     if (_busy) return;
+    final task = widget.task;
+    final forever =
+        HardwareKeyboard.instance.isShiftPressed &&
+        !task.isCompleted &&
+        (task.due?.isRecurring ?? false);
     setState(() => _busy = true);
     try {
-      await toggleComplete(context, ref, widget.task);
+      await (forever
+          ? completeForever(context, ref, task)
+          : toggleComplete(context, ref, task));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -109,7 +119,7 @@ class TaskText extends ConsumerWidget {
           onTap: onToggleCollapse,
         ),
       if (due != null) ...[
-        for (final label in [dueLabel(context, due.date, due.time, today)])
+        for (final label in [dueLabelOf(context, ref, due, today)])
           _Chip(
             icon: Icons.calendar_today_outlined,
             text: label.text,
@@ -119,7 +129,7 @@ class TaskText extends ConsumerWidget {
           ),
       ],
       if (deadline != null && deadlineShown(task, deadline, today)) ...[
-        for (final label in [dueLabel(context, deadline, null, today)])
+        for (final label in [deadlineLabel(context, deadline, today)])
           _Chip(
             icon: Icons.outlined_flag,
             text: label.text,

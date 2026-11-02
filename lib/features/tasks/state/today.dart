@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/data_providers.dart';
+import '../logic/due_dates.dart';
 
 part 'today.g.dart';
 
@@ -28,4 +29,34 @@ DateTime today(Ref ref) {
     lifecycle.dispose();
   });
   return day;
+}
+
+/// Время срока сегодня [date] [time] (`HH:MM`) прошло — срок красный, как
+/// просроченный (help «Introduction to dates and time»: зелёный — «haven't
+/// gone past the due time»). Пересчитывается в момент срока: таймер стоит
+/// только у сроков на сегодня со временем впереди.
+@riverpod
+bool dueTimePassed(Ref ref, String date, String time) {
+  final today = ref.watch(todayProvider);
+  final day = parseIsoDate(date);
+  final parts = time.split(':');
+  final (h, m) = parts.length == 2
+      ? (int.tryParse(parts.first), int.tryParse(parts.last))
+      : (null, null);
+  if (day == null || day != today || h == null || m == null) return false;
+  final now = ref.watch(clockProvider).nowWall();
+  // Стенное время — в обёртке UTC, как у `nowWall`.
+  final at = DateTime.utc(day.year, day.month, day.day, h, m);
+  if (!now.isBefore(at)) return true;
+  // Ждём по стенным часам, как [today]: в ночь перевода часов таймер
+  // сработает на час раньше (и встанет заново) или позже. Пояс срока `tz`
+  // не учитывается — время сравнивается по часам устройства (О-64).
+  final timer = Timer(at.difference(now), ref.invalidateSelf);
+  // Таймер на телефоне в глубоком сне стоит — как у [today].
+  final lifecycle = AppLifecycleListener(onResume: ref.invalidateSelf);
+  ref.onDispose(() {
+    timer.cancel();
+    lifecycle.dispose();
+  });
+  return false;
 }

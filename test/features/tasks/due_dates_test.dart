@@ -38,6 +38,22 @@ void main() {
     expect(kind(7), DueKind.later);
   });
 
+  test('цвет срока по help «Introduction to dates and time»: просрочено, '
+      'сегодня, завтра, 2–7 дней, дальше без цвета', () {
+    DueTone tone(int days, {bool passed = false}) => dueTone(
+      DateTime(2026, 10, 26).add(Duration(days: days)),
+      monday,
+      timePassed: passed,
+    );
+    expect(tone(-1), DueTone.overdue);
+    expect(tone(0), DueTone.today);
+    expect(tone(0, passed: true), DueTone.overdue);
+    expect(tone(1), DueTone.tomorrow);
+    expect(tone(2), DueTone.nextWeek);
+    expect(tone(7), DueTone.nextWeek);
+    expect(tone(8), DueTone.none);
+  });
+
   // В зоне с переходом на летнее и зимнее время в сутках перехода 23 или
   // 25 часов. Арифметика по 24 часа там сдвигала дату; тест проходит по всем
   // дням двух лет и ловит это в поясе с переходами: в CI он идёт ещё раз с
@@ -93,11 +109,52 @@ void main() {
     expect(dueOnDate(null, '2026-10-27'), const Due(date: '2026-10-27'));
   });
 
-  test('dueWithTime — время меняется, правило сохраняется; без времени — без '
-      'пояса', () {
-    expect(dueWithTime(weekly, '09:30'), weekly.copyWith(time: '09:30'));
-    expect(dueWithTime(weekly, null), weekly.copyWith(time: null, tz: null));
+  test('dueWithTime у повторяющегося — время только у вхождения, время серии '
+      'запомнено; пояс остаётся, пока у серии есть время (решения 1А и 2А по '
+      'О-65)', () {
+    expect(
+      dueWithTime(weekly, '09:30'),
+      weekly.copyWith(time: '09:30', seriesTime: '07:00'),
+    );
+    expect(
+      dueWithTime(weekly, null),
+      weekly.copyWith(time: null, seriesTime: '07:00'),
+    );
     expect(dueWithTime(weekly, null).isRecurring, isTrue);
+    // Второй перенос помнит серию, возврат к её времени ключ снимает.
+    final moved = dueWithTime(weekly, '09:30');
+    expect(dueWithTime(moved, '10:00').seriesTime, '07:00');
+    expect(dueWithTime(moved, '07:00'), weekly);
+    // Серия без времени — пустая строка.
+    final allDay = weekly.copyWith(time: null, tz: null);
+    expect(dueWithTime(allDay, '09:00').seriesTime, '');
+    expect(dueWithTime(allDay, '09:00').seriesClock, isNull);
+    // Ни у вхождения, ни у серии времени нет — пояс уходит.
+    expect(dueWithTime(allDay.copyWith(tz: 'Europe/Moscow'), null).tz, isNull);
+  });
+
+  test('dueWithTime для задачи из быстрого добавления — время всей серии '
+      '(решение А по О-65)', () {
+    expect(
+      dueWithTime(weekly, '09:30', wholeSeries: true),
+      weekly.copyWith(time: '09:30'),
+    );
+    expect(
+      dueWithTime(weekly, null, wholeSeries: true),
+      weekly.copyWith(time: null, tz: null),
+    );
+  });
+
+  test('dueWithTime у часового правила сдвигает всю серию (решение 3А по '
+      'О-65); у обычного срока времени серии нет', () {
+    final hourly = weekly.copyWith(
+      rule: const RecurrenceRule(rrule: ['FREQ=HOURLY'], fromCompletion: false),
+    );
+    expect(dueWithTime(hourly, '09:30'), hourly.copyWith(time: '09:30'));
+    expect(
+      dueWithTime(const Due(date: '2026-10-26', time: '07:00'), '09:30'),
+      const Due(date: '2026-10-26', time: '09:30'),
+    );
   });
 
   test('неповторяющийся срок с текстом: новая дата или время — текст и язык '

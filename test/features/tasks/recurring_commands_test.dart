@@ -337,6 +337,93 @@ void main() {
       );
       expect((await task(id)).due, hourly);
     });
+
+    test('«Время» → выполнить → у следующего вхождения прежнее время серии; '
+        'время серии переживает пересборку (О-65)', () async {
+      final id = await app.tasks.add(
+        content: 'x',
+        due: _due('2026-10-27', 'FREQ=DAILY', time: '07:00'),
+      );
+      await app.tasks.setDue(id, dueWithTime((await task(id)).due!, '09:30'));
+      await device.services.engine.rebuild();
+      final moved = (await task(id)).due!;
+      expect((moved.time, moved.seriesTime), ('09:30', '07:00'));
+
+      await app.tasks.complete(id);
+      final next = (await task(id)).due!;
+      expect(
+        (next.date, next.time, next.seriesTime),
+        ('2026-10-28', '07:00', null),
+      );
+      final stored = await device.services.store.fieldValue(
+        EntityTypes.task,
+        id,
+        TaskFields.due,
+      );
+      expect((stored! as Map).containsKey(DueKeys.seriesTime), isFalse);
+    });
+
+    test('«Отменить» выполнения и «Отложить» возвращает перенесённое время и '
+        'время серии', () async {
+      final id = await app.tasks.add(
+        content: 'x',
+        due: _due('2026-10-27', 'FREQ=DAILY', time: '07:00'),
+      );
+      await app.tasks.setDue(id, dueWithTime((await task(id)).due!, '09:30'));
+      final moved = (await task(id)).due!;
+      await (await app.tasks.complete(id)).call();
+      expect((await task(id)).due, moved);
+      await (await app.tasks.postpone(id)).call();
+      expect((await task(id)).due, moved);
+    });
+
+    test(
+      '«Отложить» просроченное вхождение с перенесённым временем — завтра во '
+      'время серии',
+      () async {
+        final id = await app.tasks.add(
+          content: 'x',
+          due: _due('2026-10-25', 'FREQ=DAILY', time: '07:00'),
+        );
+        await app.tasks.setDue(id, dueWithTime((await task(id)).due!, '08:00'));
+        await app.tasks.postpone(id);
+        final due = (await task(id)).due!;
+        expect(
+          (due.date, due.time, due.seriesTime),
+          ('2026-10-27', '07:00', null),
+        );
+      },
+    );
+
+    test('дата в названии: название и срок — одно действие, правило '
+        'заменяется; «без срока» убирает срок; битое правило — отказ до '
+        'записи', () async {
+      final id = await app.tasks.add(
+        content: 'x',
+        due: _due('2026-10-26', 'FREQ=DAILY'),
+      );
+      final before = (await device.ownOps()).length;
+      final weekly = _due('2026-10-26', 'FREQ=WEEKLY;BYDAY=MO');
+      await app.tasks.renameWithDue(id, 'Планёрка', weekly);
+      final ops = (await device.ownOps()).skip(before).toList();
+      expect(
+        {for (final op in ops) op.field},
+        {TaskFields.content, TaskFields.due},
+      );
+      expect({for (final op in ops) op.hlc}, hasLength(1));
+      expect(
+        ((await task(id)).content, (await task(id)).due),
+        ('Планёрка', weekly),
+      );
+
+      await app.tasks.renameWithDue(id, 'Без срока', null);
+      expect((await task(id)).due, isNull);
+      await expectLater(
+        app.tasks.renameWithDue(id, 'y', _due('2026-10-26', 'FREQ=SOMETIMES')),
+        _rejected(RejectReason.brokenRecurrence),
+      );
+      expect((await task(id)).content, 'Без срока');
+    });
   });
 
   group('О-19: повторяющаяся задача в группе завершается навсегда', () {

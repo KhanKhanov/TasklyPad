@@ -779,6 +779,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get valueNotArchived => 'Not archived';
 
   @override
+  String get valueOn => 'On';
+
+  @override
+  String get valueOff => 'Off';
+
+  @override
   String get valueDeleted => 'Deleted';
 
   @override

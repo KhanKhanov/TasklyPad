@@ -22,6 +22,7 @@ class SchedulerBottomBar extends StatelessWidget {
     required this.lang,
     required this.now,
     required this.onDone,
+    this.wholeSeries = false,
   });
 
   final Due? current;
@@ -34,8 +35,14 @@ class SchedulerBottomBar extends StatelessWidget {
   final DateTime now;
   final ValueChanged<Due?> onDone;
 
+  /// «Время» меняет всю серию, а не только ближайшее вхождение: у задачи из
+  /// быстрого добавления вхождений ещё не было (решение А по О-65).
+  final bool wholeSeries;
+
   Future<void> _time(BuildContext context, Due current) async {
-    if (current.time != null) return onDone(dueWithTime(current, null));
+    if (current.time != null) {
+      return onDone(dueWithTime(current, null, wholeSeries: wholeSeries));
+    }
     final time = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 9, minute: 0),
@@ -43,7 +50,7 @@ class SchedulerBottomBar extends StatelessWidget {
     if (time == null || !context.mounted) return;
     final hh = time.hour.toString().padLeft(2, '0');
     final mm = time.minute.toString().padLeft(2, '0');
-    onDone(dueWithTime(current, '$hh:$mm'));
+    onDone(dueWithTime(current, '$hh:$mm', wholeSeries: wholeSeries));
   }
 
   Future<void> _repeat(BuildContext context, Object pick) async {
@@ -83,7 +90,10 @@ class SchedulerBottomBar extends StatelessWidget {
         children: [
           if (due != null &&
               (due.time == null ||
-                  TaskCommands.acceptsDue(dueWithTime(due, null), now)))
+                  TaskCommands.acceptsDue(
+                    dueWithTime(due, null, wholeSeries: wholeSeries),
+                    now,
+                  )))
             TextButton.icon(
               icon: const Icon(Icons.schedule, size: 18),
               label: Text(due.time == null ? l10n.addTime : l10n.removeTime),
@@ -140,8 +150,14 @@ class SchedulerBottomBar extends StatelessWidget {
               tooltip: l10n.repeatRemove,
               iconSize: 18,
               icon: const Icon(Icons.close),
-              onPressed: () =>
-                  onDone(due!.copyWith(rule: null, string: null, lang: null)),
+              onPressed: () => onDone(
+                due!.copyWith(
+                  rule: null,
+                  string: null,
+                  lang: null,
+                  seriesTime: null,
+                ),
+              ),
             ),
           if (due != null)
             TextButton.icon(

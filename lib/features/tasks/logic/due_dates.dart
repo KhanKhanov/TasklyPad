@@ -4,6 +4,7 @@
 library;
 
 import '../../../domain/models.dart';
+import '../../../domain/recurrence.dart';
 
 /// Дата `YYYY-MM-DD` — как в поле срока.
 String isoDate(DateTime day) =>
@@ -66,6 +67,24 @@ DueKind dueKind(DateTime due, DateTime today) {
   };
 }
 
+/// Цвет срока в строке задачи (help «Introduction to dates and time»).
+enum DueTone { overdue, today, tomorrow, nextWeek, none }
+
+/// Цвет срока [due] относительно [today]: просрочено — красный, как и
+/// сегодня, когда время срока [timePassed] прошло; сегодня — зелёный;
+/// завтра — коричневый; через 2–7 дней — фиолетовый; дальше — без цвета.
+DueTone dueTone(DateTime due, DateTime today, {bool timePassed = false}) {
+  DateTime utc(DateTime t) => DateTime.utc(t.year, t.month, t.day);
+  final days = utc(due).difference(utc(today)).inDays;
+  return switch (days) {
+    < 0 => DueTone.overdue,
+    0 => timePassed ? DueTone.overdue : DueTone.today,
+    1 => DueTone.tomorrow,
+    <= 7 => DueTone.nextWeek,
+    _ => DueTone.none,
+  };
+}
+
 /// Срок [current] на дату [date] — выбор даты в планировщике. Время и пояс
 /// сохраняются (смена даты не делает срок с поясом «плавающим»), правило
 /// повторения — тоже: дата из планировщика переносит только вхождение
@@ -81,10 +100,26 @@ Due dueOnDate(Due? current, String date) => current == null
       );
 
 /// Срок [current] с временем [time] (`HH:MM`; `null` — убрать время), правило
-/// повторения сохраняется, текст неповторяющегося срока сбрасывается.
-Due dueWithTime(Due current, String? time) => _withoutStaleText(
-  current.copyWith(time: time, tz: time == null ? null : current.tz),
-);
+/// повторения сохраняется, текст неповторяющегося срока сбрасывается. У
+/// повторяющегося меняется только ближайшее вхождение, время серии
+/// запоминается в [Due.seriesTime] (help «Introduction to recurring dates»,
+/// решения 1А и 2А по О-65); у часового правила время — начало отсчёта, и
+/// меняется вся серия (решение 3А). [wholeSeries] — время всей серии: у
+/// задачи из быстрого добавления вхождений ещё не было (решение А по О-65).
+Due dueWithTime(Due current, String? time, {bool wholeSeries = false}) {
+  final rule = current.rule;
+  final keepsSeries = !wholeSeries && rule != null && !hasHourlyRule(rule);
+  final series = keepsSeries ? current.seriesClock : null;
+  return _withoutStaleText(
+    current.copyWith(
+      time: time,
+      // Пояс уходит, только когда времени нет ни у вхождения, ни у серии.
+      tz: time == null && series == null ? null : current.tz,
+      // Вхождение вернулось ко времени серии — запоминать нечего.
+      seriesTime: !keepsSeries || series == time ? null : (series ?? ''),
+    ),
+  );
+}
 
 /// Неповторяющийся срок без `string` и `lang`: после новой даты или времени
 /// введённый текст («завтра в 9») срок больше не описывает. У повторяющегося

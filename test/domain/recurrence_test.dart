@@ -21,6 +21,7 @@ Due _due(Map<String, Object?> json) {
     date: json['date']! as String,
     time: json['time'] as String?,
     tz: json['tz'] as String?,
+    seriesTime: json['series_time'] as String?,
     string: 'каждый раз',
     lang: 'ru',
     rule: RecurrenceRule(
@@ -54,12 +55,15 @@ void main() {
         expect(next, isNull);
       } else {
         // Новый срок — тот же, кроме даты и времени: текст, язык, правило и
-        // пояс сохраняются.
+        // пояс сохраняются, время серии уходит (вхождение снова в ней).
+        final time = expected['time'] as String?;
         expect(
           next,
           due.copyWith(
             date: expected['date']! as String,
-            time: expected['time'] as String?,
+            time: time,
+            tz: expected.containsKey('tz') ? expected['tz'] as String? : due.tz,
+            seriesTime: null,
           ),
         );
       }

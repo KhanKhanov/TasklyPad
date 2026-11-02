@@ -2578,6 +2578,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _dueSeriesTimeMeta = const VerificationMeta(
+    'dueSeriesTime',
+  );
+  @override
+  late final GeneratedColumn<String> dueSeriesTime = GeneratedColumn<String>(
+    'due_series_time',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _deadlineDateMeta = const VerificationMeta(
     'deadlineDate',
   );
@@ -2695,6 +2706,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     dueLang,
     dueRule,
     dueIsRecurring,
+    dueSeriesTime,
     deadlineDate,
     durationAmount,
     durationUnit,
@@ -2808,6 +2820,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         dueIsRecurring.isAcceptableOrUnknown(
           data['due_is_recurring']!,
           _dueIsRecurringMeta,
+        ),
+      );
+    }
+    if (data.containsKey('due_series_time')) {
+      context.handle(
+        _dueSeriesTimeMeta,
+        dueSeriesTime.isAcceptableOrUnknown(
+          data['due_series_time']!,
+          _dueSeriesTimeMeta,
         ),
       );
     }
@@ -2946,6 +2967,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}due_is_recurring'],
       )!,
+      dueSeriesTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}due_series_time'],
+      ),
       deadlineDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}deadline_date'],
@@ -3018,6 +3043,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   /// разбора JSON.
   final bool dueIsRecurring;
 
+  /// Время серии повторяющегося срока ([DueKeys.seriesTime]): `HH:MM`, пустая
+  /// строка — серия без времени, `null` — время серии равно [dueTime].
+  final String? dueSeriesTime;
+
   /// Дедлайн — отдельная от срока дата `YYYY-MM-DD`, без времени.
   final String? deadlineDate;
 
@@ -3049,6 +3078,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     this.dueLang,
     this.dueRule,
     required this.dueIsRecurring,
+    this.dueSeriesTime,
     this.deadlineDate,
     this.durationAmount,
     this.durationUnit,
@@ -3094,6 +3124,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       map['due_rule'] = Variable<String>(dueRule);
     }
     map['due_is_recurring'] = Variable<bool>(dueIsRecurring);
+    if (!nullToAbsent || dueSeriesTime != null) {
+      map['due_series_time'] = Variable<String>(dueSeriesTime);
+    }
     if (!nullToAbsent || deadlineDate != null) {
       map['deadline_date'] = Variable<String>(deadlineDate);
     }
@@ -3150,6 +3183,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ? const Value.absent()
           : Value(dueRule),
       dueIsRecurring: Value(dueIsRecurring),
+      dueSeriesTime: dueSeriesTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueSeriesTime),
       deadlineDate: deadlineDate == null && nullToAbsent
           ? const Value.absent()
           : Value(deadlineDate),
@@ -3192,6 +3228,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dueLang: serializer.fromJson<String?>(json['dueLang']),
       dueRule: serializer.fromJson<String?>(json['dueRule']),
       dueIsRecurring: serializer.fromJson<bool>(json['dueIsRecurring']),
+      dueSeriesTime: serializer.fromJson<String?>(json['dueSeriesTime']),
       deadlineDate: serializer.fromJson<String?>(json['deadlineDate']),
       durationAmount: serializer.fromJson<int?>(json['durationAmount']),
       durationUnit: serializer.fromJson<String?>(json['durationUnit']),
@@ -3221,6 +3258,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'dueLang': serializer.toJson<String?>(dueLang),
       'dueRule': serializer.toJson<String?>(dueRule),
       'dueIsRecurring': serializer.toJson<bool>(dueIsRecurring),
+      'dueSeriesTime': serializer.toJson<String?>(dueSeriesTime),
       'deadlineDate': serializer.toJson<String?>(deadlineDate),
       'durationAmount': serializer.toJson<int?>(durationAmount),
       'durationUnit': serializer.toJson<String?>(durationUnit),
@@ -3248,6 +3286,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     Value<String?> dueLang = const Value.absent(),
     Value<String?> dueRule = const Value.absent(),
     bool? dueIsRecurring,
+    Value<String?> dueSeriesTime = const Value.absent(),
     Value<String?> deadlineDate = const Value.absent(),
     Value<int?> durationAmount = const Value.absent(),
     Value<String?> durationUnit = const Value.absent(),
@@ -3272,6 +3311,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     dueLang: dueLang.present ? dueLang.value : this.dueLang,
     dueRule: dueRule.present ? dueRule.value : this.dueRule,
     dueIsRecurring: dueIsRecurring ?? this.dueIsRecurring,
+    dueSeriesTime: dueSeriesTime.present
+        ? dueSeriesTime.value
+        : this.dueSeriesTime,
     deadlineDate: deadlineDate.present ? deadlineDate.value : this.deadlineDate,
     durationAmount: durationAmount.present
         ? durationAmount.value
@@ -3304,6 +3346,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dueIsRecurring: data.dueIsRecurring.present
           ? data.dueIsRecurring.value
           : this.dueIsRecurring,
+      dueSeriesTime: data.dueSeriesTime.present
+          ? data.dueSeriesTime.value
+          : this.dueSeriesTime,
       deadlineDate: data.deadlineDate.present
           ? data.deadlineDate.value
           : this.deadlineDate,
@@ -3345,6 +3390,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('dueLang: $dueLang, ')
           ..write('dueRule: $dueRule, ')
           ..write('dueIsRecurring: $dueIsRecurring, ')
+          ..write('dueSeriesTime: $dueSeriesTime, ')
           ..write('deadlineDate: $deadlineDate, ')
           ..write('durationAmount: $durationAmount, ')
           ..write('durationUnit: $durationUnit, ')
@@ -3374,6 +3420,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     dueLang,
     dueRule,
     dueIsRecurring,
+    dueSeriesTime,
     deadlineDate,
     durationAmount,
     durationUnit,
@@ -3402,6 +3449,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.dueLang == this.dueLang &&
           other.dueRule == this.dueRule &&
           other.dueIsRecurring == this.dueIsRecurring &&
+          other.dueSeriesTime == this.dueSeriesTime &&
           other.deadlineDate == this.deadlineDate &&
           other.durationAmount == this.durationAmount &&
           other.durationUnit == this.durationUnit &&
@@ -3428,6 +3476,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<String?> dueLang;
   final Value<String?> dueRule;
   final Value<bool> dueIsRecurring;
+  final Value<String?> dueSeriesTime;
   final Value<String?> deadlineDate;
   final Value<int?> durationAmount;
   final Value<String?> durationUnit;
@@ -3453,6 +3502,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.dueLang = const Value.absent(),
     this.dueRule = const Value.absent(),
     this.dueIsRecurring = const Value.absent(),
+    this.dueSeriesTime = const Value.absent(),
     this.deadlineDate = const Value.absent(),
     this.durationAmount = const Value.absent(),
     this.durationUnit = const Value.absent(),
@@ -3479,6 +3529,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.dueLang = const Value.absent(),
     this.dueRule = const Value.absent(),
     this.dueIsRecurring = const Value.absent(),
+    this.dueSeriesTime = const Value.absent(),
     this.deadlineDate = const Value.absent(),
     this.durationAmount = const Value.absent(),
     this.durationUnit = const Value.absent(),
@@ -3505,6 +3556,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<String>? dueLang,
     Expression<String>? dueRule,
     Expression<bool>? dueIsRecurring,
+    Expression<String>? dueSeriesTime,
     Expression<String>? deadlineDate,
     Expression<int>? durationAmount,
     Expression<String>? durationUnit,
@@ -3531,6 +3583,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (dueLang != null) 'due_lang': dueLang,
       if (dueRule != null) 'due_rule': dueRule,
       if (dueIsRecurring != null) 'due_is_recurring': dueIsRecurring,
+      if (dueSeriesTime != null) 'due_series_time': dueSeriesTime,
       if (deadlineDate != null) 'deadline_date': deadlineDate,
       if (durationAmount != null) 'duration_amount': durationAmount,
       if (durationUnit != null) 'duration_unit': durationUnit,
@@ -3559,6 +3612,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<String?>? dueLang,
     Value<String?>? dueRule,
     Value<bool>? dueIsRecurring,
+    Value<String?>? dueSeriesTime,
     Value<String?>? deadlineDate,
     Value<int?>? durationAmount,
     Value<String?>? durationUnit,
@@ -3585,6 +3639,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       dueLang: dueLang ?? this.dueLang,
       dueRule: dueRule ?? this.dueRule,
       dueIsRecurring: dueIsRecurring ?? this.dueIsRecurring,
+      dueSeriesTime: dueSeriesTime ?? this.dueSeriesTime,
       deadlineDate: deadlineDate ?? this.deadlineDate,
       durationAmount: durationAmount ?? this.durationAmount,
       durationUnit: durationUnit ?? this.durationUnit,
@@ -3645,6 +3700,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (dueIsRecurring.present) {
       map['due_is_recurring'] = Variable<bool>(dueIsRecurring.value);
     }
+    if (dueSeriesTime.present) {
+      map['due_series_time'] = Variable<String>(dueSeriesTime.value);
+    }
     if (deadlineDate.present) {
       map['deadline_date'] = Variable<String>(deadlineDate.value);
     }
@@ -3693,6 +3751,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('dueLang: $dueLang, ')
           ..write('dueRule: $dueRule, ')
           ..write('dueIsRecurring: $dueIsRecurring, ')
+          ..write('dueSeriesTime: $dueSeriesTime, ')
           ..write('deadlineDate: $deadlineDate, ')
           ..write('durationAmount: $durationAmount, ')
           ..write('durationUnit: $durationUnit, ')
@@ -6673,6 +6732,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> dueLang,
   Value<String?> dueRule,
   Value<bool> dueIsRecurring,
+  Value<String?> dueSeriesTime,
   Value<String?> deadlineDate,
   Value<int?> durationAmount,
   Value<String?> durationUnit,
@@ -6699,6 +6759,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> dueLang,
   Value<String?> dueRule,
   Value<bool> dueIsRecurring,
+  Value<String?> dueSeriesTime,
   Value<String?> deadlineDate,
   Value<int?> durationAmount,
   Value<String?> durationUnit,
@@ -6790,6 +6851,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<bool> get dueIsRecurring => $composableBuilder(
     column: $table.dueIsRecurring,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dueSeriesTime => $composableBuilder(
+    column: $table.dueSeriesTime,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6918,6 +6984,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get dueSeriesTime => $composableBuilder(
+    column: $table.dueSeriesTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get deadlineDate => $composableBuilder(
     column: $table.deadlineDate,
     builder: (column) => ColumnOrderings(column),
@@ -7017,6 +7088,11 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get dueSeriesTime => $composableBuilder(
+    column: $table.dueSeriesTime,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get deadlineDate => $composableBuilder(
     column: $table.deadlineDate,
     builder: (column) => column,
@@ -7097,6 +7173,7 @@ class $$TasksTableTableManager
                 Value<String?> dueLang = const Value.absent(),
                 Value<String?> dueRule = const Value.absent(),
                 Value<bool> dueIsRecurring = const Value.absent(),
+                Value<String?> dueSeriesTime = const Value.absent(),
                 Value<String?> deadlineDate = const Value.absent(),
                 Value<int?> durationAmount = const Value.absent(),
                 Value<String?> durationUnit = const Value.absent(),
@@ -7122,6 +7199,7 @@ class $$TasksTableTableManager
                 dueLang: dueLang,
                 dueRule: dueRule,
                 dueIsRecurring: dueIsRecurring,
+                dueSeriesTime: dueSeriesTime,
                 deadlineDate: deadlineDate,
                 durationAmount: durationAmount,
                 durationUnit: durationUnit,
@@ -7149,6 +7227,7 @@ class $$TasksTableTableManager
                 Value<String?> dueLang = const Value.absent(),
                 Value<String?> dueRule = const Value.absent(),
                 Value<bool> dueIsRecurring = const Value.absent(),
+                Value<String?> dueSeriesTime = const Value.absent(),
                 Value<String?> deadlineDate = const Value.absent(),
                 Value<int?> durationAmount = const Value.absent(),
                 Value<String?> durationUnit = const Value.absent(),
@@ -7174,6 +7253,7 @@ class $$TasksTableTableManager
                 dueLang: dueLang,
                 dueRule: dueRule,
                 dueIsRecurring: dueIsRecurring,
+                dueSeriesTime: dueSeriesTime,
                 deadlineDate: deadlineDate,
                 durationAmount: durationAmount,
                 durationUnit: durationUnit,

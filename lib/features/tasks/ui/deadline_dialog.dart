@@ -97,7 +97,7 @@ class _DeadlineSchedulerState extends ConsumerState<_DeadlineScheduler> {
             title: Text(
               typed.date == null
                   ? l10n.noDeadline
-                  : dueLabel(context, typed.date!, null, today).text,
+                  : deadlineLabel(context, typed.date!, today).text,
             ),
             onTap: () => _done(typed.date),
           ),

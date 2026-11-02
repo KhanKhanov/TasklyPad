@@ -100,7 +100,11 @@ class _ConflictNoticeListenerState
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
-    final text = conflictNoticeText(l10n, notice.cards);
+    final text = conflictNoticeText(
+      l10n,
+      notice.cards,
+      mobile: Theme.of(context).platform == TargetPlatform.android,
+    );
     final notifier = ref.read(conflictNotificationsProvider);
     try {
       if (!await notifier.isAppActive()) {

@@ -43,6 +43,11 @@ enum ConflictField {
   theme,
   appearance,
 
+  /// «Умное распознавание даты» и «Добавлять подзадачи снова» — флаги
+  /// настроек.
+  smartDateRecognition,
+  resetRecurringSubtasks,
+
   /// Удалено (`true`) или восстановлено, у метки задачи — снята или стоит.
   deleted,
 

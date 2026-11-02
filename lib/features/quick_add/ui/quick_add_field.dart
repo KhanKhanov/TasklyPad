@@ -1,6 +1,4 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme/app_palette.dart';
@@ -8,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../nlp/quick_add.dart';
 import '../logic/suggestions.dart';
 import '../state/quick_add_controller.dart';
+import 'highlight_tap_region.dart';
 import 'paste_lines.dart';
 import 'quick_add_suggestions.dart';
 
@@ -41,13 +40,11 @@ class QuickAddField extends StatefulWidget {
 class _QuickAddFieldState extends State<QuickAddField> {
   final LayerLink _link = LayerLink();
   final OverlayPortalController _portal = OverlayPortalController();
-  final GlobalKey _fieldKey = GlobalKey();
   int _selected = 0;
 
   /// Токен, список которого закрыт `Esc`: снова откроется, когда текст
   /// токена изменится.
   String? _closedFor;
-  Offset? _down;
 
   late final PasteLinesFormatter _paste = PasteLinesFormatter(
     (lines, joined) => widget.onPasteLines(lines, joined),
@@ -143,41 +140,6 @@ class _QuickAddFieldState extends State<QuickAddField> {
     return KeyEventResult.ignored;
   }
 
-  /// Нажатие, а не протяжка: по точке ищется подсвеченный участок.
-  void _onPointerUp(PointerUpEvent event) {
-    final down = _down;
-    _down = null;
-    if (down == null || (event.position - down).distance > kTouchSlop) return;
-    final editable = _renderEditable();
-    if (editable == null) return;
-    final local = editable.globalToLocal(event.position);
-    for (final h in widget.controller.highlights) {
-      final boxes = editable.getBoxesForSelection(
-        TextSelection(baseOffset: h.start, extentOffset: h.end),
-      );
-      if (boxes.any((b) => b.toRect().contains(local))) {
-        widget.controller.dismissAt(h.start);
-        return;
-      }
-    }
-  }
-
-  RenderEditable? _renderEditable() {
-    RenderEditable? found;
-    void visit(RenderObject o) {
-      if (found != null) return;
-      if (o is RenderEditable) {
-        found = o;
-      } else {
-        o.visitChildren(visit);
-      }
-    }
-
-    final root = _fieldKey.currentContext?.findRenderObject();
-    if (root != null) visit(root);
-    return found;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -215,13 +177,12 @@ class _QuickAddFieldState extends State<QuickAddField> {
               canRequestFocus: false,
               skipTraversal: true,
               onKeyEvent: _onKey,
-              child: Listener(
-                // Только основная кнопка: правый клик открывает меню поля.
-                onPointerDown: (e) =>
-                    _down = e.buttons & kPrimaryButton != 0 ? e.position : null,
-                onPointerUp: _onPointerUp,
+              child: HighlightTapRegion(
+                spans: () => [
+                  for (final h in widget.controller.highlights) h.span,
+                ],
+                onTap: (span) => widget.controller.dismissAt(span.start),
                 child: TextField(
-                  key: _fieldKey,
                   controller: widget.controller,
                   focusNode: widget.focusNode,
                   // Многострочное поле: вставка отдаёт строки целиком, а не

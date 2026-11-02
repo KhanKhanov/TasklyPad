@@ -18,6 +18,11 @@ final class AppTheme {
 /// P2 (оранжевый) на скриншотах не встречался чётко — значение не сверено (О-21).
 const Color _p2Unverified = Color(0xFFEB8909);
 
+/// Сроки «завтра» и «через 2–7 дней» на скриншотах не встречались — цвета веб-версии
+/// Todoist по памяти, не сверены (О-21).
+const Color _tomorrowUnverified = Color(0xFFAD6200);
+const Color _nextWeekUnverified = Color(0xFF692EC2);
+
 const AppTheme tasklyTheme = AppTheme(
   id: 'taskly',
   light: AppPalette(
@@ -32,6 +37,8 @@ const AppTheme tasklyTheme = AppTheme(
     textPrimary: Color(0xFF1F1F1F),
     textSecondary: Color(0xFF818181),
     dateToday: Color(0xFF249539),
+    dateTomorrow: _tomorrowUnverified,
+    dateNextWeek: _nextWeekUnverified,
     danger: Color(0xFFDE4D40),
     priority: [
       Color(0xFFDA4844),
@@ -53,6 +60,9 @@ const AppTheme tasklyTheme = AppTheme(
     textSecondary: Color(0xFFA5ADBA),
     // Срок «сегодня» в тёмном макете не встречался — зелёный из светлого (О-21).
     dateToday: Color(0xFF3CA04F),
+    // Тёмного макета для них нет — светлее светлых, чтобы читались на тёмном (О-21).
+    dateTomorrow: Color(0xFFD08A3C),
+    dateNextWeek: Color(0xFF9B72E0),
     danger: Color(0xFFD03F3F),
     priority: [
       Color(0xFFEA352C),

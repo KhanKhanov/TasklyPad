@@ -266,6 +266,59 @@ QuickAddResult parseQuickAdd(
   );
 }
 
+/// Дата, набранная в названии существующей задачи.
+final class TitleDue {
+  const TitleDue({
+    required this.highlight,
+    required this.title,
+    this.due,
+    this.noDate = false,
+  });
+
+  /// Участок даты в строке.
+  final Highlight highlight;
+
+  /// Название без даты.
+  final String title;
+  final Due? due;
+
+  /// «no date», «без срока»: срок убирается.
+  final bool noDate;
+}
+
+/// Первая дата в названии существующей задачи [text] — только срок (решение
+/// 1А конца M3, help «Introduction to recurring dates»: новая дата в
+/// названии заменяет срок вместе с повтором). Прочие токены §1 остаются
+/// текстом названия, но дату внутри них не ищем: `#завтра` — не срок.
+/// Отрезок `9:30-10:00` — длительность, а не дата, и времени сроку не даёт.
+TitleDue? parseTitleDue(
+  String text,
+  ParseContext ctx, {
+  List<Span> dismissed = const [],
+}) {
+  final tokens = parseQuickAdd(text, ctx, dismissed: dismissed).highlights;
+  final match = _findDue(
+    text,
+    [
+      for (final h in tokens)
+        if (h.kind != HighlightKind.due) h,
+    ],
+    dismissed,
+    ctx,
+  );
+  if (match == null) return null;
+  final highlight = Highlight(match.start, match.end, HighlightKind.due);
+  return TitleDue(
+    highlight: highlight,
+    title: _title(text, [highlight]),
+    due: match.due?.copyWith(
+      string: text.substring(match.start, match.end),
+      lang: ctx.lang,
+    ),
+    noDate: match.noDate,
+  );
+}
+
 /// Строка поля срока целиком ([text] — только дата): срок, «без срока» или
 /// `null`, если строка — не дата. Здесь число без слова — день месяца.
 DueMatch? parseDueText(String text, ParseContext ctx) {

@@ -116,6 +116,10 @@ void main() {
       (text(ConflictField.appearance, 'dark'), 'Тёмный'),
       (text(ConflictField.appearance, 'system'), 'Системный'),
       (text(ConflictField.appearance, 'sepia'), '"sepia"'),
+      (text(ConflictField.smartDateRecognition, true), 'Включено'),
+      (text(ConflictField.smartDateRecognition, false), 'Выключено'),
+      (text(ConflictField.resetRecurringSubtasks, true), 'Включено'),
+      (text(ConflictField.resetRecurringSubtasks, 'да'), '"да"'),
       (text(ConflictField.other, {'a': 1}), '{"a":1}'),
       (text(ConflictField.priority, 'странно'), '"странно"'),
     ];
@@ -181,6 +185,7 @@ void main() {
       conflictFieldTitle(
         l10n,
         const ConflictValue(field: ConflictField.theme, key: 'theme_id'),
+        mobile: false,
       ),
       'Тема',
     );
@@ -191,17 +196,50 @@ void main() {
           field: ConflictField.appearance,
           key: 'theme_appearance',
         ),
+        mobile: false,
       ),
       'Внешний вид',
     );
+    // Подпись настройки — как в «Основном» этого устройства.
+    for (final (field, key, mobile, title) in [
+      (
+        ConflictField.smartDateRecognition,
+        'smart_date_recognition',
+        false,
+        'Умное распознавание даты',
+      ),
+      (
+        ConflictField.resetRecurringSubtasks,
+        'reset_recurring_subtasks',
+        false,
+        'Добавлять подзадачи снова',
+      ),
+      (
+        ConflictField.resetRecurringSubtasks,
+        'reset_recurring_subtasks',
+        true,
+        'Сбросить подзадачи',
+      ),
+    ]) {
+      expect(
+        conflictFieldTitle(
+          l10n,
+          ConflictValue(field: field, key: key),
+          mobile: mobile,
+        ),
+        title,
+      );
+    }
     expect(
-      conflictNoticeText(l10n, [card(ConflictEntity.label, title: 'дом')]),
+      conflictNoticeText(l10n, [
+        card(ConflictEntity.label, title: 'дом'),
+      ], mobile: false),
       'Конфликт: Метка «дом», поля Название, Цвет',
     );
     expect(
       conflictNoticeText(l10n, [
         card(ConflictEntity.task, title: 'a', delete: true),
-      ]),
+      ], mobile: false),
       'Конфликт удаления: Задача «a»',
     );
     expect(
@@ -209,7 +247,7 @@ void main() {
         card(ConflictEntity.task),
         card(ConflictEntity.task),
         card(ConflictEntity.task),
-      ]),
+      ], mobile: false),
       '3 новых конфликта синхронизации',
     );
     for (final (n, text) in [

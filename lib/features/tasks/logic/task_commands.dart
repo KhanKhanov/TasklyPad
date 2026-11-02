@@ -95,6 +95,21 @@ final class TaskCommands {
     await _update(id, {TaskFields.content: text});
   }
 
+  /// Название и срок одной правкой — дата, набранная в названии
+  /// существующей задачи (решение 1А конца M3): [due] заменяет прежний срок
+  /// вместе с правилом повторения (help «Introduction to recurring dates»);
+  /// `null` — «без срока». Повторяющийся срок, который не примет расчёт, —
+  /// отказ до записи, как у [setDue].
+  Future<void> renameWithDue(String id, String content, Due? due) async {
+    final text = content.trim();
+    if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
+    if (due != null && due.isRecurring) _next(due, _clock.nowWall());
+    await _update(id, {
+      TaskFields.content: text,
+      TaskFields.due: _dueValue(due),
+    });
+  }
+
   Future<void> setDescription(String id, String description) =>
       _update(id, {TaskFields.description: description});
 
@@ -289,8 +304,10 @@ final class TaskCommands {
     final overdue = due.time == null
         ? dueAt.isBefore(today)
         : dueAt.isBefore(now);
+    // Просроченная — на завтра во время серии: это новое вхождение.
     return overdue
-        ? due.copyWith(date: isoDate(today.add(const Duration(days: 1))))
+        ? withSeriesTime(due)
+              .copyWith(date: isoDate(today.add(const Duration(days: 1))))
         : following;
   }
 
@@ -753,6 +770,8 @@ final class TaskCommands {
             },
             null => null,
           },
+          // Время серии — только у повторяющегося срока.
+          DueKeys.seriesTime: due.rule == null ? null : due.seriesTime,
         }..removeWhere((_, v) => v == null));
 
   static Map<String, Object?>? _deadlineValue(String? date) =>

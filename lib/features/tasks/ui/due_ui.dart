@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/app_palette.dart';
@@ -7,22 +8,72 @@ import '../../../l10n/app_localizations.dart';
 import '../../../nlp/parse_context.dart';
 import '../../../nlp/rule_text.dart';
 import '../logic/due_dates.dart';
+import '../state/today.dart';
 
 /// Подпись срока для строки задачи и панели: «Сегодня», «Завтра», день недели
-/// или дата, со временем; цвет — просрочено / сегодня / прочее.
+/// или дата, со временем; цвет — по [dueTone]. [timePassed] — время срока
+/// сегодня уже прошло ([dueLabelOf] берёт его из [dueTimePassedProvider]).
 ({String text, Color color}) dueLabel(
   BuildContext context,
   String date,
   String? time,
+  DateTime today, {
+  bool timePassed = false,
+}) {
+  final palette = AppPalette.of(context);
+  final day = parseIsoDate(date);
+  if (day == null) return (text: date, color: palette.textSecondary);
+  final color = switch (dueTone(day, today, timePassed: timePassed)) {
+    DueTone.overdue => palette.danger,
+    DueTone.today => palette.dateToday,
+    DueTone.tomorrow => palette.dateTomorrow,
+    DueTone.nextWeek => palette.dateNextWeek,
+    DueTone.none => palette.textSecondary,
+  };
+  return (text: _dayText(context, day, time, today), color: color);
+}
+
+/// [dueLabel] срока задачи [due] — с прошедшим временем сегодня; вызывается
+/// при сборке: подпись станет красной в момент срока.
+({String text, Color color}) dueLabelOf(
+  BuildContext context,
+  WidgetRef ref,
+  Due due,
+  DateTime today,
+) {
+  final time = due.time;
+  final passed =
+      time != null && ref.watch(dueTimePassedProvider(due.date, time));
+  return dueLabel(context, due.date, time, today, timePassed: passed);
+}
+
+/// Подпись дедлайна: просрочен — красный, сегодня — зелёный, иначе без
+/// цвета. Цвета сроков на дедлайн help не переносит (допущение О-57).
+({String text, Color color}) deadlineLabel(
+  BuildContext context,
+  String deadline,
+  DateTime today,
+) {
+  final palette = AppPalette.of(context);
+  final day = parseIsoDate(deadline);
+  if (day == null) return (text: deadline, color: palette.textSecondary);
+  final color = switch (dueKind(day, today)) {
+    DueKind.overdue || DueKind.overdueYesterday => palette.danger,
+    DueKind.today => palette.dateToday,
+    _ => palette.textSecondary,
+  };
+  return (text: _dayText(context, day, null, today), color: color);
+}
+
+String _dayText(
+  BuildContext context,
+  DateTime day,
+  String? time,
   DateTime today,
 ) {
   final l10n = AppLocalizations.of(context);
-  final palette = AppPalette.of(context);
   final locale = Localizations.localeOf(context).toLanguageTag();
-  final day = parseIsoDate(date);
-  if (day == null) return (text: date, color: palette.textSecondary);
-  final kind = dueKind(day, today);
-  final name = switch (kind) {
+  final name = switch (dueKind(day, today)) {
     DueKind.today => l10n.dueToday,
     DueKind.tomorrow => l10n.dueTomorrow,
     DueKind.overdueYesterday => l10n.dueYesterday,
@@ -30,15 +81,7 @@ import '../logic/due_dates.dart';
     _ when day.year != today.year => DateFormat.yMMMd(locale).format(day),
     _ => DateFormat.MMMd(locale).format(day),
   };
-  final color = switch (kind) {
-    DueKind.overdue || DueKind.overdueYesterday => palette.danger,
-    DueKind.today => palette.dateToday,
-    _ => palette.textSecondary,
-  };
-  return (
-    text: time == null ? name : '$name ${_time(context, time)}',
-    color: color,
-  );
+  return time == null ? name : '$name ${_time(context, time)}';
 }
 
 /// Время срока в формате локали и системы: 24 часа в ru, 12 часов (AM/PM)

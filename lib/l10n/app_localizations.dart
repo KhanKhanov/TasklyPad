@@ -1424,6 +1424,18 @@ abstract class AppLocalizations {
   /// **'Не в архиве'**
   String get valueNotArchived;
 
+  /// Значение переключателя настроек в карточке «Конфликты»
+  ///
+  /// In ru, this message translates to:
+  /// **'Включено'**
+  String get valueOn;
+
+  /// Значение переключателя настроек в карточке «Конфликты»
+  ///
+  /// In ru, this message translates to:
+  /// **'Выключено'**
+  String get valueOff;
+
   /// Сторона удаления
   ///
   /// In ru, this message translates to:
