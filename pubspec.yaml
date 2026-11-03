@@ -19,7 +19,7 @@ dependencies:
   # Состояние и навигация
   flutter_riverpod: ^3.4.3
   riverpod_annotation: ^4.0.7
-  go_router: ^18.1.1
+  go_router: ^18.1.2
 
   # База данных (SQLite). sqlite3 ^3 сам несёт нативную библиотеку —
   # sqlite3_flutter_libs больше не нужен (помечен EOL на pub.dev).
