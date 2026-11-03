@@ -1,4 +1,5 @@
 import '../domain/models.dart';
+import '../domain/recurrence.dart';
 import '../domain/rrule_parts.dart';
 
 // Текст правила повторения на языке интерфейса: «каждый пн, пт», `every 3rd
@@ -124,15 +125,17 @@ final _Words _ru = _Words(
 );
 
 /// Текст правила [rule] на языке [lang] (`ru` или `en`); `null` — у правила
-/// нет формы текстом (например, `INTERVAL` вместе с днями месяца) — тогда
-/// показывается `Due.string`.
+/// нет формы текстом (например, `INTERVAL` вместе с днями месяца) или его
+/// строку отвергает строгая проверка расчёта ([isComputableRule]:
+/// `BYMONTHDAY=40`, `INTERVAL=0`) — тогда показывается `Due.string`, как
+/// ввели, а не выдуманный текст.
 String? ruleText(RecurrenceRule rule, String lang) {
   final w = switch (lang) {
     'ru' => _ru,
     'en' => _en,
     _ => throw ArgumentError.value(lang, 'lang', 'язык — ru или en'),
   };
-  if (rule.rrule.isEmpty) return null;
+  if (!isComputableRule(rule)) return null;
   final lines = [for (final line in rule.rrule) rruleParts(line)];
   if (lines.any((l) => l == null)) return null;
   final until = lines.first!.remove('UNTIL');
