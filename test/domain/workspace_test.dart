@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/domain/models.dart';
 import 'package:planner/domain/tree.dart';
+import 'package:planner/domain/view_options.dart';
+import 'package:planner/domain/view_order.dart';
 import 'package:planner/domain/workspace.dart';
 
 Project _project(
@@ -40,6 +42,9 @@ Task _task(
   bool completed = false,
   bool collapsed = false,
   List<String> labels = const [],
+  int priority = 4,
+  String? date,
+  String? time,
 }) => Task(
   id: id,
   content: id,
@@ -48,7 +53,8 @@ Task _task(
   sectionId: section,
   parentId: parent,
   orderKey: order,
-  priority: 4,
+  priority: priority,
+  due: date == null ? null : Due(date: date, time: time),
   isCollapsed: collapsed,
   isCompleted: completed,
   labelIds: labels,
@@ -61,6 +67,8 @@ Label _label(String id, {String order = 'a'}) => Label(
   orderKey: order,
   isFavorite: false,
 );
+
+List<String> _plain(Iterable<Task> tasks) => [for (final t in tasks) t.id];
 
 List<String> _ids(Iterable<TreeItem<Task>> items) => [
   for (final i in items) i.value.id,
@@ -456,5 +464,156 @@ void main() {
     expect(ws.labelTaskCount('l'), ws.labelTasks('l').length);
     expect(ws.labelTaskCount('l'), 2);
     expect(ws.labelTaskCount('нет'), 0);
+  });
+
+  group('«Сегодня», «Просрочено», «Предстоящее» (M4.4)', () {
+    const today = '2026-11-03';
+    Workspace ws() => Workspace(
+      projects: [inbox, _project('p'), _project('old', archived: true)],
+      sections: const [],
+      labels: const [],
+      tasks: [
+        _task('nine', date: today, time: '09:00'),
+        _task('allday', date: today, priority: 1),
+        _task('late', date: '2026-11-01'),
+        _task('later', date: '2026-10-20', priority: 1),
+        _task('tomorrow', date: '2026-11-04'),
+        _task('far', date: '2028-11-02'),
+        _task('beyond', date: '2028-11-03'),
+        _task('nodate'),
+        _task('done', date: today, completed: true),
+        _task('archived', project: 'old', date: today),
+        _task('parent', date: '2026-11-10'),
+        _task('child', parent: 'parent', date: today),
+      ],
+    );
+
+    test('просрочено — по дате, а не по времени: «сегодня 9:00» не '
+        'просрочено (О-25); умный порядок', () {
+      expect(_plain(ws().overdueTasks(today)), ['later', 'late']);
+    });
+
+    test(
+      'сегодня — только активные со сроком на сегодня; подзадача своей '
+      'строкой, хоть родитель не на сегодня; без времени — перед временем',
+      () {
+        expect(_plain(ws().todayTasks(today)), ['allday', 'child', 'nine']);
+        expect(ws().todayCount(today), 5);
+      },
+    );
+
+    test('предстоящее — дни от сегодня на два года вперёд, по порядку', () {
+      final days = ws().upcomingDays(today);
+      expect(days.keys, [today, '2026-11-04', '2026-11-10', '2028-11-02']);
+      expect(_plain(days[today]!), ['allday', 'child', 'nine']);
+    });
+  });
+
+  test(
+    'порядок метки по help: приоритет → дата → порядок проектов и задач',
+    () {
+      final ws = Workspace(
+        projects: [
+          inbox,
+          _project('p', order: 'b'),
+          _project('q', order: 'a'),
+        ],
+        sections: [_section('s', 'q')],
+        labels: [_label('x')],
+        tasks: [
+          _task('q_late', project: 'q', order: 'b', labels: ['x']),
+          _task('q_sec', project: 'q', section: 's', labels: ['x']),
+          _task('q_first', project: 'q', order: 'a', labels: ['x']),
+          _task('p_dated', labels: ['x'], date: '2026-11-04'),
+          _task('p_p1', labels: ['x'], priority: 1),
+          _task('in_inbox', project: null, labels: ['x']),
+        ],
+      );
+      expect(_plain(ws.labelTasks('x')), [
+        'p_p1',
+        'p_dated',
+        'in_inbox',
+        'q_first',
+        'q_late',
+        'q_sec',
+      ]);
+    },
+  );
+
+  test('список проекта с сортировкой — внутри раздела и среди соседей '
+      'родителя; группировка — подзадача в группе своих значений', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: [_section('s', 'p')],
+      labels: const [],
+      tasks: [
+        _task('a', order: 'a', priority: 3),
+        _task('b', order: 'b', priority: 1),
+        // Ключ «a2» больше ключа «b»: ручной порядок в группе — по дереву.
+        _task('a2', parent: 'a', order: 'c', priority: 1),
+        _task('a1', parent: 'a', order: 'a', priority: 2),
+        _task('s1', section: 's', order: 'a', priority: 4),
+        _task('s2', section: 's', order: 'b', priority: 2),
+      ],
+    );
+    final order = ws.taskOrder(DefaultOrder.manual, sorting: Sorting.priority);
+    final view = ws.projectView('p', order: order);
+    expect(_ids(view.unsectioned), ['b', 'a', 'a2', 'a1']);
+    expect(_ids(view.sections.single.tasks), ['s2', 's1']);
+
+    final groups = ws.groupsOf(
+      ws.projectTasks('p'),
+      Grouping.priority,
+      order: order,
+      today: '2026-11-03',
+    );
+    // «Вручную» в группе — тоже по дереву, как порядок по умолчанию.
+    final manual = ws.groupsOf(
+      ws.projectTasks('p'),
+      Grouping.priority,
+      order: ws.taskOrder(DefaultOrder.manual, sorting: Sorting.manual),
+      today: '2026-11-03',
+    );
+    expect(_plain(manual.first.tasks), ['a2', 'b']);
+    expect(
+      [for (final g in groups) (g.key, _plain(g.tasks).join(','))],
+      [
+        // Ручной порядок в группе — по дереву: подзадача «a» раньше «b».
+        (const TaskGroupKey.priority(1), 'a2,b'),
+        (const TaskGroupKey.priority(2), 'a1,s2'),
+        (const TaskGroupKey.priority(3), 'a'),
+        (const TaskGroupKey.priority(4), 's1'),
+      ],
+    );
+  });
+
+  test('архивный проект — ручной порядок в группе по дереву; день добавления '
+      'передаётся явно', () {
+    final ws = Workspace(
+      projects: [inbox, _project('old', archived: true)],
+      sections: const [],
+      labels: const [],
+      tasks: [
+        for (final t in [
+          _task('a', project: 'old', order: 'a'),
+          _task('b', project: 'old', order: 'b'),
+          _task('a1', project: 'old', parent: 'a', order: 'c'),
+        ])
+          t.copyWith(addedAt: '2026-11-01T23:30:00.000Z'),
+      ],
+    );
+    final groups = ws.groupsOf(
+      ws.projectTasks('old'),
+      Grouping.addedDate,
+      order: ws.taskOrder(DefaultOrder.manual),
+      today: '2026-11-03',
+      // День по часам приложения: такого не даст ни один пояс устройства
+      // (из 23:30 UTC 1 ноября выходит 1 или 2 ноября).
+      localDay: (_) => '2026-10-30',
+    );
+    expect(
+      [for (final g in groups) (g.key, _plain(g.tasks).join(','))],
+      [(const TaskGroupKey.day('2026-10-30'), 'a,a1,b')],
+    );
   });
 }

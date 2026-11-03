@@ -67,6 +67,45 @@ void main() {
     }
   });
 
+  test(
+    'keysBetween — N возрастающих ключей строго между соседями, короткие',
+    () {
+      final cases = <(String?, String?, int)>[
+        (null, null, 1),
+        (null, null, 50),
+        ('a', 'b', 7),
+        ('a', 'a1', 30),
+        (null, '1', 10),
+        ('zz', null, 100),
+      ];
+      for (final (lo, hi, count) in cases) {
+        final keys = keysBetween(lo, hi, count);
+        final reason = '$lo,$hi,$count → $keys';
+        expect(keys, hasLength(count), reason: reason);
+        for (final (i, key) in keys.indexed) {
+          expect(key.endsWith('0'), isFalse, reason: reason);
+          final prev = i == 0 ? lo : keys[i - 1];
+          if (prev != null) {
+            expect(prev.compareTo(key), lessThan(0), reason: reason);
+          }
+        }
+        if (hi != null) {
+          expect(keys.last.compareTo(hi), lessThan(0), reason: reason);
+        }
+      }
+      // Делением пополам: 100 ключей между соседями — не длиннее 9 символов.
+      expect(
+        keysBetween(
+          'a',
+          'b',
+          100,
+        ).map((k) => k.length).reduce((a, b) => a > b ? a : b),
+        lessThanOrEqualTo(9),
+      );
+      expect(keysBetween('a', 'b', 0), isEmpty);
+    },
+  );
+
   test('a >= b или ключ на "0" — ArgumentError', () {
     expect(() => between('b', 'a'), throwsArgumentError);
     expect(() => between('a', 'a'), throwsArgumentError);
