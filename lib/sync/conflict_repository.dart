@@ -413,7 +413,8 @@ final class ConflictRepository {
   )) {
     (_, Op.deletedField) => ConflictField.deleted,
     (EntityTypes.task, TaskFields.content) => ConflictField.content,
-    (EntityTypes.task, TaskFields.description) => ConflictField.description,
+    (EntityTypes.task || EntityTypes.project, TaskFields.description) =>
+      ConflictField.description,
     (EntityTypes.task, TaskFields.projectId) ||
     (EntityTypes.section, SectionFields.projectId) => ConflictField.project,
     (EntityTypes.task, TaskFields.sectionId) => ConflictField.section,

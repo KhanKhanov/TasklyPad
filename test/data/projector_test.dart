@@ -56,6 +56,7 @@ void main() {
       TaskFields.sectionId: 's1',
       TaskFields.parentId: 't0',
       TaskFields.orderKey: 'a0',
+      TaskFields.dayOrderKey: 'b0',
       TaskFields.priority: 1,
       TaskFields.due: {
         'date': '2026-10-24',
@@ -66,6 +67,7 @@ void main() {
       TaskFields.duration: {'amount': 30, 'unit': 'minute'},
       TaskFields.isCollapsed: true,
       TaskFields.isCompleted: true,
+      TaskFields.completedLabelNames: {'l1': 'дом'},
       TaskFields.completedAt: '2026-10-24T06:31:00Z',
       TaskFields.addedAt: '2026-10-23T10:00:00Z',
       TaskFields.deleted: true,
@@ -80,6 +82,7 @@ void main() {
     expect(row.sectionId, 's1');
     expect(row.parentId, 't0');
     expect(row.orderKey, 'a0');
+    expect(row.dayOrderKey, 'b0');
     expect(row.priority, 1);
     expect(row.dueDate, '2026-10-24');
     expect(row.dueTime, '09:30');
@@ -89,6 +92,7 @@ void main() {
     expect(row.durationUnit, 'minute');
     expect(row.isCollapsed, isTrue);
     expect(row.isCompleted, isTrue);
+    expect(row.completedLabelNames, '{"l1":"дом"}');
     expect(row.completedAt, '2026-10-24T06:31:00Z');
     expect(row.addedAt, '2026-10-23T10:00:00Z');
     expect(row.deleted, isTrue);
@@ -236,6 +240,7 @@ void main() {
   test('проект — каждое поле ложится в свою колонку', () async {
     const fields = {
       ProjectFields.name: 'Дом',
+      ProjectFields.description: 'Всё по _дому_',
       ProjectFields.color: 'berry_red',
       ProjectFields.parentId: 'p0',
       ProjectFields.orderKey: 'b0',
@@ -251,6 +256,7 @@ void main() {
     }
     final row = (await project('p1'))!;
     expect(row.name, 'Дом');
+    expect(row.description, 'Всё по _дому_');
     expect(row.color, 'berry_red');
     expect(row.parentId, 'p0');
     expect(row.orderKey, 'b0');
@@ -401,6 +407,81 @@ void main() {
       'высокий',
     );
     expect(warnings.single, contains('priority'));
+  });
+
+  test('настройки вида — каждое поле ложится в свою колонку', () async {
+    const fields = {
+      ViewOptionsFields.viewType: 'project',
+      ViewOptionsFields.objectId: 'p1',
+      ViewOptionsFields.groupedBy: 'priority',
+      ViewOptionsFields.sortedBy: 'due_date',
+      ViewOptionsFields.sortOrder: 'desc',
+      ViewOptionsFields.showCompletedTasks: true,
+      ViewOptionsFields.deleted: true,
+    };
+    for (final entry in fields.entries) {
+      await put(EntityTypes.viewOptions, 'v1', entry.key, entry.value);
+    }
+    final row = await db.select(db.viewOptions).getSingle();
+    expect(row.id, 'v1');
+    expect(row.viewType, 'project');
+    expect(row.objectId, 'p1');
+    expect(row.groupedBy, 'priority');
+    expect(row.sortedBy, 'due_date');
+    expect(row.sortOrder, 'desc');
+    expect(row.showCompletedTasks, isTrue);
+    expect(row.deleted, isTrue);
+    expect(warnings, isEmpty);
+  });
+
+  test('снимок имён меток — не объект или имя не строка: колонка пустая, '
+      'предупреждение; null снимает', () async {
+    await put(EntityTypes.task, 't1', TaskFields.completedLabelNames, {
+      'l1': 'дом',
+    });
+    await put(EntityTypes.task, 't1', TaskFields.completedLabelNames, null);
+    expect((await task('t1'))!.completedLabelNames, isNull);
+
+    await put(EntityTypes.task, 't2', TaskFields.completedLabelNames, {
+      'l1': 7,
+    });
+    await put(EntityTypes.task, 't3', TaskFields.completedLabelNames, 'дом');
+    expect((await task('t2'))!.completedLabelNames, isNull);
+    expect((await task('t3'))!.completedLabelNames, isNull);
+    expect(warnings, hasLength(2));
+    expect(warnings, everyElement(contains('completed_label_names')));
+  });
+
+  test('описание проекта, порядок дня и настройки вида не того типа — '
+      'значения по умолчанию', () async {
+    await put(EntityTypes.project, 'p1', ProjectFields.description, 42);
+    await put(EntityTypes.task, 't1', TaskFields.dayOrderKey, true);
+    await put(EntityTypes.viewOptions, 'v1', ViewOptionsFields.groupedBy, 1);
+    await put(
+      EntityTypes.viewOptions,
+      'v1',
+      ViewOptionsFields.showCompletedTasks,
+      'да',
+    );
+    expect((await project('p1'))!.description, '');
+    expect((await task('t1'))!.dayOrderKey, '');
+    final view = await db.select(db.viewOptions).getSingle();
+    expect((view.groupedBy, view.showCompletedTasks), (null, false));
+    expect(warnings, hasLength(4));
+  });
+
+  test('viewOptionsId — формат закреплён, один вид на всех устройствах — один '
+      'id', () {
+    expect(
+      viewOptionsId('project', 'p1'),
+      uuidV8([EntityTypes.viewOptions, 'project', 'p1']),
+    );
+    expect(viewOptionsId('today', null), viewOptionsId('today', null));
+    expect(
+      viewOptionsId('today', null),
+      isNot(viewOptionsId('upcoming', null)),
+    );
+    expect(viewOptionsId('project', 'p1'), isNot(viewOptionsId('label', 'p1')));
   });
 
   test('приоритет 2.0 (целое в виде дробного из JSON) — 2', () async {

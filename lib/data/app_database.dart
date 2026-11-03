@@ -25,6 +25,7 @@ part 'app_database.g.dart';
     Labels,
     TaskLabels,
     Completions,
+    ViewOptions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -39,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Версия схемы. При изменении таблиц: увеличить, выполнить
   /// `dart run drift_dev make-migrations` и описать шаг в [migration].
-  static const int currentSchemaVersion = 4;
+  static const int currentSchemaVersion = 5;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -99,6 +100,15 @@ class AppDatabase extends _$AppDatabase {
     // уже пришёл от другого устройства, разложит `reproject` (версия реестра 4).
     from3To4: (m, schema) async {
       await m.addColumn(schema.tasks, schema.tasks.dueSeriesTime);
+    },
+    // M4: описание проекта, порядок дня и имена меток на момент завершения у
+    // задачи, настройки вида. Поля и сущности, уже пришедшие от другого
+    // устройства, разложит `reproject` (версия реестра 5).
+    from4To5: (m, schema) async {
+      await m.addColumn(schema.projects, schema.projects.description);
+      await m.addColumn(schema.tasks, schema.tasks.dayOrderKey);
+      await m.addColumn(schema.tasks, schema.tasks.completedLabelNames);
+      await m.createTable(schema.viewOptions);
     },
   );
 }

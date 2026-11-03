@@ -1764,6 +1764,18 @@ class $ProjectsTable extends Projects
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
@@ -1888,6 +1900,7 @@ class $ProjectsTable extends Projects
   List<GeneratedColumn> get $columns => [
     id,
     name,
+    description,
     color,
     parentId,
     orderKey,
@@ -1919,6 +1932,15 @@ class $ProjectsTable extends Projects
       context.handle(
         _nameMeta,
         name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
       );
     }
     if (data.containsKey('color')) {
@@ -1995,6 +2017,10 @@ class $ProjectsTable extends Projects
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
       color: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}color'],
@@ -2044,6 +2070,9 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
   final String id;
   final String name;
 
+  /// Описание проекта — markdown, как описание задачи.
+  final String description;
+
   /// Имя цвета палитры Todoist.
   final String color;
   final String? parentId;
@@ -2061,6 +2090,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
   const ProjectRow({
     required this.id,
     required this.name,
+    required this.description,
     required this.color,
     this.parentId,
     required this.orderKey,
@@ -2076,6 +2106,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    map['description'] = Variable<String>(description);
     map['color'] = Variable<String>(color);
     if (!nullToAbsent || parentId != null) {
       map['parent_id'] = Variable<String>(parentId);
@@ -2094,6 +2125,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     return ProjectsCompanion(
       id: Value(id),
       name: Value(name),
+      description: Value(description),
       color: Value(color),
       parentId: parentId == null && nullToAbsent
           ? const Value.absent()
@@ -2116,6 +2148,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     return ProjectRow(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String>(json['description']),
       color: serializer.fromJson<String>(json['color']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       orderKey: serializer.fromJson<String>(json['orderKey']),
@@ -2133,6 +2166,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String>(description),
       'color': serializer.toJson<String>(color),
       'parentId': serializer.toJson<String?>(parentId),
       'orderKey': serializer.toJson<String>(orderKey),
@@ -2148,6 +2182,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
   ProjectRow copyWith({
     String? id,
     String? name,
+    String? description,
     String? color,
     Value<String?> parentId = const Value.absent(),
     String? orderKey,
@@ -2160,6 +2195,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
   }) => ProjectRow(
     id: id ?? this.id,
     name: name ?? this.name,
+    description: description ?? this.description,
     color: color ?? this.color,
     parentId: parentId.present ? parentId.value : this.parentId,
     orderKey: orderKey ?? this.orderKey,
@@ -2174,6 +2210,9 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     return ProjectRow(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       color: data.color.present ? data.color.value : this.color,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       orderKey: data.orderKey.present ? data.orderKey.value : this.orderKey,
@@ -2197,6 +2236,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
     return (StringBuffer('ProjectRow(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('color: $color, ')
           ..write('parentId: $parentId, ')
           ..write('orderKey: $orderKey, ')
@@ -2214,6 +2254,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
   int get hashCode => Object.hash(
     id,
     name,
+    description,
     color,
     parentId,
     orderKey,
@@ -2230,6 +2271,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
       (other is ProjectRow &&
           other.id == this.id &&
           other.name == this.name &&
+          other.description == this.description &&
           other.color == this.color &&
           other.parentId == this.parentId &&
           other.orderKey == this.orderKey &&
@@ -2244,6 +2286,7 @@ class ProjectRow extends DataClass implements Insertable<ProjectRow> {
 class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String> description;
   final Value<String> color;
   final Value<String?> parentId;
   final Value<String> orderKey;
@@ -2257,6 +2300,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
   const ProjectsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.description = const Value.absent(),
     this.color = const Value.absent(),
     this.parentId = const Value.absent(),
     this.orderKey = const Value.absent(),
@@ -2271,6 +2315,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
   ProjectsCompanion.insert({
     required String id,
     this.name = const Value.absent(),
+    this.description = const Value.absent(),
     this.color = const Value.absent(),
     this.parentId = const Value.absent(),
     this.orderKey = const Value.absent(),
@@ -2285,6 +2330,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
   static Insertable<ProjectRow> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? description,
     Expression<String>? color,
     Expression<String>? parentId,
     Expression<String>? orderKey,
@@ -2299,6 +2345,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (description != null) 'description': description,
       if (color != null) 'color': color,
       if (parentId != null) 'parent_id': parentId,
       if (orderKey != null) 'order_key': orderKey,
@@ -2315,6 +2362,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
   ProjectsCompanion copyWith({
     Value<String>? id,
     Value<String>? name,
+    Value<String>? description,
     Value<String>? color,
     Value<String?>? parentId,
     Value<String>? orderKey,
@@ -2329,6 +2377,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
     return ProjectsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      description: description ?? this.description,
       color: color ?? this.color,
       parentId: parentId ?? this.parentId,
       orderKey: orderKey ?? this.orderKey,
@@ -2350,6 +2399,9 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
     }
     if (color.present) {
       map['color'] = Variable<String>(color.value);
@@ -2389,6 +2441,7 @@ class ProjectsCompanion extends UpdateCompanion<ProjectRow> {
     return (StringBuffer('ProjectsCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('description: $description, ')
           ..write('color: $color, ')
           ..write('parentId: $parentId, ')
           ..write('orderKey: $orderKey, ')
@@ -2481,6 +2534,18 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
   @override
   late final GeneratedColumn<String> orderKey = GeneratedColumn<String>(
     'order_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _dayOrderKeyMeta = const VerificationMeta(
+    'dayOrderKey',
+  );
+  @override
+  late final GeneratedColumn<String> dayOrderKey = GeneratedColumn<String>(
+    'day_order_key',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2652,6 +2717,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _completedLabelNamesMeta =
+      const VerificationMeta('completedLabelNames');
+  @override
+  late final GeneratedColumn<String> completedLabelNames =
+      GeneratedColumn<String>(
+        'completed_label_names',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _completedAtMeta = const VerificationMeta(
     'completedAt',
   );
@@ -2698,6 +2774,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     sectionId,
     parentId,
     orderKey,
+    dayOrderKey,
     priority,
     dueDate,
     dueTime,
@@ -2712,6 +2789,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     durationUnit,
     isCollapsed,
     isCompleted,
+    completedLabelNames,
     completedAt,
     addedAt,
     deleted,
@@ -2770,6 +2848,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       context.handle(
         _orderKeyMeta,
         orderKey.isAcceptableOrUnknown(data['order_key']!, _orderKeyMeta),
+      );
+    }
+    if (data.containsKey('day_order_key')) {
+      context.handle(
+        _dayOrderKeyMeta,
+        dayOrderKey.isAcceptableOrUnknown(
+          data['day_order_key']!,
+          _dayOrderKeyMeta,
+        ),
       );
     }
     if (data.containsKey('priority')) {
@@ -2877,6 +2964,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         ),
       );
     }
+    if (data.containsKey('completed_label_names')) {
+      context.handle(
+        _completedLabelNamesMeta,
+        completedLabelNames.isAcceptableOrUnknown(
+          data['completed_label_names']!,
+          _completedLabelNamesMeta,
+        ),
+      );
+    }
     if (data.containsKey('completed_at')) {
       context.handle(
         _completedAtMeta,
@@ -2935,6 +3031,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.string,
         data['${effectivePrefix}order_key'],
       )!,
+      dayOrderKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day_order_key'],
+      )!,
       priority: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}priority'],
@@ -2991,6 +3091,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_completed'],
       )!,
+      completedLabelNames: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}completed_label_names'],
+      ),
       completedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}completed_at'],
@@ -3020,6 +3124,11 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final String? sectionId;
   final String? parentId;
   final String orderKey;
+
+  /// Ручной порядок внутри дня в «Сегодня» и «Предстоящем» (fractional
+  /// index, как `day_order` Todoist API); сравнивается только у задач одного
+  /// дня, поэтому после смены срока старое значение безвредно.
+  final String dayOrderKey;
 
   /// 1 = P1 (высший, красный) … 4 = P4 (по умолчанию), как в интерфейсе.
   /// В API Todoist шкала обратная (4 = P1) — переводится при импорте.
@@ -3058,6 +3167,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final bool isCollapsed;
   final bool isCompleted;
 
+  /// Имена меток на момент завершения — JSON `{"<id метки>": "<имя>"}`;
+  /// `null` — снимка нет (задача активна или была без меток).
+  final String? completedLabelNames;
+
   /// Моменты времени — UTC ISO-8601.
   final String? completedAt;
   final String? addedAt;
@@ -3070,6 +3183,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     this.sectionId,
     this.parentId,
     required this.orderKey,
+    required this.dayOrderKey,
     required this.priority,
     this.dueDate,
     this.dueTime,
@@ -3084,6 +3198,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     this.durationUnit,
     required this.isCollapsed,
     required this.isCompleted,
+    this.completedLabelNames,
     this.completedAt,
     this.addedAt,
     required this.deleted,
@@ -3104,6 +3219,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       map['parent_id'] = Variable<String>(parentId);
     }
     map['order_key'] = Variable<String>(orderKey);
+    map['day_order_key'] = Variable<String>(dayOrderKey);
     map['priority'] = Variable<int>(priority);
     if (!nullToAbsent || dueDate != null) {
       map['due_date'] = Variable<String>(dueDate);
@@ -3138,6 +3254,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     }
     map['is_collapsed'] = Variable<bool>(isCollapsed);
     map['is_completed'] = Variable<bool>(isCompleted);
+    if (!nullToAbsent || completedLabelNames != null) {
+      map['completed_label_names'] = Variable<String>(completedLabelNames);
+    }
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<String>(completedAt);
     }
@@ -3163,6 +3282,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ? const Value.absent()
           : Value(parentId),
       orderKey: Value(orderKey),
+      dayOrderKey: Value(dayOrderKey),
       priority: Value(priority),
       dueDate: dueDate == null && nullToAbsent
           ? const Value.absent()
@@ -3197,6 +3317,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           : Value(durationUnit),
       isCollapsed: Value(isCollapsed),
       isCompleted: Value(isCompleted),
+      completedLabelNames: completedLabelNames == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedLabelNames),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(completedAt),
@@ -3220,6 +3343,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       sectionId: serializer.fromJson<String?>(json['sectionId']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       orderKey: serializer.fromJson<String>(json['orderKey']),
+      dayOrderKey: serializer.fromJson<String>(json['dayOrderKey']),
       priority: serializer.fromJson<int>(json['priority']),
       dueDate: serializer.fromJson<String?>(json['dueDate']),
       dueTime: serializer.fromJson<String?>(json['dueTime']),
@@ -3234,6 +3358,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       durationUnit: serializer.fromJson<String?>(json['durationUnit']),
       isCollapsed: serializer.fromJson<bool>(json['isCollapsed']),
       isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      completedLabelNames: serializer.fromJson<String?>(
+        json['completedLabelNames'],
+      ),
       completedAt: serializer.fromJson<String?>(json['completedAt']),
       addedAt: serializer.fromJson<String?>(json['addedAt']),
       deleted: serializer.fromJson<bool>(json['deleted']),
@@ -3250,6 +3377,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'sectionId': serializer.toJson<String?>(sectionId),
       'parentId': serializer.toJson<String?>(parentId),
       'orderKey': serializer.toJson<String>(orderKey),
+      'dayOrderKey': serializer.toJson<String>(dayOrderKey),
       'priority': serializer.toJson<int>(priority),
       'dueDate': serializer.toJson<String?>(dueDate),
       'dueTime': serializer.toJson<String?>(dueTime),
@@ -3264,6 +3392,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'durationUnit': serializer.toJson<String?>(durationUnit),
       'isCollapsed': serializer.toJson<bool>(isCollapsed),
       'isCompleted': serializer.toJson<bool>(isCompleted),
+      'completedLabelNames': serializer.toJson<String?>(completedLabelNames),
       'completedAt': serializer.toJson<String?>(completedAt),
       'addedAt': serializer.toJson<String?>(addedAt),
       'deleted': serializer.toJson<bool>(deleted),
@@ -3278,6 +3407,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     Value<String?> sectionId = const Value.absent(),
     Value<String?> parentId = const Value.absent(),
     String? orderKey,
+    String? dayOrderKey,
     int? priority,
     Value<String?> dueDate = const Value.absent(),
     Value<String?> dueTime = const Value.absent(),
@@ -3292,6 +3422,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     Value<String?> durationUnit = const Value.absent(),
     bool? isCollapsed,
     bool? isCompleted,
+    Value<String?> completedLabelNames = const Value.absent(),
     Value<String?> completedAt = const Value.absent(),
     Value<String?> addedAt = const Value.absent(),
     bool? deleted,
@@ -3303,6 +3434,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     sectionId: sectionId.present ? sectionId.value : this.sectionId,
     parentId: parentId.present ? parentId.value : this.parentId,
     orderKey: orderKey ?? this.orderKey,
+    dayOrderKey: dayOrderKey ?? this.dayOrderKey,
     priority: priority ?? this.priority,
     dueDate: dueDate.present ? dueDate.value : this.dueDate,
     dueTime: dueTime.present ? dueTime.value : this.dueTime,
@@ -3321,6 +3453,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     durationUnit: durationUnit.present ? durationUnit.value : this.durationUnit,
     isCollapsed: isCollapsed ?? this.isCollapsed,
     isCompleted: isCompleted ?? this.isCompleted,
+    completedLabelNames: completedLabelNames.present
+        ? completedLabelNames.value
+        : this.completedLabelNames,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     addedAt: addedAt.present ? addedAt.value : this.addedAt,
     deleted: deleted ?? this.deleted,
@@ -3336,6 +3471,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       sectionId: data.sectionId.present ? data.sectionId.value : this.sectionId,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       orderKey: data.orderKey.present ? data.orderKey.value : this.orderKey,
+      dayOrderKey: data.dayOrderKey.present
+          ? data.dayOrderKey.value
+          : this.dayOrderKey,
       priority: data.priority.present ? data.priority.value : this.priority,
       dueDate: data.dueDate.present ? data.dueDate.value : this.dueDate,
       dueTime: data.dueTime.present ? data.dueTime.value : this.dueTime,
@@ -3364,6 +3502,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       isCompleted: data.isCompleted.present
           ? data.isCompleted.value
           : this.isCompleted,
+      completedLabelNames: data.completedLabelNames.present
+          ? data.completedLabelNames.value
+          : this.completedLabelNames,
       completedAt: data.completedAt.present
           ? data.completedAt.value
           : this.completedAt,
@@ -3382,6 +3523,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('sectionId: $sectionId, ')
           ..write('parentId: $parentId, ')
           ..write('orderKey: $orderKey, ')
+          ..write('dayOrderKey: $dayOrderKey, ')
           ..write('priority: $priority, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTime: $dueTime, ')
@@ -3396,6 +3538,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('durationUnit: $durationUnit, ')
           ..write('isCollapsed: $isCollapsed, ')
           ..write('isCompleted: $isCompleted, ')
+          ..write('completedLabelNames: $completedLabelNames, ')
           ..write('completedAt: $completedAt, ')
           ..write('addedAt: $addedAt, ')
           ..write('deleted: $deleted')
@@ -3412,6 +3555,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     sectionId,
     parentId,
     orderKey,
+    dayOrderKey,
     priority,
     dueDate,
     dueTime,
@@ -3426,6 +3570,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     durationUnit,
     isCollapsed,
     isCompleted,
+    completedLabelNames,
     completedAt,
     addedAt,
     deleted,
@@ -3441,6 +3586,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.sectionId == this.sectionId &&
           other.parentId == this.parentId &&
           other.orderKey == this.orderKey &&
+          other.dayOrderKey == this.dayOrderKey &&
           other.priority == this.priority &&
           other.dueDate == this.dueDate &&
           other.dueTime == this.dueTime &&
@@ -3455,6 +3601,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.durationUnit == this.durationUnit &&
           other.isCollapsed == this.isCollapsed &&
           other.isCompleted == this.isCompleted &&
+          other.completedLabelNames == this.completedLabelNames &&
           other.completedAt == this.completedAt &&
           other.addedAt == this.addedAt &&
           other.deleted == this.deleted);
@@ -3468,6 +3615,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<String?> sectionId;
   final Value<String?> parentId;
   final Value<String> orderKey;
+  final Value<String> dayOrderKey;
   final Value<int> priority;
   final Value<String?> dueDate;
   final Value<String?> dueTime;
@@ -3482,6 +3630,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<String?> durationUnit;
   final Value<bool> isCollapsed;
   final Value<bool> isCompleted;
+  final Value<String?> completedLabelNames;
   final Value<String?> completedAt;
   final Value<String?> addedAt;
   final Value<bool> deleted;
@@ -3494,6 +3643,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.sectionId = const Value.absent(),
     this.parentId = const Value.absent(),
     this.orderKey = const Value.absent(),
+    this.dayOrderKey = const Value.absent(),
     this.priority = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.dueTime = const Value.absent(),
@@ -3508,6 +3658,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.durationUnit = const Value.absent(),
     this.isCollapsed = const Value.absent(),
     this.isCompleted = const Value.absent(),
+    this.completedLabelNames = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.addedAt = const Value.absent(),
     this.deleted = const Value.absent(),
@@ -3521,6 +3672,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.sectionId = const Value.absent(),
     this.parentId = const Value.absent(),
     this.orderKey = const Value.absent(),
+    this.dayOrderKey = const Value.absent(),
     this.priority = const Value.absent(),
     this.dueDate = const Value.absent(),
     this.dueTime = const Value.absent(),
@@ -3535,6 +3687,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.durationUnit = const Value.absent(),
     this.isCollapsed = const Value.absent(),
     this.isCompleted = const Value.absent(),
+    this.completedLabelNames = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.addedAt = const Value.absent(),
     this.deleted = const Value.absent(),
@@ -3548,6 +3701,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<String>? sectionId,
     Expression<String>? parentId,
     Expression<String>? orderKey,
+    Expression<String>? dayOrderKey,
     Expression<int>? priority,
     Expression<String>? dueDate,
     Expression<String>? dueTime,
@@ -3562,6 +3716,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<String>? durationUnit,
     Expression<bool>? isCollapsed,
     Expression<bool>? isCompleted,
+    Expression<String>? completedLabelNames,
     Expression<String>? completedAt,
     Expression<String>? addedAt,
     Expression<bool>? deleted,
@@ -3575,6 +3730,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (sectionId != null) 'section_id': sectionId,
       if (parentId != null) 'parent_id': parentId,
       if (orderKey != null) 'order_key': orderKey,
+      if (dayOrderKey != null) 'day_order_key': dayOrderKey,
       if (priority != null) 'priority': priority,
       if (dueDate != null) 'due_date': dueDate,
       if (dueTime != null) 'due_time': dueTime,
@@ -3589,6 +3745,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (durationUnit != null) 'duration_unit': durationUnit,
       if (isCollapsed != null) 'is_collapsed': isCollapsed,
       if (isCompleted != null) 'is_completed': isCompleted,
+      if (completedLabelNames != null)
+        'completed_label_names': completedLabelNames,
       if (completedAt != null) 'completed_at': completedAt,
       if (addedAt != null) 'added_at': addedAt,
       if (deleted != null) 'deleted': deleted,
@@ -3604,6 +3762,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<String?>? sectionId,
     Value<String?>? parentId,
     Value<String>? orderKey,
+    Value<String>? dayOrderKey,
     Value<int>? priority,
     Value<String?>? dueDate,
     Value<String?>? dueTime,
@@ -3618,6 +3777,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<String?>? durationUnit,
     Value<bool>? isCollapsed,
     Value<bool>? isCompleted,
+    Value<String?>? completedLabelNames,
     Value<String?>? completedAt,
     Value<String?>? addedAt,
     Value<bool>? deleted,
@@ -3631,6 +3791,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       sectionId: sectionId ?? this.sectionId,
       parentId: parentId ?? this.parentId,
       orderKey: orderKey ?? this.orderKey,
+      dayOrderKey: dayOrderKey ?? this.dayOrderKey,
       priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
       dueTime: dueTime ?? this.dueTime,
@@ -3645,6 +3806,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       durationUnit: durationUnit ?? this.durationUnit,
       isCollapsed: isCollapsed ?? this.isCollapsed,
       isCompleted: isCompleted ?? this.isCompleted,
+      completedLabelNames: completedLabelNames ?? this.completedLabelNames,
       completedAt: completedAt ?? this.completedAt,
       addedAt: addedAt ?? this.addedAt,
       deleted: deleted ?? this.deleted,
@@ -3675,6 +3837,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     }
     if (orderKey.present) {
       map['order_key'] = Variable<String>(orderKey.value);
+    }
+    if (dayOrderKey.present) {
+      map['day_order_key'] = Variable<String>(dayOrderKey.value);
     }
     if (priority.present) {
       map['priority'] = Variable<int>(priority.value);
@@ -3718,6 +3883,11 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (isCompleted.present) {
       map['is_completed'] = Variable<bool>(isCompleted.value);
     }
+    if (completedLabelNames.present) {
+      map['completed_label_names'] = Variable<String>(
+        completedLabelNames.value,
+      );
+    }
     if (completedAt.present) {
       map['completed_at'] = Variable<String>(completedAt.value);
     }
@@ -3743,6 +3913,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('sectionId: $sectionId, ')
           ..write('parentId: $parentId, ')
           ..write('orderKey: $orderKey, ')
+          ..write('dayOrderKey: $dayOrderKey, ')
           ..write('priority: $priority, ')
           ..write('dueDate: $dueDate, ')
           ..write('dueTime: $dueTime, ')
@@ -3757,6 +3928,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('durationUnit: $durationUnit, ')
           ..write('isCollapsed: $isCollapsed, ')
           ..write('isCompleted: $isCompleted, ')
+          ..write('completedLabelNames: $completedLabelNames, ')
           ..write('completedAt: $completedAt, ')
           ..write('addedAt: $addedAt, ')
           ..write('deleted: $deleted, ')
@@ -5322,6 +5494,541 @@ class CompletionsCompanion extends UpdateCompanion<CompletionRow> {
   }
 }
 
+class $ViewOptionsTable extends ViewOptions
+    with TableInfo<$ViewOptionsTable, ViewOptionsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ViewOptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _viewTypeMeta = const VerificationMeta(
+    'viewType',
+  );
+  @override
+  late final GeneratedColumn<String> viewType = GeneratedColumn<String>(
+    'view_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _objectIdMeta = const VerificationMeta(
+    'objectId',
+  );
+  @override
+  late final GeneratedColumn<String> objectId = GeneratedColumn<String>(
+    'object_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _groupedByMeta = const VerificationMeta(
+    'groupedBy',
+  );
+  @override
+  late final GeneratedColumn<String> groupedBy = GeneratedColumn<String>(
+    'grouped_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortedByMeta = const VerificationMeta(
+    'sortedBy',
+  );
+  @override
+  late final GeneratedColumn<String> sortedBy = GeneratedColumn<String>(
+    'sorted_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<String> sortOrder = GeneratedColumn<String>(
+    'sort_order',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _showCompletedTasksMeta =
+      const VerificationMeta('showCompletedTasks');
+  @override
+  late final GeneratedColumn<bool> showCompletedTasks = GeneratedColumn<bool>(
+    'show_completed_tasks',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("show_completed_tasks" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    viewType,
+    objectId,
+    groupedBy,
+    sortedBy,
+    sortOrder,
+    showCompletedTasks,
+    deleted,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'view_options';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ViewOptionsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('view_type')) {
+      context.handle(
+        _viewTypeMeta,
+        viewType.isAcceptableOrUnknown(data['view_type']!, _viewTypeMeta),
+      );
+    }
+    if (data.containsKey('object_id')) {
+      context.handle(
+        _objectIdMeta,
+        objectId.isAcceptableOrUnknown(data['object_id']!, _objectIdMeta),
+      );
+    }
+    if (data.containsKey('grouped_by')) {
+      context.handle(
+        _groupedByMeta,
+        groupedBy.isAcceptableOrUnknown(data['grouped_by']!, _groupedByMeta),
+      );
+    }
+    if (data.containsKey('sorted_by')) {
+      context.handle(
+        _sortedByMeta,
+        sortedBy.isAcceptableOrUnknown(data['sorted_by']!, _sortedByMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('show_completed_tasks')) {
+      context.handle(
+        _showCompletedTasksMeta,
+        showCompletedTasks.isAcceptableOrUnknown(
+          data['show_completed_tasks']!,
+          _showCompletedTasksMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ViewOptionsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ViewOptionsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      viewType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}view_type'],
+      ),
+      objectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}object_id'],
+      ),
+      groupedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}grouped_by'],
+      ),
+      sortedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sorted_by'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sort_order'],
+      ),
+      showCompletedTasks: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}show_completed_tasks'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+    );
+  }
+
+  @override
+  $ViewOptionsTable createAlias(String alias) {
+    return $ViewOptionsTable(attachedDatabase, alias);
+  }
+}
+
+class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
+  final String id;
+
+  /// `today`, `upcoming`, `project`, `label` или `filter`.
+  final String? viewType;
+
+  /// Id проекта, метки или фильтра; у «Сегодня» и «Предстоящего» — `null`.
+  final String? objectId;
+
+  /// Группировка (`due_date`, `priority` …); `null` — без группировки.
+  final String? groupedBy;
+
+  /// Сортировка (`manual`, `alphabetically` …); `null` — порядок вида по
+  /// умолчанию.
+  final String? sortedBy;
+
+  /// `asc` или `desc`; `null` — по возрастанию.
+  final String? sortOrder;
+  final bool showCompletedTasks;
+  final bool deleted;
+  const ViewOptionsRow({
+    required this.id,
+    this.viewType,
+    this.objectId,
+    this.groupedBy,
+    this.sortedBy,
+    this.sortOrder,
+    required this.showCompletedTasks,
+    required this.deleted,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || viewType != null) {
+      map['view_type'] = Variable<String>(viewType);
+    }
+    if (!nullToAbsent || objectId != null) {
+      map['object_id'] = Variable<String>(objectId);
+    }
+    if (!nullToAbsent || groupedBy != null) {
+      map['grouped_by'] = Variable<String>(groupedBy);
+    }
+    if (!nullToAbsent || sortedBy != null) {
+      map['sorted_by'] = Variable<String>(sortedBy);
+    }
+    if (!nullToAbsent || sortOrder != null) {
+      map['sort_order'] = Variable<String>(sortOrder);
+    }
+    map['show_completed_tasks'] = Variable<bool>(showCompletedTasks);
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  ViewOptionsCompanion toCompanion(bool nullToAbsent) {
+    return ViewOptionsCompanion(
+      id: Value(id),
+      viewType: viewType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(viewType),
+      objectId: objectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(objectId),
+      groupedBy: groupedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupedBy),
+      sortedBy: sortedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortedBy),
+      sortOrder: sortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sortOrder),
+      showCompletedTasks: Value(showCompletedTasks),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory ViewOptionsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ViewOptionsRow(
+      id: serializer.fromJson<String>(json['id']),
+      viewType: serializer.fromJson<String?>(json['viewType']),
+      objectId: serializer.fromJson<String?>(json['objectId']),
+      groupedBy: serializer.fromJson<String?>(json['groupedBy']),
+      sortedBy: serializer.fromJson<String?>(json['sortedBy']),
+      sortOrder: serializer.fromJson<String?>(json['sortOrder']),
+      showCompletedTasks: serializer.fromJson<bool>(json['showCompletedTasks']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'viewType': serializer.toJson<String?>(viewType),
+      'objectId': serializer.toJson<String?>(objectId),
+      'groupedBy': serializer.toJson<String?>(groupedBy),
+      'sortedBy': serializer.toJson<String?>(sortedBy),
+      'sortOrder': serializer.toJson<String?>(sortOrder),
+      'showCompletedTasks': serializer.toJson<bool>(showCompletedTasks),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  ViewOptionsRow copyWith({
+    String? id,
+    Value<String?> viewType = const Value.absent(),
+    Value<String?> objectId = const Value.absent(),
+    Value<String?> groupedBy = const Value.absent(),
+    Value<String?> sortedBy = const Value.absent(),
+    Value<String?> sortOrder = const Value.absent(),
+    bool? showCompletedTasks,
+    bool? deleted,
+  }) => ViewOptionsRow(
+    id: id ?? this.id,
+    viewType: viewType.present ? viewType.value : this.viewType,
+    objectId: objectId.present ? objectId.value : this.objectId,
+    groupedBy: groupedBy.present ? groupedBy.value : this.groupedBy,
+    sortedBy: sortedBy.present ? sortedBy.value : this.sortedBy,
+    sortOrder: sortOrder.present ? sortOrder.value : this.sortOrder,
+    showCompletedTasks: showCompletedTasks ?? this.showCompletedTasks,
+    deleted: deleted ?? this.deleted,
+  );
+  ViewOptionsRow copyWithCompanion(ViewOptionsCompanion data) {
+    return ViewOptionsRow(
+      id: data.id.present ? data.id.value : this.id,
+      viewType: data.viewType.present ? data.viewType.value : this.viewType,
+      objectId: data.objectId.present ? data.objectId.value : this.objectId,
+      groupedBy: data.groupedBy.present ? data.groupedBy.value : this.groupedBy,
+      sortedBy: data.sortedBy.present ? data.sortedBy.value : this.sortedBy,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      showCompletedTasks: data.showCompletedTasks.present
+          ? data.showCompletedTasks.value
+          : this.showCompletedTasks,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ViewOptionsRow(')
+          ..write('id: $id, ')
+          ..write('viewType: $viewType, ')
+          ..write('objectId: $objectId, ')
+          ..write('groupedBy: $groupedBy, ')
+          ..write('sortedBy: $sortedBy, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('showCompletedTasks: $showCompletedTasks, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    viewType,
+    objectId,
+    groupedBy,
+    sortedBy,
+    sortOrder,
+    showCompletedTasks,
+    deleted,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ViewOptionsRow &&
+          other.id == this.id &&
+          other.viewType == this.viewType &&
+          other.objectId == this.objectId &&
+          other.groupedBy == this.groupedBy &&
+          other.sortedBy == this.sortedBy &&
+          other.sortOrder == this.sortOrder &&
+          other.showCompletedTasks == this.showCompletedTasks &&
+          other.deleted == this.deleted);
+}
+
+class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
+  final Value<String> id;
+  final Value<String?> viewType;
+  final Value<String?> objectId;
+  final Value<String?> groupedBy;
+  final Value<String?> sortedBy;
+  final Value<String?> sortOrder;
+  final Value<bool> showCompletedTasks;
+  final Value<bool> deleted;
+  final Value<int> rowid;
+  const ViewOptionsCompanion({
+    this.id = const Value.absent(),
+    this.viewType = const Value.absent(),
+    this.objectId = const Value.absent(),
+    this.groupedBy = const Value.absent(),
+    this.sortedBy = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.showCompletedTasks = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ViewOptionsCompanion.insert({
+    required String id,
+    this.viewType = const Value.absent(),
+    this.objectId = const Value.absent(),
+    this.groupedBy = const Value.absent(),
+    this.sortedBy = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.showCompletedTasks = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<ViewOptionsRow> custom({
+    Expression<String>? id,
+    Expression<String>? viewType,
+    Expression<String>? objectId,
+    Expression<String>? groupedBy,
+    Expression<String>? sortedBy,
+    Expression<String>? sortOrder,
+    Expression<bool>? showCompletedTasks,
+    Expression<bool>? deleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (viewType != null) 'view_type': viewType,
+      if (objectId != null) 'object_id': objectId,
+      if (groupedBy != null) 'grouped_by': groupedBy,
+      if (sortedBy != null) 'sorted_by': sortedBy,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (showCompletedTasks != null)
+        'show_completed_tasks': showCompletedTasks,
+      if (deleted != null) 'deleted': deleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ViewOptionsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? viewType,
+    Value<String?>? objectId,
+    Value<String?>? groupedBy,
+    Value<String?>? sortedBy,
+    Value<String?>? sortOrder,
+    Value<bool>? showCompletedTasks,
+    Value<bool>? deleted,
+    Value<int>? rowid,
+  }) {
+    return ViewOptionsCompanion(
+      id: id ?? this.id,
+      viewType: viewType ?? this.viewType,
+      objectId: objectId ?? this.objectId,
+      groupedBy: groupedBy ?? this.groupedBy,
+      sortedBy: sortedBy ?? this.sortedBy,
+      sortOrder: sortOrder ?? this.sortOrder,
+      showCompletedTasks: showCompletedTasks ?? this.showCompletedTasks,
+      deleted: deleted ?? this.deleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (viewType.present) {
+      map['view_type'] = Variable<String>(viewType.value);
+    }
+    if (objectId.present) {
+      map['object_id'] = Variable<String>(objectId.value);
+    }
+    if (groupedBy.present) {
+      map['grouped_by'] = Variable<String>(groupedBy.value);
+    }
+    if (sortedBy.present) {
+      map['sorted_by'] = Variable<String>(sortedBy.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<String>(sortOrder.value);
+    }
+    if (showCompletedTasks.present) {
+      map['show_completed_tasks'] = Variable<bool>(showCompletedTasks.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ViewOptionsCompanion(')
+          ..write('id: $id, ')
+          ..write('viewType: $viewType, ')
+          ..write('objectId: $objectId, ')
+          ..write('groupedBy: $groupedBy, ')
+          ..write('sortedBy: $sortedBy, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('showCompletedTasks: $showCompletedTasks, ')
+          ..write('deleted: $deleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5336,6 +6043,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LabelsTable labels = $LabelsTable(this);
   late final $TaskLabelsTable taskLabels = $TaskLabelsTable(this);
   late final $CompletionsTable completions = $CompletionsTable(this);
+  late final $ViewOptionsTable viewOptions = $ViewOptionsTable(this);
   late final Index opsByField = Index(
     'ops_by_field',
     'CREATE INDEX ops_by_field ON ops (entity_type, entity_id, field)',
@@ -5388,6 +6096,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     labels,
     taskLabels,
     completions,
+    viewOptions,
     opsByField,
     opsByNodeHlc,
     tasksByProject,
@@ -6395,6 +7104,7 @@ typedef $$LocalMetaTableProcessedTableManager =
 typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
   required String id,
   Value<String> name,
+  Value<String> description,
   Value<String> color,
   Value<String?> parentId,
   Value<String> orderKey,
@@ -6409,6 +7119,7 @@ typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
 typedef $$ProjectsTableUpdateCompanionBuilder = ProjectsCompanion Function({
   Value<String> id,
   Value<String> name,
+  Value<String> description,
   Value<String> color,
   Value<String?> parentId,
   Value<String> orderKey,
@@ -6437,6 +7148,11 @@ class $$ProjectsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6505,6 +7221,11 @@ class $$ProjectsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnOrderings(column),
@@ -6565,6 +7286,11 @@ class $$ProjectsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
@@ -6633,6 +7359,7 @@ class $$ProjectsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> color = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> orderKey = const Value.absent(),
@@ -6646,6 +7373,7 @@ class $$ProjectsTableTableManager
               }) => ProjectsCompanion(
                 id: id,
                 name: name,
+                description: description,
                 color: color,
                 parentId: parentId,
                 orderKey: orderKey,
@@ -6661,6 +7389,7 @@ class $$ProjectsTableTableManager
               ({
                 required String id,
                 Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> color = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> orderKey = const Value.absent(),
@@ -6674,6 +7403,7 @@ class $$ProjectsTableTableManager
               }) => ProjectsCompanion.insert(
                 id: id,
                 name: name,
+                description: description,
                 color: color,
                 parentId: parentId,
                 orderKey: orderKey,
@@ -6724,6 +7454,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> sectionId,
   Value<String?> parentId,
   Value<String> orderKey,
+  Value<String> dayOrderKey,
   Value<int> priority,
   Value<String?> dueDate,
   Value<String?> dueTime,
@@ -6738,6 +7469,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> durationUnit,
   Value<bool> isCollapsed,
   Value<bool> isCompleted,
+  Value<String?> completedLabelNames,
   Value<String?> completedAt,
   Value<String?> addedAt,
   Value<bool> deleted,
@@ -6751,6 +7483,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> sectionId,
   Value<String?> parentId,
   Value<String> orderKey,
+  Value<String> dayOrderKey,
   Value<int> priority,
   Value<String?> dueDate,
   Value<String?> dueTime,
@@ -6765,6 +7498,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> durationUnit,
   Value<bool> isCollapsed,
   Value<bool> isCompleted,
+  Value<String?> completedLabelNames,
   Value<String?> completedAt,
   Value<String?> addedAt,
   Value<bool> deleted,
@@ -6811,6 +7545,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get orderKey => $composableBuilder(
     column: $table.orderKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dayOrderKey => $composableBuilder(
+    column: $table.dayOrderKey,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6884,6 +7623,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get completedLabelNames => $composableBuilder(
+    column: $table.completedLabelNames,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get completedAt => $composableBuilder(
     column: $table.completedAt,
     builder: (column) => ColumnFilters(column),
@@ -6941,6 +7685,11 @@ class $$TasksTableOrderingComposer
 
   ColumnOrderings<String> get orderKey => $composableBuilder(
     column: $table.orderKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dayOrderKey => $composableBuilder(
+    column: $table.dayOrderKey,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7014,6 +7763,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get completedLabelNames => $composableBuilder(
+    column: $table.completedLabelNames,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get completedAt => $composableBuilder(
     column: $table.completedAt,
     builder: (column) => ColumnOrderings(column),
@@ -7061,6 +7815,11 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get orderKey =>
       $composableBuilder(column: $table.orderKey, builder: (column) => column);
+
+  GeneratedColumn<String> get dayOrderKey => $composableBuilder(
+    column: $table.dayOrderKey,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get priority =>
       $composableBuilder(column: $table.priority, builder: (column) => column);
@@ -7118,6 +7877,11 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get completedLabelNames => $composableBuilder(
+    column: $table.completedLabelNames,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get completedAt => $composableBuilder(
     column: $table.completedAt,
     builder: (column) => column,
@@ -7165,6 +7929,7 @@ class $$TasksTableTableManager
                 Value<String?> sectionId = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> orderKey = const Value.absent(),
+                Value<String> dayOrderKey = const Value.absent(),
                 Value<int> priority = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
                 Value<String?> dueTime = const Value.absent(),
@@ -7179,6 +7944,7 @@ class $$TasksTableTableManager
                 Value<String?> durationUnit = const Value.absent(),
                 Value<bool> isCollapsed = const Value.absent(),
                 Value<bool> isCompleted = const Value.absent(),
+                Value<String?> completedLabelNames = const Value.absent(),
                 Value<String?> completedAt = const Value.absent(),
                 Value<String?> addedAt = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
@@ -7191,6 +7957,7 @@ class $$TasksTableTableManager
                 sectionId: sectionId,
                 parentId: parentId,
                 orderKey: orderKey,
+                dayOrderKey: dayOrderKey,
                 priority: priority,
                 dueDate: dueDate,
                 dueTime: dueTime,
@@ -7205,6 +7972,7 @@ class $$TasksTableTableManager
                 durationUnit: durationUnit,
                 isCollapsed: isCollapsed,
                 isCompleted: isCompleted,
+                completedLabelNames: completedLabelNames,
                 completedAt: completedAt,
                 addedAt: addedAt,
                 deleted: deleted,
@@ -7219,6 +7987,7 @@ class $$TasksTableTableManager
                 Value<String?> sectionId = const Value.absent(),
                 Value<String?> parentId = const Value.absent(),
                 Value<String> orderKey = const Value.absent(),
+                Value<String> dayOrderKey = const Value.absent(),
                 Value<int> priority = const Value.absent(),
                 Value<String?> dueDate = const Value.absent(),
                 Value<String?> dueTime = const Value.absent(),
@@ -7233,6 +8002,7 @@ class $$TasksTableTableManager
                 Value<String?> durationUnit = const Value.absent(),
                 Value<bool> isCollapsed = const Value.absent(),
                 Value<bool> isCompleted = const Value.absent(),
+                Value<String?> completedLabelNames = const Value.absent(),
                 Value<String?> completedAt = const Value.absent(),
                 Value<String?> addedAt = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
@@ -7245,6 +8015,7 @@ class $$TasksTableTableManager
                 sectionId: sectionId,
                 parentId: parentId,
                 orderKey: orderKey,
+                dayOrderKey: dayOrderKey,
                 priority: priority,
                 dueDate: dueDate,
                 dueTime: dueTime,
@@ -7259,6 +8030,7 @@ class $$TasksTableTableManager
                 durationUnit: durationUnit,
                 isCollapsed: isCollapsed,
                 isCompleted: isCompleted,
+                completedLabelNames: completedLabelNames,
                 completedAt: completedAt,
                 addedAt: addedAt,
                 deleted: deleted,
@@ -8162,6 +8934,274 @@ typedef $$CompletionsTableProcessedTableManager =
       CompletionRow,
       PrefetchHooks Function()
     >;
+typedef $$ViewOptionsTableCreateCompanionBuilder =
+    ViewOptionsCompanion Function({
+      required String id,
+      Value<String?> viewType,
+      Value<String?> objectId,
+      Value<String?> groupedBy,
+      Value<String?> sortedBy,
+      Value<String?> sortOrder,
+      Value<bool> showCompletedTasks,
+      Value<bool> deleted,
+      Value<int> rowid,
+    });
+typedef $$ViewOptionsTableUpdateCompanionBuilder =
+    ViewOptionsCompanion Function({
+      Value<String> id,
+      Value<String?> viewType,
+      Value<String?> objectId,
+      Value<String?> groupedBy,
+      Value<String?> sortedBy,
+      Value<String?> sortOrder,
+      Value<bool> showCompletedTasks,
+      Value<bool> deleted,
+      Value<int> rowid,
+    });
+
+class $$ViewOptionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ViewOptionsTable> {
+  $$ViewOptionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get viewType => $composableBuilder(
+    column: $table.viewType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get objectId => $composableBuilder(
+    column: $table.objectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get groupedBy => $composableBuilder(
+    column: $table.groupedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortedBy => $composableBuilder(
+    column: $table.sortedBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get showCompletedTasks => $composableBuilder(
+    column: $table.showCompletedTasks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ViewOptionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ViewOptionsTable> {
+  $$ViewOptionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get viewType => $composableBuilder(
+    column: $table.viewType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get objectId => $composableBuilder(
+    column: $table.objectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get groupedBy => $composableBuilder(
+    column: $table.groupedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortedBy => $composableBuilder(
+    column: $table.sortedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get showCompletedTasks => $composableBuilder(
+    column: $table.showCompletedTasks,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ViewOptionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ViewOptionsTable> {
+  $$ViewOptionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get viewType =>
+      $composableBuilder(column: $table.viewType, builder: (column) => column);
+
+  GeneratedColumn<String> get objectId =>
+      $composableBuilder(column: $table.objectId, builder: (column) => column);
+
+  GeneratedColumn<String> get groupedBy =>
+      $composableBuilder(column: $table.groupedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get sortedBy =>
+      $composableBuilder(column: $table.sortedBy, builder: (column) => column);
+
+  GeneratedColumn<String> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get showCompletedTasks => $composableBuilder(
+    column: $table.showCompletedTasks,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$ViewOptionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ViewOptionsTable,
+          ViewOptionsRow,
+          $$ViewOptionsTableFilterComposer,
+          $$ViewOptionsTableOrderingComposer,
+          $$ViewOptionsTableAnnotationComposer,
+          $$ViewOptionsTableCreateCompanionBuilder,
+          $$ViewOptionsTableUpdateCompanionBuilder,
+          (
+            ViewOptionsRow,
+            BaseReferences<_$AppDatabase, $ViewOptionsTable, ViewOptionsRow>,
+          ),
+          ViewOptionsRow,
+          PrefetchHooks Function()
+        > {
+  $$ViewOptionsTableTableManager(_$AppDatabase db, $ViewOptionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ViewOptionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ViewOptionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ViewOptionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> viewType = const Value.absent(),
+                Value<String?> objectId = const Value.absent(),
+                Value<String?> groupedBy = const Value.absent(),
+                Value<String?> sortedBy = const Value.absent(),
+                Value<String?> sortOrder = const Value.absent(),
+                Value<bool> showCompletedTasks = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ViewOptionsCompanion(
+                id: id,
+                viewType: viewType,
+                objectId: objectId,
+                groupedBy: groupedBy,
+                sortedBy: sortedBy,
+                sortOrder: sortOrder,
+                showCompletedTasks: showCompletedTasks,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> viewType = const Value.absent(),
+                Value<String?> objectId = const Value.absent(),
+                Value<String?> groupedBy = const Value.absent(),
+                Value<String?> sortedBy = const Value.absent(),
+                Value<String?> sortOrder = const Value.absent(),
+                Value<bool> showCompletedTasks = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ViewOptionsCompanion.insert(
+                id: id,
+                viewType: viewType,
+                objectId: objectId,
+                groupedBy: groupedBy,
+                sortedBy: sortedBy,
+                sortOrder: sortOrder,
+                showCompletedTasks: showCompletedTasks,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ViewOptionsTable, ViewOptionsRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ViewOptionsTable,
+                    ViewOptionsRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ViewOptionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ViewOptionsTable,
+      ViewOptionsRow,
+      $$ViewOptionsTableFilterComposer,
+      $$ViewOptionsTableOrderingComposer,
+      $$ViewOptionsTableAnnotationComposer,
+      $$ViewOptionsTableCreateCompanionBuilder,
+      $$ViewOptionsTableUpdateCompanionBuilder,
+      (
+        ViewOptionsRow,
+        BaseReferences<_$AppDatabase, $ViewOptionsTable, ViewOptionsRow>,
+      ),
+      ViewOptionsRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8187,4 +9227,6 @@ class $AppDatabaseManager {
       $$TaskLabelsTableTableManager(_db, _db.taskLabels);
   $$CompletionsTableTableManager get completions =>
       $$CompletionsTableTableManager(_db, _db.completions);
+  $$ViewOptionsTableTableManager get viewOptions =>
+      $$ViewOptionsTableTableManager(_db, _db.viewOptions);
 }

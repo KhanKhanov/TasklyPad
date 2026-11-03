@@ -132,6 +132,7 @@ final class WorkspaceRepository {
   static Project _project(ProjectRow r) => Project(
     id: r.id,
     name: r.name,
+    description: r.description,
     color: r.color,
     parentId: r.parentId,
     orderKey: r.orderKey,
@@ -173,6 +174,7 @@ final class WorkspaceRepository {
       sectionId: r.sectionId,
       parentId: r.parentId,
       orderKey: r.orderKey,
+      dayOrderKey: r.dayOrderKey,
       priority: r.priority,
       due: dueDate == null
           ? null
@@ -195,6 +197,17 @@ final class WorkspaceRepository {
           : TaskDuration(amount: amount, unit: unit),
       isCollapsed: r.isCollapsed,
       isCompleted: r.isCompleted,
+      // Снимок действует, только пока задача выполнена: LWW сводит его и
+      // `is_completed` независимо, и после параллельных завершения и возврата
+      // у задачи в работе может остаться старый снимок.
+      completedLabelNames: switch (r.completedLabelNames) {
+        // Колонку пишет только проектор — JSON уже проверен.
+        final String json when r.isCompleted =>
+          (jsonDecode(json) as Map<String, Object?>).map(
+            (id, name) => MapEntry(id, name! as String),
+          ),
+        _ => const {},
+      },
       completedAt: r.completedAt,
       addedAt: r.addedAt,
       labelIds: labelIds,

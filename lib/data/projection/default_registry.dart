@@ -10,7 +10,7 @@ import 'projector.dart';
 
 /// Версия набора полей [defaultRegistry]. Увеличивать при каждом изменении
 /// полей или колонок проекторов: база переложит `field_versions` заново.
-const int projectorVersion = 4;
+const int projectorVersion = 5;
 
 final Logger _logger = Logger();
 
@@ -25,6 +25,7 @@ ProjectorRegistry defaultRegistry(
   labelProjector(db, warn: warn),
   taskLabelProjector(db, warn: warn),
   completionProjector(db, warn: warn),
+  viewOptionsProjector(db, warn: warn),
 ]);
 
 /// Задачи: поле op → колонки `tasks`.
@@ -49,6 +50,8 @@ TableProjector<$TasksTable, TaskRow> taskProjector(
         TasksCompanion(id: Value(id), parentId: Value(textOrNull(v))),
     TaskFields.orderKey: (id, v) =>
         TasksCompanion(id: Value(id), orderKey: Value(textOr(v, ''))),
+    TaskFields.dayOrderKey: (id, v) =>
+        TasksCompanion(id: Value(id), dayOrderKey: Value(textOr(v, ''))),
     TaskFields.priority: (id, v) =>
         TasksCompanion(id: Value(id), priority: Value(intOr(v, 4))),
     TaskFields.due: (id, v) => _due(id, v, warn ?? _logger.w),
@@ -58,6 +61,7 @@ TableProjector<$TasksTable, TaskRow> taskProjector(
         TasksCompanion(id: Value(id), isCollapsed: Value(boolOr(v, false))),
     TaskFields.isCompleted: (id, v) =>
         TasksCompanion(id: Value(id), isCompleted: Value(boolOr(v, false))),
+    TaskFields.completedLabelNames: _completedLabelNames,
     TaskFields.completedAt: (id, v) =>
         TasksCompanion(id: Value(id), completedAt: Value(textOrNull(v))),
     TaskFields.addedAt: (id, v) =>
@@ -172,6 +176,23 @@ TasksCompanion _duration(String id, Object? value) => switch (value) {
   _ => throw ProjectionTypeError('объект длительности', value),
 };
 
+/// Имена меток на момент завершения — объект {id метки: имя}; `null` —
+/// снимка нет. Объект, в котором хоть одно имя не строка, — не того типа.
+TasksCompanion _completedLabelNames(String id, Object? value) =>
+    switch (value) {
+      null => TasksCompanion(
+        id: Value(id),
+        completedLabelNames: const Value(null),
+      ),
+      final Map<String, Object?> names
+          when names.values.every((name) => name is String) =>
+        TasksCompanion(
+          id: Value(id),
+          completedLabelNames: Value(jsonEncode(names)),
+        ),
+      _ => throw ProjectionTypeError('объект имён меток', value),
+    };
+
 /// Проекты: поле op → колонки `projects`.
 TableProjector<$ProjectsTable, ProjectRow> projectProjector(
   AppDatabase db, {
@@ -184,6 +205,8 @@ TableProjector<$ProjectsTable, ProjectRow> projectProjector(
   writers: {
     ProjectFields.name: (id, v) =>
         ProjectsCompanion(id: Value(id), name: Value(textOr(v, ''))),
+    ProjectFields.description: (id, v) =>
+        ProjectsCompanion(id: Value(id), description: Value(textOr(v, ''))),
     ProjectFields.color: (id, v) =>
         ProjectsCompanion(id: Value(id), color: Value(textOr(v, 'charcoal'))),
     ProjectFields.parentId: (id, v) =>
@@ -290,5 +313,36 @@ TableProjector<$CompletionsTable, CompletionRow> completionProjector(
         CompletionsCompanion(id: Value(id), completedAt: Value(textOrNull(v))),
     CompletionFields.deleted: (id, v) =>
         CompletionsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
+  },
+);
+
+/// Настройки вида: поле op → колонки `view_options`. Незнакомое значение
+/// (группировка `assignee`) ложится как есть — домен читает его как значение
+/// по умолчанию.
+TableProjector<$ViewOptionsTable, ViewOptionsRow> viewOptionsProjector(
+  AppDatabase db, {
+  void Function(String message)? warn,
+}) => TableProjector(
+  db: db,
+  entityType: EntityTypes.viewOptions,
+  table: db.viewOptions,
+  warn: warn,
+  writers: {
+    ViewOptionsFields.viewType: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), viewType: Value(textOrNull(v))),
+    ViewOptionsFields.objectId: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), objectId: Value(textOrNull(v))),
+    ViewOptionsFields.groupedBy: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), groupedBy: Value(textOrNull(v))),
+    ViewOptionsFields.sortedBy: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), sortedBy: Value(textOrNull(v))),
+    ViewOptionsFields.sortOrder: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), sortOrder: Value(textOrNull(v))),
+    ViewOptionsFields.showCompletedTasks: (id, v) => ViewOptionsCompanion(
+      id: Value(id),
+      showCompletedTasks: Value(boolOr(v, false)),
+    ),
+    ViewOptionsFields.deleted: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
   },
 );
