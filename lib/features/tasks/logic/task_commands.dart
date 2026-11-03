@@ -197,10 +197,10 @@ final class TaskCommands {
     return _completeTree(ws, id);
   });
 
-  Future<Undo> _completeTree(Workspace ws, String id) => markCompleted([
+  Future<Undo> _completeTree(Workspace ws, String id) => markCompleted(ws, [
     for (final t in ws.taskSubtree(id))
       if (!ws.task(t)!.isCompleted) t,
-  ], completed: true);
+  ]);
 
   /// Выполнение вхождения повторяющейся задачи (решения 3, 6 плана M3):
   /// запись о выполнении с id из (задача, вхождение) — два устройства пишут
@@ -234,7 +234,11 @@ final class TaskCommands {
       [
         _target(task.id, {TaskFields.due}),
         for (final s in reset)
-          _target(s, {TaskFields.isCompleted, TaskFields.completedAt}),
+          _target(s, {
+            TaskFields.isCompleted,
+            TaskFields.completedAt,
+            TaskFields.completedLabelNames,
+          }),
       ],
       // Запись уже есть (пришла с другого устройства) — «Отменить» вернёт
       // её прежнее время, а не удалит чужое выполнение.
@@ -260,6 +264,7 @@ final class TaskCommands {
       await _mutator.update(EntityTypes.task, s, {
         TaskFields.isCompleted: false,
         TaskFields.completedAt: null,
+        TaskFields.completedLabelNames: null,
       });
     }
     await _reviveLabels(ws, reset);
@@ -341,8 +346,8 @@ final class TaskCommands {
   /// он восстанавливает прежние значения полей, в том числе место.
   ///
   /// Удалённые метки возвращённых задач возвращаются, как в Todoist
-  /// ([_reviveLabels]). [Undo] (в интерфейсе его нет) возвращает только поля
-  /// задач и раздела, метки остаются.
+  /// ([_reviveLabels]); снимок имён меток снимается. [Undo] (в интерфейсе его
+  /// нет) возвращает только поля задач и раздела, метки остаются.
   Future<Undo> uncomplete(String id) async {
     final ws = await _read();
     var root = await _alive(id, ws);
@@ -368,6 +373,7 @@ final class TaskCommands {
         _target(t, {
           TaskFields.isCompleted,
           TaskFields.completedAt,
+          TaskFields.completedLabelNames,
           TaskFields.orderKey,
         }),
       if (reinstateSection)
@@ -382,6 +388,7 @@ final class TaskCommands {
         await _mutator.update(EntityTypes.task, t, {
           TaskFields.isCompleted: false,
           TaskFields.completedAt: null,
+          TaskFields.completedLabelNames: null,
           TaskFields.orderKey: keys[t],
         });
       }
@@ -401,12 +408,15 @@ final class TaskCommands {
 
   /// Удалённые метки задач [ids], которые возвращаются в работу, — как в
   /// Todoist (help «Introduction to labels»): задача получает живую метку с
-  /// тем же именем (без учёта регистра), а если её нет — метку, созданную
-  /// заново с этим именем, цветом и избранным по умолчанию, в конце списка.
+  /// именем на момент завершения (снимок [Task.completedLabelNames]; нет
+  /// снимка — последнее имя удалённой метки), без учёта регистра, а если её
+  /// нет — метку, созданную заново с этим именем, цветом и избранным по
+  /// умолчанию, в конце списка.
   /// Связь с удалённой меткой снимается: если ту восстановят (выбор на экране
   /// «Конфликты»), задача не понесёт две одноимённые метки. Id новой метки —
-  /// [revivedLabelId]: два устройства, вернувшие такие задачи офлайн,
-  /// создают одну метку.
+  /// [revivedLabelId] из id удалённой и имени: два устройства, вернувшие
+  /// такие задачи офлайн, создают одну метку, а разные имена одной удалённой
+  /// метки в снимках задач — разные метки.
   Future<void> _reviveLabels(Workspace ws, List<String> ids) async {
     final byName = <String, String>{};
     for (final l in ws.labels) {
@@ -414,20 +424,22 @@ final class TaskCommands {
     }
     final keys = [for (final l in ws.labels) l.orderKey];
     for (final t in ids) {
-      for (final old in ws.task(t)!.labelIds) {
-        final deleted = ws.deletedLabel(old);
-        // Пустое имя — строка известна только по tombstone, поля создателя
-        // ещё не пришли: создавать нечего.
-        if (deleted == null || deleted.name.trim().isEmpty) continue;
-        final target = byName[deleted.name.toLowerCase()] ??= await () async {
+      final task = ws.task(t)!;
+      for (final old in task.labelIds) {
+        if (ws.deletedLabel(old) == null) continue;
+        // Пустое имя — снимка нет, а метка известна только по tombstone (поля
+        // создателя ещё не пришли): создавать нечего.
+        final name = ws.taskLabel(task, old)!.name;
+        if (name.trim().isEmpty) continue;
+        final target = byName[name.toLowerCase()] ??= await () async {
           var id = old;
           do {
-            id = revivedLabelId(id);
+            id = revivedLabelId(id, name);
           } while (ws.label(id) != null || ws.deletedLabel(id) != null);
           final key = keyAtEnd(keys);
           keys.add(key);
           await _mutator.update(EntityTypes.label, id, {
-            LabelFields.name: deleted.name,
+            LabelFields.name: name,
             LabelFields.color: 'charcoal',
             LabelFields.orderKey: key,
             LabelFields.isFavorite: false,
@@ -603,23 +615,37 @@ final class TaskCommands {
 
   // --- Внутреннее ---
 
-  /// Отметить задачи [ids] завершёнными или нет одной транзакцией, без
-  /// проверок дерева: для действий над группой (завершение с подзадачами,
-  /// архив раздела).
-  Future<Undo> markCompleted(
-    List<String> ids, {
-    required bool completed,
-  }) async {
-    const fields = {TaskFields.isCompleted, TaskFields.completedAt};
+  /// Завершить задачи [ids] снимка [ws] одной транзакцией, без проверок
+  /// дерева: для действий над группой (завершение с подзадачами, архив
+  /// раздела). Задача с метками получает снимок их имён
+  /// ([TaskFields.completedLabelNames]) тем же действием (решение 4 плана
+  /// M4); «Отменить» возвращает и его. У задачи без меток снимок снимается:
+  /// старый мог остаться после параллельных завершения и возврата, а метку
+  /// могут поставить и выполненной задаче.
+  Future<Undo> markCompleted(Workspace ws, List<String> ids) async {
+    final names = {
+      for (final t in ids)
+        t: {
+          for (final l in ws.task(t)!.labelIds)
+            if (ws.label(l) case final label?) l: label.name,
+        },
+    };
     final undo = await _mutator.capture([
-      for (final t in ids) _target(t, fields),
+      for (final t in ids)
+        _target(t, {
+          TaskFields.isCompleted,
+          TaskFields.completedAt,
+          TaskFields.completedLabelNames,
+        }),
     ]);
-    final at = completed ? _now() : null;
+    final at = _now();
     await _mutator.batch(() async {
       for (final t in ids) {
         await _mutator.update(EntityTypes.task, t, {
-          TaskFields.isCompleted: completed,
+          TaskFields.isCompleted: true,
           TaskFields.completedAt: at,
+          // Пустого снимка нет — `null`; без старого снимка op не пишется.
+          TaskFields.completedLabelNames: names[t]!.isEmpty ? null : names[t],
         });
       }
     });

@@ -72,7 +72,7 @@ final class SectionCommands {
         for (final t in ws.taskSubtree(root.id))
           if (!ws.task(t)!.isCompleted) t,
     ];
-    await _tasks.markCompleted(open, completed: true);
+    await _tasks.markCompleted(ws, open);
     await _mutator.update(EntityTypes.section, id, {
       SectionFields.isArchived: true,
     });
