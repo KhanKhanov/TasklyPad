@@ -13,8 +13,9 @@ import 'support/devices.dart';
 
 // Данные схемы v5 (решения 1, 3, 4, 5 плана M4) на двух устройствах тем же
 // путём, что в приложении: Mutator → журнал drift → папка на диске → другая
-// база. Команд для новых полей ещё нет (M4.2, M4.5, M4.9, M4.11) — правки
-// пишутся через Mutator, как их будут писать команды.
+// база. Снимок имён меток пишут команды (M4.2); для остальных полей команд
+// ещё нет (M4.5, M4.9, M4.11) — правки пишутся через Mutator, как их будут
+// писать команды.
 void main() {
   late TestDevice pc;
   late TestDevice phone;
@@ -309,15 +310,8 @@ void main() {
     );
     await syncBoth();
 
-    // Как будет писать `markCompleted` (M4.2): выполнение и снимок одним
-    // действием.
-    for (final dev in [pc, phone]) {
-      await dev.services.mutator.update(EntityTypes.task, task, {
-        TaskFields.isCompleted: true,
-        TaskFields.completedAt: dev.clock.nowUtc().toIso8601String(),
-        TaskFields.completedLabelNames: {label: 'дом'},
-      });
-    }
+    await onPc.tasks.complete(task);
+    await onPhone.tasks.complete(task);
     await syncBoth();
 
     for (final dev in [onPc, onPhone]) {
@@ -327,6 +321,200 @@ void main() {
     }
     expect(await pc.conflicts(), isEmpty);
     expect(await phone.conflicts(), isEmpty);
+    await expectStableAndSame();
+  });
+
+  test(
+    'ПК завершил задачу, телефон офлайн переименовал метку — на выполненной '
+    'имя на момент завершения, на активной новое; пересборка то же',
+    () async {
+      final label = await onPc.labels.add(name: 'дом');
+      final done = await onPc.tasks.add(content: 'done', labelIds: {label});
+      final open = await onPc.tasks.add(content: 'open', labelIds: {label});
+      await syncBoth();
+
+      await onPc.tasks.complete(done);
+      await onPhone.labels.rename(label, 'дача');
+      await syncBoth();
+
+      for (final dev in [onPc, onPhone]) {
+        final ws = await dev.read();
+        expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дом');
+        expect(ws.taskLabel(ws.task(open)!, label)?.name, 'дача');
+      }
+      for (final dev in [pc, phone]) {
+        expect(await cards(dev), isEmpty);
+      }
+      await expectStableAndSame();
+      for (final dev in [onPc, onPhone]) {
+        final ws = await dev.read();
+        expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дом');
+      }
+    },
+  );
+
+  test('ПК вернул задачу в работу, телефон офлайн переименовал метку — у '
+      'задачи в работе текущее имя, снимка нет, карточек нет', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final task = await onPc.tasks.add(content: 't', labelIds: {label});
+    await onPc.tasks.complete(task);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(task);
+    await onPhone.labels.rename(label, 'дача');
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      final active = ws.task(task)!;
+      expect(active.isCompleted, isFalse);
+      expect(active.completedLabelNames, isEmpty);
+      expect(ws.taskLabel(active, label)?.name, 'дача');
+    }
+    for (final dev in [pc, phone]) {
+      expect(
+        (await dev.entity(
+          EntityTypes.task,
+          task,
+        ))![TaskFields.completedLabelNames],
+        isNull,
+      );
+      expect(await cards(dev), isEmpty);
+    }
+    await expectStableAndSame();
+  });
+
+  test('метку переименовали и удалили на ПК после завершения, оба устройства '
+      'офлайн вернули задачи в работу — одна метка с именем на момент '
+      'завершения', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.tasks.complete(b);
+    await onPc.labels.rename(label, 'дача');
+    await onPc.labels.delete(label);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      final revived = ws.labels.single;
+      expect(revived.name, 'дом');
+      expect(ws.task(a)!.labelIds, [revived.id]);
+      expect(ws.task(b)!.labelIds, [revived.id]);
+    }
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    await expectStableAndSame();
+  });
+
+  test('одна удалённая метка под разными именами в снимках, задачи вернули на '
+      'двух устройствах офлайн — у каждого имени своя метка, одинаково на '
+      'обоих, конфликтов нет', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.labels.rename(label, 'работа');
+    await onPc.tasks.complete(b);
+    await onPc.labels.delete(label);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      String nameOn(String t) => ws.label(ws.task(t)!.labelIds.single)!.name;
+      expect({for (final l in ws.labels) l.name}, {'дом', 'работа'});
+      expect((nameOn(a), nameOn(b)), ('дом', 'работа'));
+    }
+    expect(await pc.conflicts(), isEmpty);
+    expect(await phone.conflicts(), isEmpty);
+    await expectStableAndSame();
+  });
+
+  test('имена удалённой метки в снимках различаются только регистром, задачи '
+      'вернули на двух устройствах офлайн — одна метка, спор о написании '
+      'виден конфликтом, данные сходятся', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.labels.rename(label, 'Дом');
+    await onPc.tasks.complete(b);
+    await onPc.labels.delete(label);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    final (onA, onB) = (await onPc.read(), await onPhone.read());
+    expect(
+      [for (final l in onB.labels) (l.id, l.name)],
+      [for (final l in onA.labels) (l.id, l.name)],
+    );
+    final revived = onA.labels.single;
+    expect(revived.name.toLowerCase(), 'дом');
+    expect(onA.task(a)!.labelIds, [revived.id]);
+    expect(onA.task(b)!.labelIds, [revived.id]);
+    final conflict = (await pc.conflicts()).single;
+    expect(conflict.field, LabelFields.name);
+    expect((await phone.conflicts()).single.id, conflict.id);
+    await expectStableAndSame();
+  });
+
+  test('ПК вернул задачу в работу и переименовал метку, телефон офлайн вернул '
+      'и снова завершил — в карточке «выполнена» каждая сторона пишет свой '
+      'снимок', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final task = await onPc.tasks.add(content: 't', labelIds: {label});
+    await onPc.tasks.complete(task);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(task);
+    await onPc.labels.rename(label, 'дача');
+    phone.advance(const Duration(seconds: 5));
+    await onPhone.tasks.uncomplete(task);
+    await onPhone.tasks.complete(task);
+    await syncBoth();
+
+    // Действует позднее — завершение телефона со снимком «дом».
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      expect(ws.taskLabel(ws.task(task)!, label)?.name, 'дом');
+    }
+    final card = (await cards(pc)).single;
+    expect(card.older.fields[TaskFields.completedLabelNames], isNull);
+    expect(card.newer.fields[TaskFields.completedLabelNames], {label: 'дом'});
+
+    await pc.services.mutator.resolveConflicts(
+      card.conflictIds,
+      card.older.fields,
+    );
+    await syncBoth();
+    for (final dev in [onPc, onPhone]) {
+      final ws = await dev.read();
+      final active = ws.task(task)!;
+      expect(active.isCompleted, isFalse);
+      expect(ws.taskLabel(active, label)?.name, 'дача');
+    }
+    for (final dev in [pc, phone]) {
+      expect(
+        (await dev.entity(
+          EntityTypes.task,
+          task,
+        ))![TaskFields.completedLabelNames],
+        isNull,
+      );
+      expect(await cards(dev), isEmpty);
+    }
     await expectStableAndSame();
   });
 

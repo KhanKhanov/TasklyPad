@@ -275,7 +275,7 @@ void main() {
       expect(ws.labels, isEmpty);
       expect(ws.task(open)!.labelIds, isEmpty);
       expect(ws.task(done)!.labelIds, [label]);
-      expect(ws.taskLabel(label)?.name, 'дом');
+      expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дом');
     });
 
     test('возврат в работу задачи с удалённой меткой — метка создаётся '
@@ -397,6 +397,213 @@ void main() {
       final ws = await app.read();
       expect(ws.labels, hasLength(2));
       expect(ws.task(done)!.labelIds, [revived]);
+    });
+
+    test('переименование после завершения — на выполненной задаче имя на '
+        'момент завершения, на активной новое', () async {
+      final label = await app.labels.add(name: 'дом');
+      final open = await app.tasks.add(content: 'open', labelIds: {label});
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.rename(label, 'дача');
+
+      final ws = await app.read();
+      expect(ws.task(done)!.completedLabelNames, {label: 'дом'});
+      expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дом');
+      expect(ws.taskLabel(ws.task(open)!, label)?.name, 'дача');
+      expect(ws.label(label)?.name, 'дача');
+    });
+
+    test('метку переименовали после завершения и удалили — возврат в работу '
+        'создаёт метку с именем на момент завершения, снимок снят', () async {
+      final label = await app.labels.add(name: 'дом');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.rename(label, 'дача');
+      await app.labels.delete(label);
+      final before = await app.read();
+      expect(before.taskLabel(before.task(done)!, label)?.name, 'дом');
+
+      await app.tasks.uncomplete(done);
+      final ws = await app.read();
+      final revived = ws.labels.single;
+      expect(revived.name, 'дом');
+      expect(ws.task(done)!.labelIds, [revived.id]);
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          done,
+        ))![TaskFields.completedLabelNames],
+        isNull,
+      );
+    });
+
+    test('переименованная после завершения живая метка — возврат оставляет '
+        'её на задаче с текущим именем (допущение О-41)', () async {
+      final label = await app.labels.add(name: 'дом');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.rename(label, 'дача');
+
+      await app.tasks.uncomplete(done);
+      final ws = await app.read();
+      expect([for (final l in ws.labels) l.name], ['дача']);
+      expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дача');
+    });
+
+    test('задача без меток — снимок не пишется; «Отменить» завершения '
+        'снимает снимок задачи с метками', () async {
+      final label = await app.labels.add(name: 'дом');
+      final plain = await app.tasks.add(content: 'plain');
+      final tagged = await app.tasks.add(content: 'tagged', labelIds: {label});
+      await app.tasks.complete(plain);
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          plain,
+        ))!.containsKey(TaskFields.completedLabelNames),
+        isFalse,
+      );
+
+      final undo = await app.tasks.complete(tagged);
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          tagged,
+        ))![TaskFields.completedLabelNames],
+        {label: 'дом'},
+      );
+      await undo();
+      final ws = await app.read();
+      expect(ws.task(tagged)!.isCompleted, isFalse);
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          tagged,
+        ))![TaskFields.completedLabelNames],
+        isNull,
+      );
+    });
+
+    test('архив раздела и завершение с подзадачами пишут снимок каждой '
+        'завершённой задаче с метками', () async {
+      final label = await app.labels.add(name: 'дом');
+      final project = await app.projects.add(name: 'Работа');
+      final section = await app.sections.add(project, name: 'Неделя');
+      final inSection = await app.tasks.add(
+        content: 'в разделе',
+        projectId: project,
+        sectionId: section,
+        labelIds: {label},
+      );
+      final parent = await app.tasks.add(content: 'p');
+      final child = await app.tasks.add(
+        content: 'c',
+        parentId: parent,
+        labelIds: {label},
+      );
+      await app.sections.archive(section);
+      await app.tasks.complete(parent);
+      await app.labels.rename(label, 'дача');
+
+      final ws = await app.read();
+      for (final t in [inSection, child]) {
+        expect(ws.task(t)!.completedLabelNames, {label: 'дом'}, reason: t);
+        expect(ws.taskLabel(ws.task(t)!, label)?.name, 'дом', reason: t);
+      }
+      expect(ws.task(parent)!.completedLabelNames, isEmpty);
+    });
+
+    test('одна удалённая метка под разными именами в снимках задач одного '
+        'возврата — у каждого имени своя новая метка', () async {
+      final label = await app.labels.add(name: 'дом');
+      final parent = await app.tasks.add(content: 'p', labelIds: {label});
+      final child = await app.tasks.add(
+        content: 'c',
+        parentId: parent,
+        labelIds: {label},
+      );
+      await app.tasks.complete(child);
+      await app.labels.rename(label, 'работа');
+      await app.tasks.complete(parent);
+      await app.labels.delete(label);
+
+      // Возврат подзадачи возвращает и родителя — одно действие.
+      await app.tasks.uncomplete(child);
+      final ws = await app.read();
+      String nameOn(String t) => ws.label(ws.task(t)!.labelIds.single)!.name;
+      expect({for (final l in ws.labels) l.name}, {'дом', 'работа'});
+      expect(nameOn(child), 'дом');
+      expect(nameOn(parent), 'работа');
+    });
+
+    test('удалённая метка известна только по tombstone: со снимком возврат '
+        'создаёт метку с его именем, без снимка — ничего не создаёт', () async {
+      final mutator = device.services.mutator;
+      Future<String> doneWithGhost(String ghost, {String? name}) async {
+        final t = await app.tasks.add(content: ghost);
+        await mutator.update(EntityTypes.taskLabel, taskLabelId(t, ghost), {
+          TaskLabelFields.taskId: t,
+          TaskLabelFields.labelId: ghost,
+          TaskLabelFields.deleted: false,
+        });
+        await mutator.update(EntityTypes.task, t, {
+          TaskFields.isCompleted: true,
+          TaskFields.completedLabelNames: ?(name == null
+              ? null
+              : {ghost: name}),
+        });
+        device.advance(const Duration(seconds: 1));
+        await mutator.delete(EntityTypes.label, ghost);
+        return t;
+      }
+
+      final named = await doneWithGhost('ghost1', name: 'дом');
+      final bare = await doneWithGhost('ghost2');
+      await app.tasks.uncomplete(named);
+      await app.tasks.uncomplete(bare);
+
+      final ws = await app.read();
+      final revived = ws.labels.single;
+      expect(
+        (revived.id, revived.name),
+        (revivedLabelId('ghost1', 'дом'), 'дом'),
+      );
+      expect(ws.task(named)!.labelIds, [revived.id]);
+      expect(ws.task(bare)!.labelIds, isEmpty);
+    });
+
+    test('«Отменить» возврата в работу возвращает и снимок имён', () async {
+      final label = await app.labels.add(name: 'дом');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.rename(label, 'дача');
+
+      final undo = await app.tasks.uncomplete(done);
+      await undo();
+      final ws = await app.read();
+      expect(ws.task(done)!.isCompleted, isTrue);
+      expect(ws.taskLabel(ws.task(done)!, label)?.name, 'дом');
+    });
+
+    test('старый снимок у задачи, завершённой уже без меток, снимается: '
+        'метка, поставленная потом, — под текущим именем', () async {
+      final label = await app.labels.add(name: 'дом');
+      final task = await app.tasks.add(content: 't', labelIds: {label});
+      await app.tasks.complete(task);
+      // Возврат без снятия снимка — как после параллельных завершения на
+      // одном устройстве и возврата на другом.
+      await device.services.mutator.update(EntityTypes.task, task, {
+        TaskFields.isCompleted: false,
+      });
+      await app.tasks.setLabels(task, const {});
+      await app.labels.rename(label, 'дача');
+      await app.tasks.complete(task);
+      await app.tasks.setLabels(task, {label});
+
+      final ws = await app.read();
+      expect(ws.task(task)!.completedLabelNames, isEmpty);
+      expect(ws.taskLabel(ws.task(task)!, label)?.name, 'дача');
     });
 
     test('дубликат выполненной задачи не получает связь с удалённой '

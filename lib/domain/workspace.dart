@@ -153,9 +153,19 @@ final class Workspace {
   /// Удалённая метка — её имя и цвет видны на выполненных задачах.
   Label? deletedLabel(String id) => _deletedLabels[id];
 
-  /// Метка из списка меток задачи ([Task.labelIds]): живая или — у
-  /// выполненной задачи — удалённая.
-  Label? taskLabel(String id) => _labels[id] ?? _deletedLabels[id];
+  /// Метка [id] из списка меток задачи [task] ([Task.labelIds]): живая или —
+  /// у выполненной задачи — удалённая. Имя у выполненной — из снимка на
+  /// момент завершения ([Task.completedLabelNames]), если он есть, как в
+  /// Todoist: переименование метки после завершения его не меняет (О-41).
+  Label? taskLabel(Task task, String id) {
+    final label = _anyLabel(id);
+    final name = task.completedLabelNames[id];
+    return label == null || name == null || name.isEmpty
+        ? label
+        : label.copyWith(name: name);
+  }
+
+  Label? _anyLabel(String id) => _labels[id] ?? _deletedLabels[id];
 
   /// Активные задачи с меткой (с подзадачами, без архивных проектов), по
   /// порядку проектов и задач.
@@ -384,7 +394,7 @@ final class Workspace {
         labelIds: [
           for (final id in t.labelIds)
             if (_labels.containsKey(id) || _completedBeforeDeletion(t, id)) id,
-        ]..sort((a, b) => _byOrder(_labelKey)(taskLabel(a)!, taskLabel(b)!)),
+        ]..sort((a, b) => _byOrder(_labelKey)(_anyLabel(a)!, _anyLabel(b)!)),
       );
       _taskParent[t.id] = parents[t.id];
     }

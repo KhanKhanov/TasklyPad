@@ -66,13 +66,16 @@ const String settingsEntityId = '00000000-0000-8000-8000-000000000002';
 String taskLabelId(String taskId, String labelId) =>
     uuidV8([EntityTypes.taskLabel, taskId, labelId]);
 
-/// Id метки, созданной заново вместо удалённой [labelId], когда задачу с ней
-/// вернули в работу: один и тот же на всех устройствах. Два устройства,
-/// вернувшие офлайн задачи с одной удалённой меткой, пишут одну метку
-/// одинаковыми значениями, а не две. Если и эта метка уже есть (удалена или
-/// переименована), берётся следующий id цепочки — от неё.
-String revivedLabelId(String labelId) =>
-    uuidV8([EntityTypes.label, 'revived', labelId]);
+/// Id метки с именем [name], созданной заново вместо удалённой [labelId],
+/// когда задачу с ней вернули в работу: один и тот же на всех устройствах.
+/// Два устройства, вернувшие офлайн задачи с одной удалённой меткой, пишут
+/// одну метку одинаковыми значениями, а не две. Имя (без учёта регистра) —
+/// часть id: в снимках задач одна метка может называться по-разному, и
+/// каждое имя получает свою метку (решение 2А M4.2 в plans/m4). Если и эта
+/// метка уже есть (удалена или переименована), берётся следующий id
+/// цепочки — от неё.
+String revivedLabelId(String labelId, String name) =>
+    uuidV8([EntityTypes.label, 'revived', labelId, name.toLowerCase()]);
 
 /// Id проекта «Входящие» — один на всех устройствах.
 ///
@@ -156,10 +159,9 @@ abstract final class TaskFields {
   static const String isCompleted = 'is_completed';
   static const String completedAt = 'completed_at';
 
-  /// Имена меток задачи на момент завершения — объект {id метки: имя}:
-  /// пишется тем же действием, что [isCompleted] `true`, только у задачи с
-  /// метками; возврат в работу снимает (`null`). Имени поля в Todoist API
-  /// нет — своё (решение 4 плана M4, О-41).
+  /// Имена меток задачи на момент завершения — объект {id метки: имя}; когда
+  /// пишется и снимается — SYNC_DESIGN «Специальные случаи». Имени поля в
+  /// Todoist API нет — своё (решение 4 плана M4, О-41).
   static const String completedLabelNames = 'completed_label_names';
   static const String addedAt = 'added_at';
   static const String deleted = Op.deletedField;

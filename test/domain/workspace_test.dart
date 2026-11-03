@@ -384,10 +384,35 @@ void main() {
     expect(ws.label('gone'), isNull);
     expect(ws.deletedLabel('gone')?.name, 'gone');
     expect(ws.deletedLabel('x'), isNull);
-    expect(ws.taskLabel('gone')?.name, 'gone');
-    expect(ws.taskLabel('x')?.name, 'x');
+    final done = ws.task('done')!;
+    expect(ws.taskLabel(done, 'gone')?.name, 'gone');
+    expect(ws.taskLabel(done, 'x')?.name, 'x');
     expect([for (final l in ws.labels) l.id], ['x']);
     expect(ws.labelTaskCount('gone'), 0);
+  });
+
+  test('имя метки на выполненной задаче — из снимка на момент завершения; '
+      'метки без снимка и пустое имя в снимке — текущее имя', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p')],
+      sections: const [],
+      labels: [_label('x'), _label('y'), _label('z')],
+      tasks: [
+        _task(
+          'done',
+          labels: ['x', 'y', 'z'],
+          completed: true,
+        ).copyWith(completedLabelNames: {'x': 'старое', 'z': ''}),
+      ],
+    );
+    final done = ws.task('done')!;
+    expect(
+      [for (final id in done.labelIds) ws.taskLabel(done, id)?.name],
+      ['старое', 'y', 'z'],
+    );
+    expect(ws.taskLabel(done, 'x')?.color, 'charcoal');
+    expect(ws.label('x')?.name, 'x', reason: 'сама метка не меняется');
+    expect(ws.taskLabel(done, 'unknown'), isNull);
   });
 
   test('projectView: архивные разделы — только при showCompleted и после '

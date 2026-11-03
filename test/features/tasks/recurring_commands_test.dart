@@ -507,6 +507,38 @@ void main() {
       expect(labels.map((l) => l.name), ['дом']);
     });
 
+    test('сброшенная подзадача: метку переименовали и удалили после её '
+        'завершения — новая метка с именем на момент завершения, снимок '
+        'снят', () async {
+      final id = await app.tasks.add(
+        content: 'Уборка',
+        due: _due('2026-10-26', 'FREQ=DAILY'),
+      );
+      final label = await app.labels.add(name: 'дом');
+      final sub = await app.tasks.add(
+        content: 'Шаг',
+        parentId: id,
+        labelIds: {label},
+      );
+      await app.tasks.complete(sub);
+      await app.labels.rename(label, 'дача');
+      await app.labels.delete(label);
+      await setReset(true);
+
+      await app.tasks.complete(id);
+
+      final ws = await app.read();
+      final labels = [for (final l in ws.task(sub)!.labelIds) ws.label(l)!];
+      expect(labels.map((l) => l.name), ['дом']);
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          sub,
+        ))![TaskFields.completedLabelNames],
+        isNull,
+      );
+    });
+
     test('«Отменить» не удаляет запись о выполнении, пришедшую раньше с '
         'другого устройства, а возвращает её время', () async {
       final due = _due('2026-10-26', 'FREQ=DAILY');
