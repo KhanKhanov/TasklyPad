@@ -873,9 +873,12 @@ mixin _$ConflictCard {
 
  ConflictEntity get entity; String get entityId;/// Название задачи или имя проекта, раздела, метки; `null` — пусто.
  String? get title; bool get isInbox;/// У метки задачи — название задачи ([title] — имя метки).
- String? get ownerTitle; bool get isDelete; List<String> get conflictIds;/// Более ранняя правка — проигравшая, пока пользователь не выбрал.
- ConflictSide get older; ConflictSide get newer;/// Действующие значения, если ни одна сторона не действует целиком
-/// (поле правили после конфликта), иначе пусто.
+ String? get ownerTitle; bool get isDelete; List<String> get conflictIds;/// Сторона с более ранним последним действием. Пока пользователь не
+/// выбрал, каждое поле решает LWW: в карточке из нескольких действий
+/// часть полей может победить у одной стороны, часть — у другой.
+ ConflictSide get older; ConflictSide get newer;/// Действующие значения, если ни одна сторона не действует целиком (поле
+/// правили после конфликта или поля победили у разных сторон), иначе
+/// пусто.
  List<ConflictValue> get current;
 /// Create a copy of ConflictCard
 /// with the given fields replaced by the non-null parameter values.
@@ -1118,14 +1121,18 @@ class _ConflictCard extends ConflictCard {
   return EqualUnmodifiableListView(_conflictIds);
 }
 
-/// Более ранняя правка — проигравшая, пока пользователь не выбрал.
+/// Сторона с более ранним последним действием. Пока пользователь не
+/// выбрал, каждое поле решает LWW: в карточке из нескольких действий
+/// часть полей может победить у одной стороны, часть — у другой.
 @override final  ConflictSide older;
 @override final  ConflictSide newer;
-/// Действующие значения, если ни одна сторона не действует целиком
-/// (поле правили после конфликта), иначе пусто.
+/// Действующие значения, если ни одна сторона не действует целиком (поле
+/// правили после конфликта или поля победили у разных сторон), иначе
+/// пусто.
  final  List<ConflictValue> _current;
-/// Действующие значения, если ни одна сторона не действует целиком
-/// (поле правили после конфликта), иначе пусто.
+/// Действующие значения, если ни одна сторона не действует целиком (поле
+/// правили после конфликта или поля победили у разных сторон), иначе
+/// пусто.
 @override@JsonKey() List<ConflictValue> get current {
   if (_current is EqualUnmodifiableListView) return _current;
   // ignore: implicit_dynamic_type
