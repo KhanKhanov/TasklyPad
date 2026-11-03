@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Project {
 
- String get id; String get name;/// Имя цвета палитры Todoist (`berry_red` … `taupe`).
+ String get id; String get name;/// Описание — markdown; пустая строка — описания нет.
+ String get description;/// Имя цвета палитры Todoist (`berry_red` … `taupe`).
  String get color; String? get parentId; String get orderKey; bool get isFavorite; bool get isArchived; bool get isInbox;/// `list`, `board` или `calendar`; незнакомое значение — как `list`.
  String get viewStyle; bool get isCollapsed;
 /// Create a copy of Project
@@ -29,20 +30,20 @@ $ProjectCopyWith<Project> get copyWith => _$ProjectCopyWithImpl<Project>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as Project;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Project&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.orderKey, _this.orderKey) || other.orderKey == _this.orderKey)&&(identical(other.isFavorite, _this.isFavorite) || other.isFavorite == _this.isFavorite)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.isInbox, _this.isInbox) || other.isInbox == _this.isInbox)&&(identical(other.viewStyle, _this.viewStyle) || other.viewStyle == _this.viewStyle)&&(identical(other.isCollapsed, _this.isCollapsed) || other.isCollapsed == _this.isCollapsed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Project&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.orderKey, _this.orderKey) || other.orderKey == _this.orderKey)&&(identical(other.isFavorite, _this.isFavorite) || other.isFavorite == _this.isFavorite)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.isInbox, _this.isInbox) || other.isInbox == _this.isInbox)&&(identical(other.viewStyle, _this.viewStyle) || other.viewStyle == _this.viewStyle)&&(identical(other.isCollapsed, _this.isCollapsed) || other.isCollapsed == _this.isCollapsed));
 }
 
 
 @override
 int get hashCode {
   final _this = this as Project;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.color,_this.parentId,_this.orderKey,_this.isFavorite,_this.isArchived,_this.isInbox,_this.viewStyle,_this.isCollapsed);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.description,_this.color,_this.parentId,_this.orderKey,_this.isFavorite,_this.isArchived,_this.isInbox,_this.viewStyle,_this.isCollapsed);
 }
 
 @override
 String toString() {
   final _this = this as Project;
-  return 'Project(id: ${_this.id}, name: ${_this.name}, color: ${_this.color}, parentId: ${_this.parentId}, orderKey: ${_this.orderKey}, isFavorite: ${_this.isFavorite}, isArchived: ${_this.isArchived}, isInbox: ${_this.isInbox}, viewStyle: ${_this.viewStyle}, isCollapsed: ${_this.isCollapsed})';
+  return 'Project(id: ${_this.id}, name: ${_this.name}, description: ${_this.description}, color: ${_this.color}, parentId: ${_this.parentId}, orderKey: ${_this.orderKey}, isFavorite: ${_this.isFavorite}, isArchived: ${_this.isArchived}, isInbox: ${_this.isInbox}, viewStyle: ${_this.viewStyle}, isCollapsed: ${_this.isCollapsed})';
 }
 
 
@@ -53,7 +54,7 @@ abstract mixin class $ProjectCopyWith<$Res>  {
   factory $ProjectCopyWith(Project value, $Res Function(Project) _then) = _$ProjectCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String color, String? parentId, String orderKey, bool isFavorite, bool isArchived, bool isInbox, String viewStyle, bool isCollapsed
+ String id, String name, String description, String color, String? parentId, String orderKey, bool isFavorite, bool isArchived, bool isInbox, String viewStyle, bool isCollapsed
 });
 
 
@@ -70,10 +71,11 @@ class _$ProjectCopyWithImpl<$Res>
 
 /// Create a copy of Project
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? color = null,Object? parentId = freezed,Object? orderKey = null,Object? isFavorite = null,Object? isArchived = null,Object? isInbox = null,Object? viewStyle = null,Object? isCollapsed = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? description = null,Object? color = null,Object? parentId = freezed,Object? orderKey = null,Object? isFavorite = null,Object? isArchived = null,Object? isInbox = null,Object? viewStyle = null,Object? isCollapsed = null,}) {
   return _then(Project(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as String?,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
@@ -167,10 +169,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Project() when $default != null:
-return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
+return $default(_that.id,_that.name,_that.description,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
   return orElse();
 
 }
@@ -188,10 +190,10 @@ return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)  $default,) {final _that = this;
 switch (_that) {
 case _Project():
-return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
+return $default(_that.id,_that.name,_that.description,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +210,10 @@ return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  String color,  String? parentId,  String orderKey,  bool isFavorite,  bool isArchived,  bool isInbox,  String viewStyle,  bool isCollapsed)?  $default,) {final _that = this;
 switch (_that) {
 case _Project() when $default != null:
-return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
+return $default(_that.id,_that.name,_that.description,_that.color,_that.parentId,_that.orderKey,_that.isFavorite,_that.isArchived,_that.isInbox,_that.viewStyle,_that.isCollapsed);case _:
   return null;
 
 }
@@ -223,11 +225,13 @@ return $default(_that.id,_that.name,_that.color,_that.parentId,_that.orderKey,_t
 
 
 class _Project implements Project {
-  const _Project({required this.id, required this.name, required this.color, this.parentId, required this.orderKey, required this.isFavorite, required this.isArchived, required this.isInbox, required this.viewStyle, required this.isCollapsed});
+  const _Project({required this.id, required this.name, this.description = '', required this.color, this.parentId, required this.orderKey, required this.isFavorite, required this.isArchived, required this.isInbox, required this.viewStyle, required this.isCollapsed});
   
 
 @override final  String id;
 @override final  String name;
+/// Описание — markdown; пустая строка — описания нет.
+@override@JsonKey() final  String description;
 /// Имя цвета палитры Todoist (`berry_red` … `taupe`).
 @override final  String color;
 @override final  String? parentId;
@@ -249,18 +253,18 @@ _$ProjectCopyWith<_Project> get copyWith => __$ProjectCopyWithImpl<_Project>(thi
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Project&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.orderKey, orderKey) || other.orderKey == orderKey)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isInbox, isInbox) || other.isInbox == isInbox)&&(identical(other.viewStyle, viewStyle) || other.viewStyle == viewStyle)&&(identical(other.isCollapsed, isCollapsed) || other.isCollapsed == isCollapsed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Project&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.color, color) || other.color == color)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.orderKey, orderKey) || other.orderKey == orderKey)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isInbox, isInbox) || other.isInbox == isInbox)&&(identical(other.viewStyle, viewStyle) || other.viewStyle == viewStyle)&&(identical(other.isCollapsed, isCollapsed) || other.isCollapsed == isCollapsed));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,color,parentId,orderKey,isFavorite,isArchived,isInbox,viewStyle,isCollapsed);
+    return Object.hash(runtimeType,id,name,description,color,parentId,orderKey,isFavorite,isArchived,isInbox,viewStyle,isCollapsed);
 }
 
 @override
 String toString() {
-    return 'Project(id: $id, name: $name, color: $color, parentId: $parentId, orderKey: $orderKey, isFavorite: $isFavorite, isArchived: $isArchived, isInbox: $isInbox, viewStyle: $viewStyle, isCollapsed: $isCollapsed)';
+    return 'Project(id: $id, name: $name, description: $description, color: $color, parentId: $parentId, orderKey: $orderKey, isFavorite: $isFavorite, isArchived: $isArchived, isInbox: $isInbox, viewStyle: $viewStyle, isCollapsed: $isCollapsed)';
 }
 
 
@@ -271,7 +275,7 @@ abstract mixin class _$ProjectCopyWith<$Res> implements $ProjectCopyWith<$Res> {
   factory _$ProjectCopyWith(_Project value, $Res Function(_Project) _then) = __$ProjectCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String color, String? parentId, String orderKey, bool isFavorite, bool isArchived, bool isInbox, String viewStyle, bool isCollapsed
+ String id, String name, String description, String color, String? parentId, String orderKey, bool isFavorite, bool isArchived, bool isInbox, String viewStyle, bool isCollapsed
 });
 
 
@@ -288,10 +292,11 @@ class __$ProjectCopyWithImpl<$Res>
 
 /// Create a copy of Project
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = null,Object? parentId = freezed,Object? orderKey = null,Object? isFavorite = null,Object? isArchived = null,Object? isInbox = null,Object? viewStyle = null,Object? isCollapsed = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? color = null,Object? parentId = freezed,Object? orderKey = null,Object? isFavorite = null,Object? isArchived = null,Object? isInbox = null,Object? viewStyle = null,Object? isCollapsed = null,}) {
   return _then(_Project(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as String?,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
@@ -1740,9 +1745,12 @@ as String,
 mixin _$Task {
 
  String get id; String get content; String get description;/// `null` — «Входящие» (задача без проекта бывает, пока не пришла op).
- String? get projectId; String? get sectionId; String? get parentId; String get orderKey;/// 1 = P1 (высший) … 4 = P4 (по умолчанию).
+ String? get projectId; String? get sectionId; String? get parentId; String get orderKey;/// Ручной порядок внутри дня в «Сегодня» и «Предстоящем»; сравнивается
+/// только у задач одного дня. Пустая строка — порядок не задан.
+ String get dayOrderKey;/// 1 = P1 (высший) … 4 = P4 (по умолчанию).
  int get priority; Due? get due;/// Дедлайн — дата `YYYY-MM-DD`.
- String? get deadline; TaskDuration? get duration; bool get isCollapsed; bool get isCompleted;/// UTC ISO-8601.
+ String? get deadline; TaskDuration? get duration; bool get isCollapsed; bool get isCompleted;/// Имена меток на момент завершения: id метки → имя; пусто — снимка нет.
+ Map<String, String> get completedLabelNames;/// UTC ISO-8601.
  String? get completedAt; String? get addedAt;/// Живые метки задачи (id), по порядку меток.
  List<String> get labelIds;
 /// Create a copy of Task
@@ -1756,20 +1764,20 @@ $TaskCopyWith<Task> get copyWith => _$TaskCopyWithImpl<Task>(this as Task, _$ide
 @override
 bool operator ==(Object other) {
   final _this = this as Task;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Task&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.projectId, _this.projectId) || other.projectId == _this.projectId)&&(identical(other.sectionId, _this.sectionId) || other.sectionId == _this.sectionId)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.orderKey, _this.orderKey) || other.orderKey == _this.orderKey)&&(identical(other.priority, _this.priority) || other.priority == _this.priority)&&(identical(other.due, _this.due) || other.due == _this.due)&&(identical(other.deadline, _this.deadline) || other.deadline == _this.deadline)&&(identical(other.duration, _this.duration) || other.duration == _this.duration)&&(identical(other.isCollapsed, _this.isCollapsed) || other.isCollapsed == _this.isCollapsed)&&(identical(other.isCompleted, _this.isCompleted) || other.isCompleted == _this.isCompleted)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.addedAt, _this.addedAt) || other.addedAt == _this.addedAt)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Task&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.content, _this.content) || other.content == _this.content)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.projectId, _this.projectId) || other.projectId == _this.projectId)&&(identical(other.sectionId, _this.sectionId) || other.sectionId == _this.sectionId)&&(identical(other.parentId, _this.parentId) || other.parentId == _this.parentId)&&(identical(other.orderKey, _this.orderKey) || other.orderKey == _this.orderKey)&&(identical(other.dayOrderKey, _this.dayOrderKey) || other.dayOrderKey == _this.dayOrderKey)&&(identical(other.priority, _this.priority) || other.priority == _this.priority)&&(identical(other.due, _this.due) || other.due == _this.due)&&(identical(other.deadline, _this.deadline) || other.deadline == _this.deadline)&&(identical(other.duration, _this.duration) || other.duration == _this.duration)&&(identical(other.isCollapsed, _this.isCollapsed) || other.isCollapsed == _this.isCollapsed)&&(identical(other.isCompleted, _this.isCompleted) || other.isCompleted == _this.isCompleted)&&const DeepCollectionEquality().equals(other.completedLabelNames, _this.completedLabelNames)&&(identical(other.completedAt, _this.completedAt) || other.completedAt == _this.completedAt)&&(identical(other.addedAt, _this.addedAt) || other.addedAt == _this.addedAt)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds));
 }
 
 
 @override
 int get hashCode {
   final _this = this as Task;
-  return Object.hash(runtimeType,_this.id,_this.content,_this.description,_this.projectId,_this.sectionId,_this.parentId,_this.orderKey,_this.priority,_this.due,_this.deadline,_this.duration,_this.isCollapsed,_this.isCompleted,_this.completedAt,_this.addedAt,const DeepCollectionEquality().hash(_this.labelIds));
+  return Object.hash(runtimeType,_this.id,_this.content,_this.description,_this.projectId,_this.sectionId,_this.parentId,_this.orderKey,_this.dayOrderKey,_this.priority,_this.due,_this.deadline,_this.duration,_this.isCollapsed,_this.isCompleted,const DeepCollectionEquality().hash(_this.completedLabelNames),_this.completedAt,_this.addedAt,const DeepCollectionEquality().hash(_this.labelIds));
 }
 
 @override
 String toString() {
   final _this = this as Task;
-  return 'Task(id: ${_this.id}, content: ${_this.content}, description: ${_this.description}, projectId: ${_this.projectId}, sectionId: ${_this.sectionId}, parentId: ${_this.parentId}, orderKey: ${_this.orderKey}, priority: ${_this.priority}, due: ${_this.due}, deadline: ${_this.deadline}, duration: ${_this.duration}, isCollapsed: ${_this.isCollapsed}, isCompleted: ${_this.isCompleted}, completedAt: ${_this.completedAt}, addedAt: ${_this.addedAt}, labelIds: ${_this.labelIds})';
+  return 'Task(id: ${_this.id}, content: ${_this.content}, description: ${_this.description}, projectId: ${_this.projectId}, sectionId: ${_this.sectionId}, parentId: ${_this.parentId}, orderKey: ${_this.orderKey}, dayOrderKey: ${_this.dayOrderKey}, priority: ${_this.priority}, due: ${_this.due}, deadline: ${_this.deadline}, duration: ${_this.duration}, isCollapsed: ${_this.isCollapsed}, isCompleted: ${_this.isCompleted}, completedLabelNames: ${_this.completedLabelNames}, completedAt: ${_this.completedAt}, addedAt: ${_this.addedAt}, labelIds: ${_this.labelIds})';
 }
 
 
@@ -1780,7 +1788,7 @@ abstract mixin class $TaskCopyWith<$Res>  {
   factory $TaskCopyWith(Task value, $Res Function(Task) _then) = _$TaskCopyWithImpl;
 @useResult
 $Res call({
- String id, String content, String description, String? projectId, String? sectionId, String? parentId, String orderKey, int priority, Due? due, String? deadline, TaskDuration? duration, bool isCollapsed, bool isCompleted, String? completedAt, String? addedAt, List<String> labelIds
+ String id, String content, String description, String? projectId, String? sectionId, String? parentId, String orderKey, String dayOrderKey, int priority, Due? due, String? deadline, TaskDuration? duration, bool isCollapsed, bool isCompleted, Map<String, String> completedLabelNames, String? completedAt, String? addedAt, List<String> labelIds
 });
 
 
@@ -1797,7 +1805,7 @@ class _$TaskCopyWithImpl<$Res>
 
 /// Create a copy of Task
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? content = null,Object? description = null,Object? projectId = freezed,Object? sectionId = freezed,Object? parentId = freezed,Object? orderKey = null,Object? priority = null,Object? due = freezed,Object? deadline = freezed,Object? duration = freezed,Object? isCollapsed = null,Object? isCompleted = null,Object? completedAt = freezed,Object? addedAt = freezed,Object? labelIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? content = null,Object? description = null,Object? projectId = freezed,Object? sectionId = freezed,Object? parentId = freezed,Object? orderKey = null,Object? dayOrderKey = null,Object? priority = null,Object? due = freezed,Object? deadline = freezed,Object? duration = freezed,Object? isCollapsed = null,Object? isCompleted = null,Object? completedLabelNames = null,Object? completedAt = freezed,Object? addedAt = freezed,Object? labelIds = null,}) {
   return _then(Task(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -1806,13 +1814,15 @@ as String,projectId: freezed == projectId ? _self.projectId : projectId // ignor
 as String?,sectionId: freezed == sectionId ? _self.sectionId : sectionId // ignore: cast_nullable_to_non_nullable
 as String?,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as String?,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
+as String,dayOrderKey: null == dayOrderKey ? _self.dayOrderKey : dayOrderKey // ignore: cast_nullable_to_non_nullable
 as String,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as int,due: freezed == due ? _self.due : due // ignore: cast_nullable_to_non_nullable
 as Due?,deadline: freezed == deadline ? _self.deadline : deadline // ignore: cast_nullable_to_non_nullable
 as String?,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as TaskDuration?,isCollapsed: null == isCollapsed ? _self.isCollapsed : isCollapsed // ignore: cast_nullable_to_non_nullable
 as bool,isCompleted: null == isCompleted ? _self.isCompleted : isCompleted // ignore: cast_nullable_to_non_nullable
-as bool,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
+as bool,completedLabelNames: null == completedLabelNames ? _self.completedLabelNames : completedLabelNames // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as String?,addedAt: freezed == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
 as String?,labelIds: null == labelIds ? _self.labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as List<String>,
@@ -1924,10 +1934,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  String? completedAt,  String? addedAt,  List<String> labelIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  String dayOrderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  Map<String, String> completedLabelNames,  String? completedAt,  String? addedAt,  List<String> labelIds)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Task() when $default != null:
-return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedAt,_that.addedAt,_that.labelIds);case _:
+return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.dayOrderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedLabelNames,_that.completedAt,_that.addedAt,_that.labelIds);case _:
   return orElse();
 
 }
@@ -1945,10 +1955,10 @@ return $default(_that.id,_that.content,_that.description,_that.projectId,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  String? completedAt,  String? addedAt,  List<String> labelIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  String dayOrderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  Map<String, String> completedLabelNames,  String? completedAt,  String? addedAt,  List<String> labelIds)  $default,) {final _that = this;
 switch (_that) {
 case _Task():
-return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedAt,_that.addedAt,_that.labelIds);case _:
+return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.dayOrderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedLabelNames,_that.completedAt,_that.addedAt,_that.labelIds);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1965,10 +1975,10 @@ return $default(_that.id,_that.content,_that.description,_that.projectId,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  String? completedAt,  String? addedAt,  List<String> labelIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String content,  String description,  String? projectId,  String? sectionId,  String? parentId,  String orderKey,  String dayOrderKey,  int priority,  Due? due,  String? deadline,  TaskDuration? duration,  bool isCollapsed,  bool isCompleted,  Map<String, String> completedLabelNames,  String? completedAt,  String? addedAt,  List<String> labelIds)?  $default,) {final _that = this;
 switch (_that) {
 case _Task() when $default != null:
-return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedAt,_that.addedAt,_that.labelIds);case _:
+return $default(_that.id,_that.content,_that.description,_that.projectId,_that.sectionId,_that.parentId,_that.orderKey,_that.dayOrderKey,_that.priority,_that.due,_that.deadline,_that.duration,_that.isCollapsed,_that.isCompleted,_that.completedLabelNames,_that.completedAt,_that.addedAt,_that.labelIds);case _:
   return null;
 
 }
@@ -1980,7 +1990,7 @@ return $default(_that.id,_that.content,_that.description,_that.projectId,_that.s
 
 
 class _Task implements Task {
-  const _Task({required this.id, required this.content, required this.description, this.projectId, this.sectionId, this.parentId, required this.orderKey, required this.priority, this.due, this.deadline, this.duration, required this.isCollapsed, required this.isCompleted, this.completedAt, this.addedAt,  List<String> labelIds = const <String>[]}): _labelIds = labelIds;
+  const _Task({required this.id, required this.content, required this.description, this.projectId, this.sectionId, this.parentId, required this.orderKey, this.dayOrderKey = '', required this.priority, this.due, this.deadline, this.duration, required this.isCollapsed, required this.isCompleted,  Map<String, String> completedLabelNames = const <String, String>{}, this.completedAt, this.addedAt,  List<String> labelIds = const <String>[]}): _completedLabelNames = completedLabelNames,_labelIds = labelIds;
   
 
 @override final  String id;
@@ -1991,6 +2001,9 @@ class _Task implements Task {
 @override final  String? sectionId;
 @override final  String? parentId;
 @override final  String orderKey;
+/// Ручной порядок внутри дня в «Сегодня» и «Предстоящем»; сравнивается
+/// только у задач одного дня. Пустая строка — порядок не задан.
+@override@JsonKey() final  String dayOrderKey;
 /// 1 = P1 (высший) … 4 = P4 (по умолчанию).
 @override final  int priority;
 @override final  Due? due;
@@ -1999,6 +2012,15 @@ class _Task implements Task {
 @override final  TaskDuration? duration;
 @override final  bool isCollapsed;
 @override final  bool isCompleted;
+/// Имена меток на момент завершения: id метки → имя; пусто — снимка нет.
+ final  Map<String, String> _completedLabelNames;
+/// Имена меток на момент завершения: id метки → имя; пусто — снимка нет.
+@override@JsonKey() Map<String, String> get completedLabelNames {
+  if (_completedLabelNames is EqualUnmodifiableMapView) return _completedLabelNames;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_completedLabelNames);
+}
+
 /// UTC ISO-8601.
 @override final  String? completedAt;
 @override final  String? addedAt;
@@ -2022,18 +2044,18 @@ _$TaskCopyWith<_Task> get copyWith => __$TaskCopyWithImpl<_Task>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Task&&(identical(other.id, id) || other.id == id)&&(identical(other.content, content) || other.content == content)&&(identical(other.description, description) || other.description == description)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.sectionId, sectionId) || other.sectionId == sectionId)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.orderKey, orderKey) || other.orderKey == orderKey)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.due, due) || other.due == due)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.isCollapsed, isCollapsed) || other.isCollapsed == isCollapsed)&&(identical(other.isCompleted, isCompleted) || other.isCompleted == isCompleted)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Task&&(identical(other.id, id) || other.id == id)&&(identical(other.content, content) || other.content == content)&&(identical(other.description, description) || other.description == description)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.sectionId, sectionId) || other.sectionId == sectionId)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.orderKey, orderKey) || other.orderKey == orderKey)&&(identical(other.dayOrderKey, dayOrderKey) || other.dayOrderKey == dayOrderKey)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.due, due) || other.due == due)&&(identical(other.deadline, deadline) || other.deadline == deadline)&&(identical(other.duration, duration) || other.duration == duration)&&(identical(other.isCollapsed, isCollapsed) || other.isCollapsed == isCollapsed)&&(identical(other.isCompleted, isCompleted) || other.isCompleted == isCompleted)&&const DeepCollectionEquality().equals(other.completedLabelNames, _completedLabelNames)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,content,description,projectId,sectionId,parentId,orderKey,priority,due,deadline,duration,isCollapsed,isCompleted,completedAt,addedAt,const DeepCollectionEquality().hash(_labelIds));
+    return Object.hash(runtimeType,id,content,description,projectId,sectionId,parentId,orderKey,dayOrderKey,priority,due,deadline,duration,isCollapsed,isCompleted,const DeepCollectionEquality().hash(_completedLabelNames),completedAt,addedAt,const DeepCollectionEquality().hash(_labelIds));
 }
 
 @override
 String toString() {
-    return 'Task(id: $id, content: $content, description: $description, projectId: $projectId, sectionId: $sectionId, parentId: $parentId, orderKey: $orderKey, priority: $priority, due: $due, deadline: $deadline, duration: $duration, isCollapsed: $isCollapsed, isCompleted: $isCompleted, completedAt: $completedAt, addedAt: $addedAt, labelIds: $labelIds)';
+    return 'Task(id: $id, content: $content, description: $description, projectId: $projectId, sectionId: $sectionId, parentId: $parentId, orderKey: $orderKey, dayOrderKey: $dayOrderKey, priority: $priority, due: $due, deadline: $deadline, duration: $duration, isCollapsed: $isCollapsed, isCompleted: $isCompleted, completedLabelNames: $completedLabelNames, completedAt: $completedAt, addedAt: $addedAt, labelIds: $labelIds)';
 }
 
 
@@ -2044,7 +2066,7 @@ abstract mixin class _$TaskCopyWith<$Res> implements $TaskCopyWith<$Res> {
   factory _$TaskCopyWith(_Task value, $Res Function(_Task) _then) = __$TaskCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String content, String description, String? projectId, String? sectionId, String? parentId, String orderKey, int priority, Due? due, String? deadline, TaskDuration? duration, bool isCollapsed, bool isCompleted, String? completedAt, String? addedAt, List<String> labelIds
+ String id, String content, String description, String? projectId, String? sectionId, String? parentId, String orderKey, String dayOrderKey, int priority, Due? due, String? deadline, TaskDuration? duration, bool isCollapsed, bool isCompleted, Map<String, String> completedLabelNames, String? completedAt, String? addedAt, List<String> labelIds
 });
 
 
@@ -2061,7 +2083,7 @@ class __$TaskCopyWithImpl<$Res>
 
 /// Create a copy of Task
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? content = null,Object? description = null,Object? projectId = freezed,Object? sectionId = freezed,Object? parentId = freezed,Object? orderKey = null,Object? priority = null,Object? due = freezed,Object? deadline = freezed,Object? duration = freezed,Object? isCollapsed = null,Object? isCompleted = null,Object? completedAt = freezed,Object? addedAt = freezed,Object? labelIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? content = null,Object? description = null,Object? projectId = freezed,Object? sectionId = freezed,Object? parentId = freezed,Object? orderKey = null,Object? dayOrderKey = null,Object? priority = null,Object? due = freezed,Object? deadline = freezed,Object? duration = freezed,Object? isCollapsed = null,Object? isCompleted = null,Object? completedLabelNames = null,Object? completedAt = freezed,Object? addedAt = freezed,Object? labelIds = null,}) {
   return _then(_Task(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -2070,13 +2092,15 @@ as String,projectId: freezed == projectId ? _self.projectId : projectId // ignor
 as String?,sectionId: freezed == sectionId ? _self.sectionId : sectionId // ignore: cast_nullable_to_non_nullable
 as String?,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
 as String?,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
+as String,dayOrderKey: null == dayOrderKey ? _self.dayOrderKey : dayOrderKey // ignore: cast_nullable_to_non_nullable
 as String,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as int,due: freezed == due ? _self.due : due // ignore: cast_nullable_to_non_nullable
 as Due?,deadline: freezed == deadline ? _self.deadline : deadline // ignore: cast_nullable_to_non_nullable
 as String?,duration: freezed == duration ? _self.duration : duration // ignore: cast_nullable_to_non_nullable
 as TaskDuration?,isCollapsed: null == isCollapsed ? _self.isCollapsed : isCollapsed // ignore: cast_nullable_to_non_nullable
 as bool,isCompleted: null == isCompleted ? _self.isCompleted : isCompleted // ignore: cast_nullable_to_non_nullable
-as bool,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
+as bool,completedLabelNames: null == completedLabelNames ? _self._completedLabelNames : completedLabelNames // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,completedAt: freezed == completedAt ? _self.completedAt : completedAt // ignore: cast_nullable_to_non_nullable
 as String?,addedAt: freezed == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
 as String?,labelIds: null == labelIds ? _self._labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as List<String>,

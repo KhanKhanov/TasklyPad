@@ -20,11 +20,26 @@ abstract final class EntityTypes {
 
   /// Выполненное вхождение повторяющейся задачи с id [completionId].
   static const String completion = 'completion';
+
+  /// Настройки вида («Отображение») с id [viewOptionsId].
+  static const String viewOptions = 'view_options';
 }
 
 /// Типы сущностей, которые не дают конфликтов: спор о выполнении вхождения и
-/// так виден конфликтом поля `due` задачи (решение 3 плана M3).
-const Set<String> silentEntityTypes = {EntityTypes.completion};
+/// так виден конфликтом поля `due` задачи (решение 3 плана M3), а спор о виде
+/// списка карточки не стоит (решение 1 плана M4).
+const Set<String> silentEntityTypes = {
+  EntityTypes.completion,
+  EntityTypes.viewOptions,
+};
+
+/// Id настроек вида [viewType] объекта [objectId] (проект, метка; у
+/// «Сегодня» и «Предстоящего» — `null`): один и тот же на всех устройствах,
+/// поэтому настройки одного вида с двух устройств — одна сущность, а не две
+/// (SYNC_DESIGN «Специальные случаи»). «Входящие» — `project` с
+/// [inboxProjectId].
+String viewOptionsId(String viewType, String? objectId) =>
+    uuidV8([EntityTypes.viewOptions, viewType, objectId ?? '']);
 
 /// Id записи о выполнении вхождения [dueWas] задачи [taskId]: один и тот же
 /// на всех устройствах. Два устройства, отметившие одно вхождение офлайн,
@@ -77,14 +92,18 @@ const Map<String, Object?> inboxProjectFields = {
   ProjectFields.isInbox: true,
 };
 
-/// Поля, параллельная правка которых не конфликт: порядок, свёрнутость и
-/// дата выполнения (задачу завершили на двух устройствах — спорить о минуте
-/// незачем) пользователю выбирать незачем, LWW решает сам. Имена полей общие
-/// для всех типов сущностей. Правило — SYNC_DESIGN «Конфликты».
+/// Поля, параллельная правка которых не конфликт: порядок (и порядок дня),
+/// свёрнутость, дата выполнения (задачу завершили на двух устройствах —
+/// спорить о минуте незачем) и имена меток на момент завершения (пишутся
+/// вместе с выполнением, спор о нём виден в `is_completed`) пользователю
+/// выбирать незачем, LWW решает сам. Имена полей общие для всех типов
+/// сущностей. Правило — SYNC_DESIGN «Конфликты».
 const Set<String> silentFields = {
   TaskFields.orderKey,
+  TaskFields.dayOrderKey,
   TaskFields.isCollapsed,
   TaskFields.completedAt,
+  TaskFields.completedLabelNames,
 };
 
 /// Поля-объекты и ключи, которые знает эта версия приложения. При правке
@@ -117,6 +136,10 @@ abstract final class TaskFields {
   static const String parentId = 'parent_id';
   static const String orderKey = 'order_key';
 
+  /// Ручной порядок внутри дня в «Сегодня» и «Предстоящем» — fractional
+  /// index вместо целого `day_order` Todoist API (решение 3 плана M4).
+  static const String dayOrderKey = 'day_order_key';
+
   /// 1 = P1 (высший) … 4 = P4; в API Todoist шкала обратная.
   static const String priority = 'priority';
 
@@ -132,6 +155,12 @@ abstract final class TaskFields {
   static const String isCollapsed = 'is_collapsed';
   static const String isCompleted = 'is_completed';
   static const String completedAt = 'completed_at';
+
+  /// Имена меток задачи на момент завершения — объект {id метки: имя}:
+  /// пишется тем же действием, что [isCompleted] `true`, только у задачи с
+  /// метками; возврат в работу снимает (`null`). Имени поля в Todoist API
+  /// нет — своё (решение 4 плана M4, О-41).
+  static const String completedLabelNames = 'completed_label_names';
   static const String addedAt = 'added_at';
   static const String deleted = Op.deletedField;
 }
@@ -189,6 +218,9 @@ abstract final class DurationKeys {
 /// Поля проекта.
 abstract final class ProjectFields {
   static const String name = 'name';
+
+  /// Описание — как `description` проекта в Todoist API.
+  static const String description = TaskFields.description;
   static const String color = 'color';
   static const String parentId = 'parent_id';
   static const String orderKey = 'order_key';
@@ -236,6 +268,22 @@ abstract final class SettingsFields {
   /// `reset_recurring_subtasks` в Todoist API (импорт M11); поля нет —
   /// выключено (решение 1А «Ход M3.4», О-57).
   static const String resetRecurringSubtasks = 'reset_recurring_subtasks';
+}
+
+/// Поля настроек вида — имена и значения как у `view_options` Todoist API.
+/// Удаления нет: «Сбросить всё» пишет значения по умолчанию.
+abstract final class ViewOptionsFields {
+  /// `today`, `upcoming`, `project`, `label` или `filter` — часть
+  /// [viewOptionsId].
+  static const String viewType = 'view_type';
+
+  /// Id проекта, метки или фильтра — часть [viewOptionsId].
+  static const String objectId = 'object_id';
+  static const String groupedBy = 'grouped_by';
+  static const String sortedBy = 'sorted_by';
+  static const String sortOrder = 'sort_order';
+  static const String showCompletedTasks = 'show_completed_tasks';
+  static const String deleted = Op.deletedField;
 }
 
 /// Поля записи о выполнении вхождения.

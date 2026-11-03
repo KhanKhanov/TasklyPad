@@ -101,7 +101,7 @@ void main() {
       final nodes = [await _node('a'), await _node('b'), await _node('c')];
       final ids = [
         ...['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0', 'g0'],
-        ...['c0', 'c1'],
+        ...['c0', 'c1', 'v0'],
       ];
 
       T pick<T>(List<T> list) => list[random.nextInt(list.length)];
@@ -150,6 +150,16 @@ void main() {
               },
               {TaskFields.isCollapsed: random.nextBool()},
               {TaskFields.isCompleted: random.nextBool()},
+              {
+                TaskFields.dayOrderKey: pick(['a0', 'a1']),
+              },
+              {
+                TaskFields.completedLabelNames: pick<Object?>([
+                  null,
+                  {'l0': 'дом'},
+                  {'l0': 'дача'},
+                ]),
+              },
               // Поле, которого эта версия не знает (от более новой).
               {
                 'responsible_uid': pick(['u1', 'u2']),
@@ -157,7 +167,11 @@ void main() {
             ]),
         },
         'p' => {
-          pick([ProjectFields.name, ProjectFields.color]): pick([
+          pick([
+            ProjectFields.name,
+            ProjectFields.color,
+            ProjectFields.description,
+          ]): pick([
             'x',
             'y',
             'z',
@@ -190,6 +204,20 @@ void main() {
           {TaskLabelFields.taskId: 't0', TaskLabelFields.labelId: 'l0'},
           {Op.deletedField: random.nextBool()},
         ]),
+        // Настройки вида: молчащий тип, поля — как у вида проекта.
+        'v' => pick<Map<String, Object?>>([
+          {
+            ViewOptionsFields.viewType: 'project',
+            ViewOptionsFields.objectId: 'p0',
+          },
+          {
+            ViewOptionsFields.groupedBy: pick(['priority', 'label', null]),
+          },
+          {
+            ViewOptionsFields.sortedBy: pick(['due_date', 'manual', null]),
+          },
+          {ViewOptionsFields.showCompletedTasks: random.nextBool()},
+        ]),
         _ => {
           SectionFields.name: pick(['Покупки', 'Работа']),
         },
@@ -208,6 +236,7 @@ void main() {
             'x' => EntityTypes.taskLabel,
             'g' => EntityTypes.settings,
             'c' => EntityTypes.completion,
+            'v' => EntityTypes.viewOptions,
             _ => EntityTypes.section,
           };
           await node.engine.mutate(type, id, randomFields(id));

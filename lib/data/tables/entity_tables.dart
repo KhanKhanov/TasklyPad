@@ -13,6 +13,9 @@ class Projects extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().withDefault(const Constant(''))();
 
+  /// Описание проекта — markdown, как описание задачи.
+  TextColumn get description => text().withDefault(const Constant(''))();
+
   /// Имя цвета палитры Todoist.
   TextColumn get color => text().withDefault(const Constant('charcoal'))();
   TextColumn get parentId => text().nullable()();
@@ -45,6 +48,11 @@ class Tasks extends Table {
   TextColumn get sectionId => text().nullable()();
   TextColumn get parentId => text().nullable()();
   TextColumn get orderKey => text().withDefault(const Constant(''))();
+
+  /// Ручной порядок внутри дня в «Сегодня» и «Предстоящем» (fractional
+  /// index, как `day_order` Todoist API); сравнивается только у задач одного
+  /// дня, поэтому после смены срока старое значение безвредно.
+  TextColumn get dayOrderKey => text().withDefault(const Constant(''))();
 
   /// 1 = P1 (высший, красный) … 4 = P4 (по умолчанию), как в интерфейсе.
   /// В API Todoist шкала обратная (4 = P1) — переводится при импорте.
@@ -84,9 +92,45 @@ class Tasks extends Table {
   BoolColumn get isCollapsed => boolean().withDefault(const Constant(false))();
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
 
+  /// Имена меток на момент завершения — JSON `{"<id метки>": "<имя>"}`;
+  /// `null` — снимка нет (задача активна или была без меток).
+  TextColumn get completedLabelNames => text().nullable()();
+
   /// Моменты времени — UTC ISO-8601.
   TextColumn get completedAt => text().nullable()();
   TextColumn get addedAt => text().nullable()();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Настройки вида («Отображение»): одна строка на вид — проект, метку,
+/// «Сегодня», «Предстоящее». Id детерминированный (`viewOptionsId`): одно и
+/// то же на всех устройствах, поэтому настройки одного вида, заданные на двух
+/// устройствах, — одна сущность. Значения — как в Todoist API; `null` —
+/// значение по умолчанию.
+@DataClassName('ViewOptionsRow')
+class ViewOptions extends Table {
+  TextColumn get id => text()();
+
+  /// `today`, `upcoming`, `project`, `label` или `filter`.
+  TextColumn get viewType => text().nullable()();
+
+  /// Id проекта, метки или фильтра; у «Сегодня» и «Предстоящего» — `null`.
+  TextColumn get objectId => text().nullable()();
+
+  /// Группировка (`due_date`, `priority` …); `null` — без группировки.
+  TextColumn get groupedBy => text().nullable()();
+
+  /// Сортировка (`manual`, `alphabetically` …); `null` — порядок вида по
+  /// умолчанию.
+  TextColumn get sortedBy => text().nullable()();
+
+  /// `asc` или `desc`; `null` — по возрастанию.
+  TextColumn get sortOrder => text().nullable()();
+  BoolColumn get showCompletedTasks =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override

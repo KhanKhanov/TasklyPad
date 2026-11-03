@@ -13,6 +13,9 @@ abstract class Project with _$Project {
     required String id,
     required String name,
 
+    /// Описание — markdown; пустая строка — описания нет.
+    @Default('') String description,
+
     /// Имя цвета палитры Todoist (`berry_red` … `taupe`).
     required String color,
     String? parentId,
@@ -133,6 +136,10 @@ abstract class Task with _$Task {
     String? parentId,
     required String orderKey,
 
+    /// Ручной порядок внутри дня в «Сегодня» и «Предстоящем»; сравнивается
+    /// только у задач одного дня. Пустая строка — порядок не задан.
+    @Default('') String dayOrderKey,
+
     /// 1 = P1 (высший) … 4 = P4 (по умолчанию).
     required int priority,
     Due? due,
@@ -142,6 +149,9 @@ abstract class Task with _$Task {
     TaskDuration? duration,
     required bool isCollapsed,
     required bool isCompleted,
+
+    /// Имена меток на момент завершения: id метки → имя; пусто — снимка нет.
+    @Default(<String, String>{}) Map<String, String> completedLabelNames,
 
     /// UTC ISO-8601.
     String? completedAt,

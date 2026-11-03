@@ -11,6 +11,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 // Снимки схем — drift_schemas/, классы generated/ — из
 // `dart run drift_dev make-migrations`. При новой версии схемы: снимок,
@@ -191,6 +192,7 @@ void main() {
         },
         from2To3: (m, s) async {},
         from3To4: (m, s) async {},
+        from4To5: (m, s) async {},
       ),
     );
     await expectLater(
@@ -351,6 +353,7 @@ void main() {
           throw StateError('сбой посреди миграции');
         },
         from3To4: (m, s) async {},
+        from4To5: (m, s) async {},
       ),
     );
     await expectLater(
@@ -477,6 +480,7 @@ void main() {
           await m.addColumn(s.tasks, s.tasks.dueSeriesTime);
           throw StateError('сбой посреди миграции');
         },
+        from4To5: (m, s) async {},
       ),
     );
     await expectLater(
@@ -495,6 +499,224 @@ void main() {
 
     final db = AppDatabase(schema.newConnection());
     await verifier.migrateAndValidate(db, 4);
+    await db.close();
+  });
+
+  test('v4 → v5 — строки v4 целы, описание и порядок дня пустые, снимка '
+      'меток и настроек вида нет', () {
+    const project = v4.ProjectsData(
+      id: 'p1',
+      name: 'Работа',
+      color: 'red',
+      orderKey: 'a0',
+      isFavorite: 1,
+      isArchived: 0,
+      isInbox: 0,
+      viewStyle: 'board',
+      isCollapsed: 0,
+      deleted: 0,
+    );
+    const task = v4.TasksData(
+      id: 't1',
+      content: 'Зарядка',
+      description: 'утром',
+      projectId: 'p1',
+      orderKey: 'a0',
+      priority: 2,
+      dueDate: '2026-10-30',
+      dueTime: '10:00',
+      dueString: 'каждый день в 7',
+      dueLang: 'ru',
+      dueRule: '{"rrule":["FREQ=DAILY"],"from_completion":false}',
+      dueIsRecurring: 1,
+      dueSeriesTime: '07:00',
+      isCollapsed: 0,
+      isCompleted: 0,
+      addedAt: '2026-10-24T09:00:00.000Z',
+      deleted: 0,
+    );
+    const label = v4.LabelsData(
+      id: 'l1',
+      name: 'дом',
+      color: 'blue',
+      orderKey: 'a0',
+      isFavorite: 0,
+      deleted: 0,
+    );
+    const link = v4.TaskLabelsData(
+      id: 'tl1',
+      taskId: 't1',
+      labelId: 'l1',
+      deleted: 0,
+    );
+    return verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insert(oldDb.projects, project);
+        batch.insert(oldDb.tasks, task);
+        batch.insert(oldDb.labels, label);
+        batch.insert(oldDb.taskLabels, link);
+      },
+      validateItems: (newDb) async {
+        expect(await newDb.select(newDb.projects).get(), [
+          const v5.ProjectsData(
+            id: 'p1',
+            name: 'Работа',
+            description: '',
+            color: 'red',
+            orderKey: 'a0',
+            isFavorite: 1,
+            isArchived: 0,
+            isInbox: 0,
+            viewStyle: 'board',
+            isCollapsed: 0,
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.tasks).get(), [
+          const v5.TasksData(
+            id: 't1',
+            content: 'Зарядка',
+            description: 'утром',
+            projectId: 'p1',
+            orderKey: 'a0',
+            dayOrderKey: '',
+            priority: 2,
+            dueDate: '2026-10-30',
+            dueTime: '10:00',
+            dueString: 'каждый день в 7',
+            dueLang: 'ru',
+            dueRule: '{"rrule":["FREQ=DAILY"],"from_completion":false}',
+            dueIsRecurring: 1,
+            dueSeriesTime: '07:00',
+            isCollapsed: 0,
+            isCompleted: 0,
+            addedAt: '2026-10-24T09:00:00.000Z',
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.labels).get(), [
+          const v5.LabelsData(
+            id: 'l1',
+            name: 'дом',
+            color: 'blue',
+            orderKey: 'a0',
+            isFavorite: 0,
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.taskLabels).get(), [
+          const v5.TaskLabelsData(
+            id: 'tl1',
+            taskId: 't1',
+            labelId: 'l1',
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.viewOptions).get(), isEmpty);
+      },
+    );
+  });
+
+  test(
+    'v4 → v5 — описание, порядок дня, снимок меток и настройки вида, '
+    'пришедшие до обновления, после reproject в новых колонках и таблице',
+    () async {
+      // Сборка M3 уже приняла ops сборки M4: новые поля и сущность лежат в
+      // field_versions, колонок и таблицы для них ещё не было.
+      final hlc = const Hlc(wallMs: 1761300000000, counter: 0, nodeId: 'b');
+      final schema = await verifier.schemaAt(4);
+      final old = v4.DatabaseAtV4(schema.newConnection());
+      v4.FieldVersionsData version(
+        String type,
+        String id,
+        String field,
+        String json,
+      ) => v4.FieldVersionsData(
+        entityType: type,
+        entityId: id,
+        field: field,
+        hlc: '$hlc',
+        valueJson: json,
+      );
+      await old.batch((batch) {
+        batch.insertAll(old.fieldVersions, [
+          version('project', 'p1', 'description', '"Квартальный план"'),
+          version('task', 't1', 'day_order_key', '"a1"'),
+          version('task', 't1', 'completed_label_names', '{"l1":"дом"}'),
+          version('view_options', 'v1', 'view_type', '"project"'),
+          version('view_options', 'v1', 'object_id', '"p1"'),
+          version('view_options', 'v1', 'grouped_by', '"priority"'),
+        ]);
+        batch.insert(
+          old.localMeta,
+          const v4.LocalMetaData(key: 'projector_version', value: '4'),
+        );
+      });
+      await old.close();
+
+      final db = AppDatabase(schema.newConnection());
+      addTearDown(db.close);
+      final store = DriftOpStore(db);
+      expect(await store.needsReproject(), isTrue);
+      await store.reproject();
+
+      final project = await db.select(db.projects).getSingle();
+      expect(project.description, 'Квартальный план');
+      final task = await db.select(db.tasks).getSingle();
+      expect(
+        (task.dayOrderKey, task.completedLabelNames),
+        ('a1', '{"l1":"дом"}'),
+      );
+      final view = await db.select(db.viewOptions).getSingle();
+      expect(
+        (view.id, view.viewType, view.objectId, view.groupedBy),
+        ('v1', 'project', 'p1', 'priority'),
+      );
+    },
+  );
+
+  test('v4 → v5 — сбой посередине откатывает миграцию целиком, повтор '
+      'проходит', () async {
+    final schema = await verifier.schemaAt(4);
+    final failing = AppDatabase(
+      schema.newConnection(),
+      migrationSteps: migrationSteps(
+        from1To2: (m, s) async {},
+        from2To3: (m, s) async {},
+        from3To4: (m, s) async {},
+        from4To5: (m, s) async {
+          await m.addColumn(s.projects, s.projects.description);
+          await m.createTable(s.viewOptions);
+          throw StateError('сбой посреди миграции');
+        },
+      ),
+    );
+    await expectLater(
+      failing.customSelect('SELECT 1').get(),
+      throwsA(isA<StateError>()),
+    );
+    await failing.close();
+
+    final raw = schema.rawDatabase;
+    expect(raw.select('PRAGMA user_version').single.values.single, 4);
+    final columns = raw
+        .select('PRAGMA table_info(projects)')
+        .map((row) => row['name'])
+        .toList();
+    expect(columns, isNot(contains('description')));
+    final tables = raw
+        .select("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .map((row) => row['name'])
+        .toList();
+    expect(tables, isNot(contains('view_options')));
+
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 5);
     await db.close();
   });
 }
