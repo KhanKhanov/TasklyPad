@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/conflicts.dart';
+import 'package:planner/domain/theme_settings.dart';
 import 'package:planner/features/conflicts/logic/conflict_commands.dart';
 import 'package:planner/sync/conflict_repository.dart';
 import 'package:planner/sync/io_sync_fs.dart';
@@ -226,6 +227,82 @@ void main() {
     await expectConverged();
   });
 
+  test(
+    'тема и распознавание дат спорят в одном периоде — две карточки: '
+    '«Тема» и «Основное» выбираются отдельно (решение 2А «Ход M4.3»)',
+    () async {
+      const dark = ThemeChoice(
+        themeId: 'taskly',
+        appearance: ThemeAppearance.dark,
+      );
+      await onPc.theme.save(dark, syncTheme: true);
+      await syncBoth();
+      await onPhone.theme.save(dark, syncTheme: true);
+      await syncBoth();
+
+      await onPc.theme.save(
+        const ThemeChoice(themeId: 'kale', appearance: ThemeAppearance.dark),
+        syncTheme: true,
+      );
+      await onPc.general.save(smartDateRecognition: false);
+      await onPhone.theme.save(
+        const ThemeChoice(
+          themeId: 'lavender',
+          appearance: ThemeAppearance.dark,
+        ),
+        syncTheme: true,
+      );
+      await onPhone.general.save(smartDateRecognition: false);
+      phone.advance(const Duration(minutes: 1));
+      await onPhone.general.save(smartDateRecognition: true);
+      await syncBoth();
+
+      for (final dev in [pc, phone]) {
+        final cards = await repo(dev).load();
+        expect(
+          {
+            for (final card in cards)
+              {
+                for (final side in [card.older, card.newer])
+                  for (final v in side.values) (v.field, v.value),
+              },
+          },
+          {
+            {(ConflictField.theme, 'kale'), (ConflictField.theme, 'lavender')},
+            {
+              (ConflictField.smartDateRecognition, false),
+              (ConflictField.smartDateRecognition, true),
+            },
+          },
+        );
+      }
+
+      // Телефон выключил «Синхронизировать тему»: у него карточки темы нет, а
+      // карточка «Основного» та же, что на ПК.
+      await onPhone.theme.save(
+        (await onPhone.themeRepo.load()).effective,
+        syncTheme: false,
+      );
+      ConflictCard general(List<ConflictCard> cards) => cards.singleWhere(
+        (c) =>
+            c.older.values.single.field == ConflictField.smartDateRecognition,
+      );
+      ConflictSide plain(ConflictSide s) =>
+          s.copyWith(isThisDevice: false, isFormerThisDevice: false);
+      final onPhoneCards = await repo(phone).load();
+      expect(onPhoneCards, hasLength(1));
+      final (mine, theirs) = (
+        general(onPhoneCards),
+        general(await repo(pc).load()),
+      );
+      expect(mine.conflictIds, theirs.conflictIds);
+      expect(
+        [plain(mine.older), plain(mine.newer)],
+        [plain(theirs.older), plain(theirs.newer)],
+      );
+    },
+  );
+
   test('долгий офлайн телефона и повторная доставка — один спор, повторное '
       'применение ничего не меняет', () async {
     await syncBoth();
@@ -245,13 +322,17 @@ void main() {
 
     // Конфликт — каждая параллельная пара ops с разными значениями (SYNC_DESIGN
     // «Конфликты»): 15 «включено» ПК (чётные дни) против «выключено»
-    // телефона; совпадающие «выключено» не спорят. Карточек столько же — О-66.
+    // телефона; совпадающие «выключено» не спорят. Карточка — одна на пару
+    // устройств (решение 11 plans/m4), со всеми 15.
     final open = await pc.conflicts();
     expect(open, hasLength(15));
     expect(
       {for (final c in open) (c.field, c.resolved)},
       {(SettingsFields.smartDateRecognition, false)},
     );
+    for (final dev in [pc, phone]) {
+      expect((await repo(dev).load()).single.conflictIds, hasLength(15));
+    }
     expect((await flags(onPhone)).$2, isTrue);
     await expectConverged();
 

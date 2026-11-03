@@ -153,6 +153,19 @@ Due withSeriesTime(Due due) {
   );
 }
 
+/// Каждую строку правила [rule] принимает строгая проверка [nextOccurrence]
+/// ([_parseRule]). Пустой список правил — тоже `false`. Срок не нужен:
+/// часовое правило у срока без времени отвергает уже расчёт.
+bool isComputableRule(RecurrenceRule rule) {
+  if (rule.rrule.isEmpty) return false;
+  try {
+    rule.rrule.forEach(_parseRule);
+    return true;
+  } on FormatException {
+    return false;
+  }
+}
+
 /// Есть часовое правило (`FREQ=HOURLY`): его время — начало отсчёта серии.
 /// Строка не проверяется — битую отвергнет [nextOccurrence].
 bool hasHourlyRule(RecurrenceRule rule) =>

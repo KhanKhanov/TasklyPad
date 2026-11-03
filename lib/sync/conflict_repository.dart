@@ -37,6 +37,27 @@ final class ConflictRepository {
     TaskLabelFields.labelId,
   };
 
+  /// Место задачи — что пишет перенос: выбор стороны пишет его целиком
+  /// (решение 4А plans/m4 «Ход M4.3»), порядок — вместе с местом, иначе
+  /// задача встала бы по порядку из чужого проекта.
+  static const Set<String> _taskPlacement = {
+    TaskFields.projectId,
+    TaskFields.sectionId,
+    TaskFields.parentId,
+    TaskFields.orderKey,
+  };
+
+  /// Место раздела и проекта — проект или родитель с порядком, как пишет их
+  /// перенос.
+  static const Set<String> _sectionPlacement = {
+    SectionFields.projectId,
+    SectionFields.orderKey,
+  };
+  static const Set<String> _projectPlacement = {
+    ProjectFields.parentId,
+    ProjectFields.orderKey,
+  };
+
   /// Поля общей темы в `settings`.
   static const Set<String> _themeFields = {
     SettingsFields.themeId,
@@ -108,6 +129,7 @@ final class ConflictRepository {
     if (open.isEmpty) return const [];
     final opsByEntity = <String, Map<String, Op>>{};
     final groups = <String, List<(Conflict, Op, Op)>>{};
+    final periods = <String, _Period>{};
     for (final c in open) {
       final entityKey = _entityKey(c);
       final ops = opsByEntity[entityKey] ??= {
@@ -120,19 +142,42 @@ final class ConflictRepository {
         throw StateError('Нет ops конфликта ${c.id} в журнале');
       }
       // Удаление: все споры удаления сущности и спор «удалено / восстановлено»
-      // — одна карточка. Правка: одна пара действий (общий HLC у полей одного
-      // действия) — одна карточка.
-      final key = _isDelete(c)
-          ? 'delete $entityKey'
-          : 'edit $entityKey ${older.hlc} ${newer.hlc}';
+      // — одна карточка. Правка: споры правки сущности между одной парой
+      // устройств за один период — одна карточка (решение 11 plans/m4,
+      // решения 1А и 2А «Ход M4.3»): после долгого офлайна N правок поля
+      // против одной дали бы N одинаковых карточек. Период — что каждое
+      // устройство знало о сущности (`base`): ни одно действие из споров с
+      // тем же ключом не видело действий другого устройства из них же
+      // (каждое спорит с действием того же `base`, значит, новее его).
+      // Синхронизация меняет `base`, и спор, не решённый до неё, остаётся
+      // своей карточкой — иначе последние действия обоих показывали бы в его
+      // поле победителя. У настроек — карточка на раздел окна: тема и
+      // «Основное» выбираются отдельно.
+      if (_isDelete(c)) {
+        (groups['delete $entityKey'] ??= []).add((c, older, newer));
+        continue;
+      }
+      final (first, second) = older.nodeId.compareTo(newer.nodeId) < 0
+          ? (older, newer)
+          : (newer, older);
+      final pair =
+          'edit $entityKey ${_settingsSection(c)} '
+          '${first.nodeId} ${second.nodeId}';
+      final key = '$pair ${first.base} ${second.base}';
+      periods[key] = (pair: pair, bases: (first.base, second.base));
       (groups[key] ??= []).add((c, older, newer));
     }
+    final carried = _carryToLatest(groups, periods);
     final thisNode = await _meta.nodeId();
     final former = await _meta.previousNodeIds();
     final cards = [
-      for (final group in groups.values)
+      for (final MapEntry(:key, value: group) in groups.entries)
         _withDevices(
-          await _card(group, opsByEntity[_entityKey(group.first.$1)]!),
+          await _card(
+            group,
+            opsByEntity[_entityKey(group.first.$1)]!,
+            carried: carried[key] ?? const [],
+          ),
           thisNode,
           former,
         ),
@@ -157,18 +202,117 @@ final class ConflictRepository {
 
   static String _entityKey(Conflict c) => '${c.entityType}/${c.entityId}';
 
+  /// Спор поля, которое та же пара устройств снова спорила в более позднем
+  /// периоде, уходит в карточку позднего (решение 5А plans/m4 «Ход M4.3»):
+  /// обе стороны изменили поле, уже увидев победителя, и старый спор о нём
+  /// устарел, а выбор поля закрывает все его конфликты (`resolveConflict`
+  /// пакета) — и новый, которого пользователь не видел. Поле уходит с
+  /// группой ([_unitFields]: место задачи — целиком, «выполнена» — с датой
+  /// выполнения). Опустевшая карточка убирается. Возвращает ключ карточки →
+  /// перенесённые в неё споры.
+  ///
+  /// Порядок периодов пары — по знанию устройств: большее из двух `base`
+  /// сторон, затем меньшее (`null` — меньше любого). Знание каждого
+  /// устройства только растёт, поэтому период, где оба знали не меньше, а
+  /// одно — больше, идёт позже. Остальное — одинаковые наборы `base` у
+  /// разных устройств — по самому позднему HLC споров, затем по ключу:
+  /// порядок одинаков на всех устройствах.
+  static Map<String, List<(Conflict, Op, Op)>> _carryToLatest(
+    Map<String, List<(Conflict, Op, Op)>> groups,
+    Map<String, _Period> periods,
+  ) {
+    final latest = {
+      for (final key in periods.keys)
+        key: groups[key]!.map((g) => g.$3.hlc).reduce((a, b) => a < b ? b : a),
+    };
+    int byHlc(Hlc? a, Hlc? b) => a == null
+        ? (b == null ? 0 : -1)
+        : b == null
+        ? 1
+        : a.compareTo(b);
+    (Hlc?, Hlc?) descending(String key) {
+      final (x, y) = periods[key]!.bases;
+      return byHlc(x, y) >= 0 ? (x, y) : (y, x);
+    }
+
+    int order(String a, String b) {
+      final ((aHi, aLo), (bHi, bLo)) = (descending(a), descending(b));
+      for (final c in [
+        () => byHlc(aHi, bHi),
+        () => byHlc(aLo, bLo),
+        () => latest[a]!.compareTo(latest[b]!),
+        () => a.compareTo(b),
+      ]) {
+        final result = c();
+        if (result != 0) return result;
+      }
+      return 0;
+    }
+
+    // От самого позднего периода к раннему: поле достаётся первому, кто его
+    // спорил.
+    final target = <String, String>{}; // пара и поле → ключ карточки
+    final carried = <String, List<(Conflict, Op, Op)>>{};
+    for (final key in periods.keys.toList()..sort((a, b) => order(b, a))) {
+      final pair = periods[key]!.pair;
+      groups[key]!.removeWhere((g) {
+        final to = target['$pair ${_unitFields(g.$1).first}'] ??= key;
+        if (to == key) return false;
+        (carried[to] ??= []).add(g);
+        return true;
+      });
+      if (groups[key]!.isEmpty) groups.remove(key);
+    }
+    return carried;
+  }
+
+  /// Поля, которые выбираются вместе с полем спора [c]: место задачи,
+  /// раздела и проекта — целиком, с порядком (решение 4А), «выполнена» — с
+  /// датой выполнения и именами меток на момент завершения (решение 1А к
+  /// коммиту 3 M2.3). Первое — само поле или представитель группы.
+  static Set<String> _unitFields(Conflict c) {
+    final place = switch (c.entityType) {
+      EntityTypes.task => _taskPlacement,
+      EntityTypes.section => _sectionPlacement,
+      EntityTypes.project => _projectPlacement,
+      _ => const <String>{},
+    };
+    if (place.contains(c.field)) {
+      return place;
+    }
+    if (c.entityType == EntityTypes.task && c.field == TaskFields.isCompleted) {
+      return const {
+        TaskFields.isCompleted,
+        TaskFields.completedAt,
+        TaskFields.completedLabelNames,
+      };
+    }
+    return {c.field};
+  }
+
+  /// Раздел окна настроек поля спора; у других сущностей — пусто.
+  static String _settingsSection(Conflict c) =>
+      c.entityType != EntityTypes.settings
+      ? ''
+      : _themeFields.contains(c.field)
+      ? 'theme'
+      : 'general';
+
   static bool _isDelete(Conflict c) =>
       c.kind == ConflictKind.delete || c.field == Op.deletedField;
 
+  /// [carried] — споры, перенесённые из более ранних периодов
+  /// ([_carryToLatest]): карточка закрывает и их.
   Future<ConflictCard> _card(
     List<(Conflict, Op, Op)> group,
-    Map<String, Op> entityOps,
-  ) async {
+    Map<String, Op> entityOps, {
+    required List<(Conflict, Op, Op)> carried,
+  }) async {
     final first = group.first.$1;
     final (type, id) = (first.entityType, first.entityId);
     final (older, newer, current) = _isDelete(first)
         ? await _deleteSides(type, id, group)
-        : await _editSides(type, id, group, entityOps.values);
+        : await _editSides(type, id, group, carried, entityOps.values);
     final (title, ownerTitle) = await _titles(type, id);
     return ConflictCard(
       entity: _entityOf(type),
@@ -177,51 +321,115 @@ final class ConflictRepository {
       ownerTitle: ownerTitle,
       isInbox: await _isInbox(type, id),
       isDelete: _isDelete(first),
-      conflictIds: [for (final (c, _, _) in group) c.id]..sort(),
+      conflictIds: [
+        for (final (c, _, _) in [...group, ...carried]) c.id,
+      ]..sort(),
       older: older,
       newer: newer,
       current: older.isCurrent || newer.isCurrent ? const [] : current,
     );
   }
 
-  /// Стороны правки. Каждая сторона записывает при выборе оба действия
-  /// целиком (решения 2Б и 5А к коммиту 3 M2.3): свои поля — своими
-  /// значениями, поля только другого действия — значением, которое видел её
-  /// автор (`seenValue`). Так «выполнена» уходит вместе с датой выполнения
-  /// (она «молчит», решение 1А), а перенос без смены раздела возвращает и
-  /// раздел. Показываются поля, в которых стороны расходятся, — с
-  /// действующими значениями.
+  /// Стороны правки (решение 11 plans/m4, решения 6А и 1А «Ход M4.3»): у
+  /// каждого устройства значение поля — его последняя правка этой группы
+  /// полей ([_unitFields]), сделанная, пока оно знало о сущности не больше,
+  /// чем в карточке (`base`), время стороны — последняя из них. Пишутся только поля споров карточки с их группой: поле, о котором
+  /// спора не было, действует, как записало устройство. Поле группы, которое
+  /// автор правки не писал, — значение, которое он видел (`seenValue`): так
+  /// перенос без смены раздела возвращает и раздел. Группа, в которой
+  /// стороны совпадают, не пишется (решение 3А): выбирать в ней нечего, а
+  /// запись откатила бы правку, сделанную после спора; иначе — целиком (4А).
+  ///
+  /// Правка, сделанная при большем знании, могла видеть правку другой
+  /// стороны, и её значение было бы уже выбором, а не стороной. Показываются
+  /// поля, кроме «молчащих», где стороны расходятся или действует уже другое
+  /// значение (выбор его сбросит), — с действующими значениями.
   Future<_Sides> _editSides(
     String type,
     String id,
     List<(Conflict, Op, Op)> group,
+    List<(Conflict, Op, Op)> carried,
     Iterable<Op> entityOps,
   ) async {
     final ops = entityOps.toList();
-    final (_, olderOp, newerOp) = group.first;
-    Map<String, Object?> action(Op author) => {
-      for (final op in ops)
-        if (op.hlc == author.hlc) op.field: op.value,
+    final bases = <String, Hlc?>{
+      for (final (_, older, newer) in group) ...{
+        older.nodeId: older.base,
+        newer.nodeId: newer.base,
+      },
     };
-    final (olderOwn, newerOwn) = (action(olderOp), action(newerOp));
-    final keys = {...olderOwn.keys, ...newerOwn.keys};
-    Map<String, Object?> whole(Map<String, Object?> own, Op author) => {
-      for (final key in keys)
-        key: own.containsKey(key) ? own[key] : seenValue(author, key, ops),
+    if (bases.length != 2) {
+      throw StateError('Спор правки $type/$id не двух устройств');
+    }
+    bool knewNoMore(Op op) {
+      final (mine, limit) = (op.base, bases[op.nodeId]);
+      return mine == null || (limit != null && !(limit < mine));
+    }
+
+    final units = {
+      for (final (c, _, _) in [...group, ...carried])
+        _unitFields(c).first: _unitFields(c),
+    };
+    // Группа полей (по первому полю) → последняя правка её полей у каждого
+    // устройства, сделанная, пока оно знало о сущности не больше, чем в этой
+    // карточке.
+    final latest = <String, Map<String, Op>>{};
+    for (final op in ops) {
+      if (!bases.containsKey(op.nodeId) || !knewNoMore(op)) continue;
+      for (final MapEntry(key: unit, value: fields) in units.entries) {
+        if (!fields.contains(op.field)) continue;
+        final byNode = latest[unit] ??= {};
+        final seen = byNode[op.nodeId];
+        if (seen == null || seen.hlc < op.hlc) byNode[op.nodeId] = op;
+      }
+    }
+    Object? valueAt(Op author, String field) {
+      for (final op in ops) {
+        if (op.hlc == author.hlc && op.field == field) return op.value;
+      }
+      return seenValue(author, field, ops);
+    }
+
+    Op lastOf(String node) =>
+        [for (final byNode in latest.values) byNode[node]!]
+            .reduce((a, b) => a.hlc < b.hlc ? b : a);
+    Map<String, Object?> valuesOf(String node) => {
+      for (final MapEntry(key: unit, value: fields) in units.entries)
+        for (final field in fields) field: valueAt(latest[unit]![node]!, field),
+    };
+    final [olderOp, newerOp] = [for (final node in bases.keys) lastOf(node)]
+      ..sort((a, b) => a.hlc.compareTo(b.hlc));
+    final (olderWhole, newerWhole) = (
+      valuesOf(olderOp.nodeId),
+      valuesOf(newerOp.nodeId),
+    );
+    // Расходится группа только по видимым полям: «молчащие» (порядок, дата
+    // выполнения) пишутся вместе с видимым расхождением, иначе выбор менял
+    // бы их без следа на карточке.
+    final differ = {
+      for (final fields in units.values)
+        if (fields.any(
+          (f) =>
+              !silentFields.contains(f) &&
+              !jsonEquals(olderWhole[f], newerWhole[f]),
+        ))
+          ...fields,
     };
     final (olderFields, newerFields) = (
-      whole(olderOwn, olderOp),
-      whole(newerOwn, newerOp),
+      {for (final key in differ) key: olderWhole[key]},
+      {for (final key in differ) key: newerWhole[key]},
     );
+    final current = {
+      for (final key in differ)
+        if (!silentFields.contains(key))
+          key: await _store.fieldValue(type, id, key),
+    };
     final shown = [
-      for (final key in keys)
-        if (!silentFields.contains(key) &&
-            !jsonEquals(olderFields[key], newerFields[key]))
+      for (final key in current.keys)
+        if (!jsonEquals(olderFields[key], newerFields[key]) ||
+            !jsonEquals(olderFields[key], current[key]))
           key,
     ];
-    final current = {
-      for (final key in shown) key: await _store.fieldValue(type, id, key),
-    };
     Future<ConflictSide> side(
       Op author,
       Map<String, Object?> fields,
@@ -237,7 +445,7 @@ final class ConflictRepository {
     return (
       await side(olderOp, olderFields),
       await side(newerOp, newerFields),
-      await _values(type, current),
+      await _values(type, {for (final key in shown) key: current[key]}),
     );
   }
 
@@ -448,6 +656,10 @@ final class ConflictRepository {
     _ => ConflictField.other,
   };
 }
+
+/// Период карточки правки: сущность, раздел настроек и пара устройств, и
+/// `base` каждого из них (в порядке id узлов).
+typedef _Period = ({String pair, (Hlc?, Hlc?) bases});
 
 /// Более ранняя и более поздняя стороны и действующие значения полей
 /// карточки (у удаления — пусто: решает только `deleted`).

@@ -21,13 +21,18 @@ import '../settings/fake_sync.dart';
 // Конфликт — настоящий: второе устройство и обмен ops через движок. Локаль — en.
 void main() {
   /// Задача «a», переименованная параллельно: здесь — в «mine», на другом
-  /// устройстве — позже в «theirs». Возвращает id задачи.
+  /// устройстве — позже [renames] раз, последний — в «theirs». Возвращает id
+  /// задачи.
   ///
   /// Каждый шаг с базой приложения — отдельным `runAsync` с кадрами между
   /// ними: правка будит потоки экранов, их запросы идут в фейковом времени
   /// теста, и следующий запрос к той же базе внутри одного `runAsync` ждал
   /// бы их вечно.
-  Future<String> makeConflict(WidgetTester tester, TestDevice device) async {
+  Future<String> makeConflict(
+    WidgetTester tester,
+    TestDevice device, {
+    int renames = 1,
+  }) async {
     final mutator = device.services.mutator;
     final other = (await tester.runAsync(() => TestDevice.start(seed: 7)))!;
     final id = (await tester.runAsync(
@@ -41,10 +46,12 @@ void main() {
     await settle(tester);
     await tester.runAsync(() async {
       await other.services.engine.applyAll(created);
-      other.advance(const Duration(minutes: 1));
-      await other.services.mutator.update(EntityTypes.task, id, {
-        TaskFields.content: 'theirs',
-      });
+      for (var i = renames; i > 0; i--) {
+        other.advance(const Duration(minutes: 1));
+        await other.services.mutator.update(EntityTypes.task, id, {
+          TaskFields.content: i == 1 ? 'theirs' : 'theirs $i',
+        });
+      }
     });
     await tester.runAsync(
       () => mutator.update(EntityTypes.task, id, {TaskFields.content: 'mine'}),
@@ -105,6 +112,29 @@ void main() {
       await settle(tester);
       expect(find.text('No conflicts'), findsOneWidget);
       expect(find.widgetWithText(InkWell, 'Conflicts'), findsNothing);
+      final row = await tester.runAsync(() => device.taskRow(id));
+      expect(row!.content, 'mine');
+    });
+  });
+
+  testWidgets('пять переименований на другом устройстве против одного здесь — '
+      'в сайдбаре 1, одна карточка с последним названием; выбор закрывает её '
+      '(О-66)', (tester) async {
+    await withApp(tester, (device) async {
+      final id = await makeConflict(tester, device, renames: 5);
+      final item = find.widgetWithText(InkWell, 'Conflicts');
+      expect(find.descendant(of: item, matching: find.text('1')), findsOne);
+
+      await tester.tap(item);
+      await settle(tester);
+      expect(find.text('Keep this version'), findsNWidgets(2));
+      expect(find.text('Name: mine'), findsOneWidget);
+      expect(find.text('Name: theirs'), findsOneWidget);
+      expect(find.textContaining('Name: theirs '), findsNothing);
+
+      await tester.tap(find.text('Keep this version').first);
+      await settle(tester);
+      expect(find.text('No conflicts'), findsOneWidget);
       final row = await tester.runAsync(() => device.taskRow(id));
       expect(row!.content, 'mine');
     });
