@@ -287,11 +287,11 @@ void main() {
   }
 
   // Прежняя папка недоступна целиком: не прочитан никто из отмеченных.
-  final unavailable = <String, void Function(String)>{
-    'записана более новой версией': (folder) =>
+  final unavailable = <String, Future<void> Function(String)>{
+    'записана более новой версией': (folder) async =>
         File(p.join(folder, syncFolderName, 'format.json'))
             .writeAsStringSync('{"v":999,"folder_id":"x"}\n'),
-    'удалена': (folder) => Directory(folder).deleteSync(recursive: true),
+    'удалена': (folder) => deleteDir(Directory(folder)),
   };
   for (final MapEntry(key: name, value: breakFolder) in unavailable.entries) {
     test('смена папки: прежняя папка $name — смена не начата, прежняя папка '
@@ -305,7 +305,7 @@ void main() {
       await AppCommands(b).tasks.add(content: 'from B');
       await _runner(b, 'B').setFolder(oldFolder);
       await ra.setFolder(oldFolder);
-      breakFolder(oldFolder);
+      await breakFolder(oldFolder);
       final before = Directory(oldFolder).existsSync()
           ? _files(oldFolder)
           : null;
@@ -391,7 +391,7 @@ void main() {
     final ra = _runner(a, 'A');
     await ra.setFolder(folder);
     expect(await ra.devices(), hasLength(1));
-    Directory(folder).deleteSync(recursive: true);
+    await deleteDir(Directory(folder));
     await expectLater(ra.devices(), throwsA(isA<SyncFolderMissingException>()));
   });
 
@@ -403,7 +403,7 @@ void main() {
     await AppCommands(a).tasks.add(content: 'from A');
     await ra.setFolder(folder);
     final sync = Directory(p.join(folder, syncFolderName));
-    sync.deleteSync(recursive: true);
+    await deleteDir(sync);
 
     await expectLater(ra.syncNow(), throwsA(isA<SyncFolderMissingException>()));
     expect(sync.existsSync(), isFalse);
@@ -449,7 +449,7 @@ void main() {
     await ra.setFolder(folder);
     await rb.setFolder(folder);
     await ra.syncNow();
-    Directory(p.join(folder, syncFolderName)).deleteSync(recursive: true);
+    await deleteDir(Directory(p.join(folder, syncFolderName)));
 
     await expectLater(ra.syncNow(), throwsA(isA<SyncFolderMissingException>()));
     await expectLater(rb.syncNow(), throwsA(isA<SyncFolderMissingException>()));
@@ -477,7 +477,7 @@ void main() {
     await AppCommands(b).tasks.add(content: 'from B');
     await rb.setFolder(folder);
     await ra.setFolder(folder);
-    Directory(p.join(folder, syncFolderName)).deleteSync(recursive: true);
+    await deleteDir(Directory(p.join(folder, syncFolderName)));
 
     final devices = await ra.journalDevices();
     expect({for (final x in devices) x.nodeId}, {b.nodeId, d.nodeId});
@@ -508,7 +508,7 @@ void main() {
     );
     final rc = _runner(copy, 'A2');
     await rc.syncNow();
-    Directory(p.join(folder, syncFolderName)).deleteSync(recursive: true);
+    await deleteDir(Directory(p.join(folder, syncFolderName)));
 
     final devices = await rc.journalDevices();
     expect(
@@ -578,7 +578,7 @@ void main() {
       final sync = Directory(p.join(folder, syncFolderName));
       await _copyDir(sync, Directory(p.join(backup, syncFolderName)));
       final id = await a.services.syncState.folderId();
-      sync.deleteSync(recursive: true);
+      await deleteDir(sync);
       await expectLater(
         ra.syncNow(),
         throwsA(isA<SyncFolderMissingException>()),

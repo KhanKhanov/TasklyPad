@@ -17,26 +17,30 @@ import '../../data/support/drift_probe.dart';
 /// Время старта часов устройств в тестах.
 final DateTime testStart = DateTime.utc(2026, 10, 23, 9);
 
-/// Временная папка на диске, удаляется после теста.
+/// Временная папка на диске, удаляется после теста ([deleteDir]).
+Directory tempDir(String prefix) {
+  final dir = Directory.systemTemp.createTempSync(prefix);
+  addTearDown(() => deleteDir(dir));
+  return dir;
+}
+
+/// Удалить папку [dir] со всем содержимым; её нет — ничего.
 ///
 /// На Windows только что записанный файл может ещё держать антивирус или
 /// индексатор — удаление тогда падает с «Папка не пуста» (errno 145), хотя
-/// тест прошёл. Поэтому удаление повторяется с паузой; не вышло — ошибка.
-Directory tempDir(String prefix) {
-  final dir = Directory.systemTemp.createTempSync(prefix);
-  addTearDown(() async {
-    for (var attempt = 1; ; attempt++) {
-      if (!dir.existsSync()) return;
-      try {
-        dir.deleteSync(recursive: true);
-        return;
-      } on FileSystemException {
-        if (attempt == 5) rethrow;
-        await Future<void>.delayed(Duration(milliseconds: 100 * attempt));
-      }
+/// с самой папкой всё в порядке. Поэтому удаление повторяется с паузой; не
+/// вышло — ошибка.
+Future<void> deleteDir(Directory dir) async {
+  for (var attempt = 1; ; attempt++) {
+    if (!dir.existsSync()) return;
+    try {
+      dir.deleteSync(recursive: true);
+      return;
+    } on FileSystemException {
+      if (attempt == 5) rethrow;
+      await Future<void>.delayed(Duration(milliseconds: 100 * attempt));
     }
-  });
-  return dir;
+  }
 }
 
 /// Устройство в тесте: своя база в памяти, свои часы, метка узла и ядро
