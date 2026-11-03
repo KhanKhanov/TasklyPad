@@ -1,5 +1,7 @@
 import 'models.dart';
 import 'tree.dart';
+import 'view_options.dart';
+import 'view_order.dart';
 
 /// Снимок всех данных пользователя с вычисленными производными: что живо,
 /// что в архиве, деревья проектов и задач, счётчики.
@@ -167,24 +169,132 @@ final class Workspace {
 
   Label? _anyLabel(String id) => _labels[id] ?? _deletedLabels[id];
 
-  /// Активные задачи с меткой (с подзадачами, без архивных проектов), по
-  /// порядку проектов и задач.
-  List<Task> labelTasks(String labelId) {
-    final order = {
-      for (final (i, item) in projectTree(expandCollapsed: true).indexed)
-        item.value.id: i,
-      ?_inboxId: -1,
-    };
-    final result = [
-      for (final t in _tasks.values)
-        if (t.labelIds.contains(labelId) && _isActive(t)) t,
-    ];
-    int rank(Task t) => order[_rootProject(t)] ?? order.length;
-    return result..sort((a, b) {
-      final byProject = rank(a).compareTo(rank(b));
-      return byProject != 0 ? byProject : _byOrder(_taskKey)(a, b);
-    });
+  /// Активные задачи с меткой (с подзадачами, без архивных проектов) в
+  /// порядке [order]; по умолчанию — порядок метки help «Default sorting
+  /// order»: приоритет → дата → дедлайн → порядок проектов и задач.
+  List<Task> labelTasks(String labelId, {TaskOrder? order}) => [
+    for (final t in _tasks.values)
+      if (t.labelIds.contains(labelId) && _isActive(t)) t,
+  ]..sort((order ?? taskOrder(DefaultOrder.label)).compare);
+
+  /// Сравнение задач вида с порядком [fallback] по умолчанию; порядок
+  /// проектов и задач (для метки) — из этого снимка.
+  TaskOrder taskOrder(
+    DefaultOrder fallback, {
+    Sorting sorting = Sorting.byDefault,
+    SortOrder sortOrder = SortOrder.asc,
+    String Function(Task)? nameOf,
+  }) => TaskOrder(
+    fallback: fallback,
+    sorting: sorting,
+    sortOrder: sortOrder,
+    nameOf: nameOf ?? (t) => t.content,
+    projectRank: (t) => _projectRanks[t.id] ?? _projectRanks.length,
+  );
+
+  /// Место каждой задачи в порядке сайдбара: «Входящие», затем проекты
+  /// деревом, затем архив деревом (его можно открыть — ручной порядок в
+  /// группах нужен и там); внутри проекта — без раздела, затем разделы,
+  /// задачи деревом.
+  late final Map<String, int> _projectRanks = () {
+    final ranks = <String, int>{};
+    void visit(Task t) {
+      ranks[t.id] = ranks.length;
+      for (final child in _taskChildren[t.id] ?? const <Task>[]) {
+        visit(child);
+      }
+    }
+
+    final archived = flattenTree(
+      archivedProjects,
+      (p) => _projectChildren[p.id] ?? const <Project>[],
+    );
+    for (final project in [
+      ..._projectOrder,
+      for (final item in archived) item.value.id,
+    ]) {
+      for (final section in [
+        null,
+        for (final s in sectionsOf(project)) s.id,
+        for (final s in sectionsOf(project, archived: true)) s.id,
+      ]) {
+        _roots[(project, section)]?.forEach(visit);
+      }
+    }
+    return ranks;
+  }();
+
+  /// Id проектов в порядке сайдбара, «Входящие» первыми.
+  late final List<String> _projectOrder = [
+    ?_inboxId,
+    for (final item in projectTree(expandCollapsed: true)) item.value.id,
+  ];
+
+  /// Задачи [tasks] по группам [grouping] ([groupTasks]): порядок меток и
+  /// проектов, проект задачи — из этого снимка; [today] — `YYYY-MM-DD`,
+  /// [localDay] — день по времени UTC (дата добавления; экран передаёт день
+  /// по часам приложения).
+  List<TaskGroup> groupsOf(
+    Iterable<Task> tasks,
+    Grouping grouping, {
+    required TaskOrder order,
+    required String today,
+    String Function(String utc)? localDay,
+  }) => groupTasks(
+    tasks,
+    grouping,
+    order: order,
+    today: today,
+    localDay: localDay,
+    labelOrder: [for (final l in _labels.values) l.id],
+    projectOrder: _projectOrder,
+    projectOf: _rootProject,
+  );
+
+  // --- «Сегодня» и «Предстоящее» ---
+  // Только активные задачи со сроком (help «Plan your day with the Today
+  // view»: «Only tasks with a date appear»); подзадача — своей строкой,
+  // даже если родитель не на этот день (допущение, О-69). [today] —
+  // `YYYY-MM-DD` по стенным часам устройства.
+
+  /// Просроченные: срок раньше [today] — по дате, а не по времени (О-25).
+  /// Вручную не сортируются (help «Default sorting order»).
+  List<Task> overdueTasks(String today, {TaskOrder? order}) => _dueWhere(
+    (date) => date.compareTo(today) < 0,
+    order ?? taskOrder(DefaultOrder.overdue),
+  );
+
+  /// Задачи со сроком на [today].
+  List<Task> todayTasks(String today, {TaskOrder? order}) =>
+      _dueWhere((date) => date == today, order);
+
+  /// Счётчик «Сегодня» в сайдбаре: на сегодня и просроченные (допущение,
+  /// О-69).
+  int todayCount(String today) => [
+    for (final t in _tasks.values)
+      if (_isActive(t) && (t.due?.date.compareTo(today) ?? 1) <= 0) t,
+  ].length;
+
+  /// «Предстоящее»: дни с задачами от [today] на два года вперёд (help «Plan
+  /// your week with the Upcoming view»), день → задачи по порядку [order].
+  /// У повторяющейся задачи — только ближайшее вхождение: срок задачи и есть
+  /// оно. Дни без задач не выводятся — их рисует экран.
+  Map<String, List<Task>> upcomingDays(String today, {TaskOrder? order}) {
+    final end = '${int.parse(today.substring(0, 4)) + 2}${today.substring(4)}';
+    final days = <String, List<Task>>{};
+    for (final t in _dueWhere(
+      (date) => date.compareTo(today) >= 0 && date.compareTo(end) < 0,
+      order,
+    )) {
+      (days[t.due!.date] ??= []).add(t);
+    }
+    return {for (final day in days.keys.toList()..sort()) day: days[day]!};
   }
+
+  List<Task> _dueWhere(bool Function(String date) when, TaskOrder? order) => [
+    for (final t in _tasks.values)
+      if (t.due case final due? when _isActive(t) && when(due.date)) t,
+  ]..sort((order ?? taskOrder(DefaultOrder.smart)).compare);
 
   // --- Задачи ---
 
@@ -196,11 +306,19 @@ final class Workspace {
   /// активных соседей; архивные разделы — тоже только при нём, после
   /// активных (help «Introduction to sections»: «To find archived sections,
   /// turn on Completed tasks under Display»). Подзадачи свёрнутой задачи не
-  /// выводятся.
-  ProjectView projectView(String projectId, {bool showCompleted = false}) {
+  /// выводятся. [order] — сортировка «Отображения»: внутри раздела и среди
+  /// соседей одного родителя (help «Sort or group tasks»), по умолчанию —
+  /// ручной порядок.
+  ProjectView projectView(
+    String projectId, {
+    bool showCompleted = false,
+    TaskOrder? order,
+  }) {
+    List<Task> visible(List<Task> tasks) =>
+        _visible(tasks, showCompleted, order);
     List<TreeItem<Task>> tree(String? sectionId) => flattenTree(
-      _visible(_roots[(projectId, sectionId)] ?? const [], showCompleted),
-      (t) => _visible(_taskChildren[t.id] ?? const [], showCompleted),
+      visible(_roots[(projectId, sectionId)] ?? const []),
+      (t) => visible(_taskChildren[t.id] ?? const []),
       collapsed: (t) => t.isCollapsed,
     );
     return ProjectView(
@@ -213,6 +331,30 @@ final class Workspace {
             (section: s, tasks: tree(s.id)),
       ],
     );
+  }
+
+  /// Задачи проекта одним списком, с подзадачами (свёрнутость не важна), —
+  /// для группировки: подзадача уходит в группу своих значений. Состав — как
+  /// у [projectView].
+  List<Task> projectTasks(String projectId, {bool showCompleted = false}) {
+    final out = <Task>[];
+    void visit(Task t) {
+      out.add(t);
+      _visible(_taskChildren[t.id] ?? const [], showCompleted).forEach(visit);
+    }
+
+    for (final section in [
+      null,
+      for (final s in sectionsOf(projectId)) s.id,
+      if (showCompleted)
+        for (final s in sectionsOf(projectId, archived: true)) s.id,
+    ]) {
+      _visible(
+        _roots[(projectId, section)] ?? const [],
+        showCompleted,
+      ).forEach(visit);
+    }
+    return out;
   }
 
   /// Подзадачи задачи деревом (для панели задачи), без учёта свёрнутости.
@@ -466,9 +608,17 @@ final class Workspace {
       if (!p.isArchived) p,
   ];
 
-  static List<Task> _visible(List<Task> tasks, bool showCompleted) => [
-    for (final t in tasks)
-      if (!t.isCompleted) t,
+  /// Активные, затем (при [showCompleted]) завершённые. [order] сортирует
+  /// активных; завершённые — позже завершённые выше.
+  static List<Task> _visible(
+    List<Task> tasks,
+    bool showCompleted, [
+    TaskOrder? order,
+  ]) => [
+    ...[
+      for (final t in tasks)
+        if (!t.isCompleted) t,
+    ]..sort(order?.compare ?? _byOrder(_taskKey)),
     if (showCompleted)
       ...[
         for (final t in tasks)

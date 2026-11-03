@@ -191,6 +191,34 @@ models.py, без docstring) — метки на задаче хранятся �
 возврате старого имени живой метки нет -> по логике help создаётся метка со СТАРЫМ именем (допущение 4 нашего кода, оставляющее живую
 переименованную метку, вероятно расходится).
 
+Разобрано 2026-11-03 (до M4.4, сортировка/группировка, Сегодня/Предстоящее; WebFetch — пересказ, кавычки инструмента сверять):
+- sort-or-group-tasks-in-todoist-WFWD0hrb (en; тот же текст в 360017135159): группировка — Date, Date added, Deadline, Priority, Label (+ project/assignee/
+  workspace в тексте); сортировка — Manual, Name, Date, Date added, Deadline, Priority; "None" / "Manual" / "Reset all" (ru «Сбросить все»); меню направления
+  зовётся "Ordering menu" (web/Android) / "Direction menu" (iOS), названия самих пунктов asc/desc НЕ приведены. Подзадачи: "When you sort a project, the sort
+  applies to sub-tasks too, in both list and board layouts" (по имени — подзадачи каждого родителя тоже по алфавиту); "When you group tasks, sub-tasks aren't
+  shown under their parent task", каждая — в группе по СВОИМ данным (дата/приоритет); "The task view always shows sub-tasks in their manual order". ПРОТИВОРЕЧИЕ: ru
+  (www.todoist.com/ru/help/todoist/features/...) в пересказе — «подзадачи сохраняют исходный порядок при группировке и сортировке» — вероятно старая версия. Разделы:
+  "Tasks are sorted within their own sections" (P1 последнего раздела — вверху раздела, не проекта). Имя: "ignores logographs" и спецсимволы (å ä ö æ ø); регистр НЕ
+  описан. Задачи без даты/дедлайна, порядок групп, метки (несколько на задаче), порядок внутри группы, замена разделов при группировке — НЕ описаны.
+  Календарная раскладка: сортировка/группировка недоступны. Группировка выключает перетаскивание.
+- default-sorting-order-in-todoist-mqmgerY7: проекты — "in the order in which they were added", внутри раздела; Сегодня/Предстоящее — Date and time (or deadline,
+  if no date) → Priority → Deadline → Manual ordering → Task creation date and time; метки и фильтры без дат — Priority → Date and time → Deadline → Project order →
+  Task order within project; фильтры с датами — как Сегодня; "Overdue tasks can't be manually sorted" (порядка просроченных нет); общее: критерии по возрастанию,
+  кроме Priority (P1→P4); разворот меняет только первичный критерий, вторичные — по умолчанию; "When you sort by Date, tasks without a date appear at the bottom"
+  в asc и вверху в desc. Подзадачи в статье не упомянуты.
+- plan-your-day-with-the-today-view-UVUXaiSs: "Only tasks with a date appear in Today and Upcoming"; про подзадачи, архивные проекты, дедлайн-без-даты,
+  порядок просроченных — молчит; "To see what you've finished today, turn on Completed tasks"; "Postponing an overdue recurring task always moves it to tomorrow";
+  перетаскивание вниз = на завтра требует выключенных сортировки/группировки.
+- plan-your-week-with-the-upcoming-view-OKOg1mR8: "up to two years in the future"; в list/board — только ближайшее вхождение; тумблер "Future occurrences" (Display) —
+  только календарь (Pro); дедлайн-без-даты — только в боковой панели Plan календаря (до 7 дней); Reschedule в метках/фильтрах — только при группировке по Date.
+- use-sub-tasks-in-todoist-kMamDo: "If you schedule both the parent task and sub-task to today, they'll both appear in the Today view with the same indent level"
+  (родитель и подзадача на сегодня — одинаковый отступ); раскрытие подзадач в Today/Upcoming/фильтрах/метках/поиске; перетаскивание отступа — только без сортировки/группировки;
+  подзадача с другой датой, чем у родителя — НЕ описано.
+- customize-views AoHhBxFdZ/4407240443282: группировка — "project, label, filter, Inbox, or Today view"; про Upcoming, порядок групп, "No date" — молчит.
+- API v1 view_options: view_type today|upcoming|assigned_to_me|project|label|filter|workspace_filter; grouped_by assignee|added_date|due_date|deadline|label|priority|project|
+  workspace; sorted_by alphabetically|assignee|added_date|due_date|deadline|label|priority|project|workspace|manual; sort_order asc|desc; show_completed_tasks bool;
+  view_mode list|board|calendar|table. day_orders — "Deprecated", замена user_item_orders (order_key на задачу); схема day_orders в видимой части страницы обрезана.
+
 **Help НЕ говорит:** что с подзадачами при завершении/удалении родителя; ограничения Входящих; список цветов (hex);
 счётчик «2/5»; что с подпроектами при разархивации; секунды тоста Undo; задачи архивного проекта (только просмотр или нет);
 русские названия цветов; число задач у метки; подтверждение удаления по Shift+Delete; окно/панель задачи; порядок меток.

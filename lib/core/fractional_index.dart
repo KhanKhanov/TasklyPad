@@ -93,6 +93,23 @@ List<String> sequence(int count, {String? after}) {
   return keys;
 }
 
+/// [count] возрастающих ключей строго между [lo] и [hi] (`null` — начало или
+/// конец списка, как у [between]) — несколько выделенных задач, брошенных в
+/// одно место. Делим промежуток пополам: длина ключей растёт как логарифм от
+/// [count], а не на символ через каждые несколько ключей. Соседи — как у
+/// [between]: [lo] меньше [hi], без ключей на `0` (иначе [ArgumentError]);
+/// совпавшие ключи соседей сначала разводит [rekeyInOrder].
+List<String> keysBetween(String? lo, String? hi, int count) {
+  if (count <= 0) return const [];
+  final mid = between(lo, hi);
+  final left = (count - 1) ~/ 2;
+  return [
+    ...keysBetween(lo, mid, left),
+    mid,
+    ...keysBetween(mid, hi, count - 1 - left),
+  ];
+}
+
 /// Ключ для вставки в позицию [index] списка [keys], упорядоченного как на
 /// экране (0 — в начало, `keys.length` — в конец). Терпим к данным с других
 /// устройств: пустой ключ (поле порядка ещё не пришло) и неверный (на `0`)
