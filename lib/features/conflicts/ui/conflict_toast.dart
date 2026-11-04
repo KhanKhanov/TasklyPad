@@ -8,6 +8,7 @@ import 'package:logger/logger.dart';
 import '../../../app/data_providers.dart';
 import '../../../app/sync_providers.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_toast.dart';
 import '../state/conflict_notices.dart';
 import 'conflict_values.dart';
 import 'conflicts_navigation.dart';
@@ -39,7 +40,7 @@ class _ConflictNoticeListenerState
   /// нерешённых конфликтов не осталось — выбор мог быть сделан и на другом
   /// устройстве. Закрыть можно только текущий тост: `close` у тоста в
   /// очереди закрыл бы чужой («Отменить»).
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _toast;
+  AppToast? _toast;
 
   @override
   void initState() {
@@ -75,7 +76,7 @@ class _ConflictNoticeListenerState
     // могли решить на другом устройстве, пока приложение было закрыто.
     ref.listen(openConflictsProvider, (was, cards) {
       if (!(cards.value?.isEmpty ?? false)) return;
-      _toast?.close();
+      _toast?.dismiss();
       final before = was?.value;
       if (before == null || before.isNotEmpty) unawaited(_clearSystem());
     });
@@ -120,29 +121,24 @@ class _ConflictNoticeListenerState
       );
     }
     if (!messenger.mounted) return;
-    late final ScaffoldFeatureController<SnackBar, SnackBarClosedReason> toast;
-    toast = messenger.showSnackBar(
-      SnackBar(
-        content: Text(text),
-        duration: conflictToastDuration,
-        // Тост с кнопкой Flutter по умолчанию держит, пока его не закроют.
-        persist: false,
-        behavior: SnackBarBehavior.floating,
-        width: 360,
-        // Тост мог ждать в очереди, пока конфликт решали: тогда он уже не
-        // нужен.
-        onVisible: () {
-          if (!mounted ||
-              (ref.read(openConflictsProvider).value?.isEmpty ?? false)) {
-            toast.close();
-          } else {
-            _toast = toast;
-          }
-        },
-        action: SnackBarAction(
-          label: l10n.conflictOpen,
-          onPressed: () => showConflictsScreen(router),
-        ),
+    late final AppToast toast;
+    toast = showAppToast(
+      messenger,
+      text: text,
+      duration: conflictToastDuration,
+      // Тост мог ждать в очереди, пока конфликт решали: тогда он уже не
+      // нужен.
+      onVisible: () {
+        if (!mounted ||
+            (ref.read(openConflictsProvider).value?.isEmpty ?? false)) {
+          toast.close();
+        } else {
+          _toast = toast;
+        }
+      },
+      action: (
+        label: l10n.conflictOpen,
+        onPressed: () => showConflictsScreen(router),
       ),
     );
     unawaited(

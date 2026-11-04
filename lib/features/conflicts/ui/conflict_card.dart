@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/conflicts.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../domain/sync_status.dart';
+import '../../common/ui/app_toast.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../settings/ui/sync_section.dart';
 import 'conflict_values.dart';
@@ -180,9 +181,7 @@ class _SideView extends ConsumerWidget {
       hidden = await ref.read(conflictCommandsProvider).keep(card, side);
     });
     if (hidden && messenger.mounted) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.conflictRestoredHidden)),
-      );
+      showAppToast(messenger, text: l10n.conflictRestoredHidden);
     }
   }
 }

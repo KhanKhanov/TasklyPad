@@ -7,6 +7,7 @@ import '../../../app/sync_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../domain/sync_status.dart';
+import '../../common/ui/app_toast.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/sync_controller.dart';
 import 'change_folder_dialog.dart';
@@ -190,22 +191,19 @@ class SyncSection extends ConsumerWidget {
     }
     if (change == null || !messenger.mounted) return;
     final (:adopted, :unreadable, issues: _, error: _) = change;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          unreadable.isNotEmpty && adopted.isEmpty
-              ? l10n.folderUnreadable(unreadable.length)
-              : unreadable.isNotEmpty
-              ? l10n.folderAdoptedPartial(adopted.length, unreadable.length)
-              : adopted.isEmpty
-              ? l10n.folderConnected
-              : l10n.folderAdopted(adopted.length),
-        ),
-        // Предупреждение о непрочитанных правках — дольше обычного тоста.
-        duration: unreadable.isNotEmpty
-            ? const Duration(seconds: 10)
-            : const Duration(seconds: 4),
-      ),
+    showAppToast(
+      messenger,
+      text: unreadable.isNotEmpty && adopted.isEmpty
+          ? l10n.folderUnreadable(unreadable.length)
+          : unreadable.isNotEmpty
+          ? l10n.folderAdoptedPartial(adopted.length, unreadable.length)
+          : adopted.isEmpty
+          ? l10n.folderConnected
+          : l10n.folderAdopted(adopted.length),
+      // Предупреждение о непрочитанных правках — дольше обычного тоста.
+      duration: unreadable.isNotEmpty
+          ? const Duration(seconds: 10)
+          : const Duration(seconds: 4),
     );
   }
 
@@ -234,14 +232,11 @@ class SyncSection extends ConsumerWidget {
     );
     if (change == null || change.error != null || !messenger.mounted) return;
     final adopted = change.adopted.length;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          adopted == 0
-              ? l10n.folderRecreated
-              : l10n.folderRecreatedAdopted(adopted),
-        ),
-      ),
+    showAppToast(
+      messenger,
+      text: adopted == 0
+          ? l10n.folderRecreated
+          : l10n.folderRecreatedAdopted(adopted),
     );
   }
 
@@ -261,7 +256,7 @@ class SyncSection extends ConsumerWidget {
       () => ref.read(syncControllerProvider.notifier).rebuild(),
     );
     if (done && messenger.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.rebuildDone)));
+      showAppToast(messenger, text: l10n.rebuildDone);
     }
   }
 }
