@@ -5,6 +5,7 @@ import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import '../../tasks/logic/task_commands.dart';
+import '../../views/logic/view_options_commands.dart';
 
 /// Действия пользователя над проектами — всё через [Mutator].
 ///
@@ -16,11 +17,13 @@ final class ProjectCommands {
     required this._mutator,
     required this._read,
     required this._tasks,
+    required this._views,
   });
 
   final Mutator _mutator;
   final Future<Workspace> Function() _read;
   final TaskCommands _tasks;
+  final ViewOptionsCommands _views;
 
   /// Создать проект в конце уровня [parentId]. Возвращает id.
   Future<String> add({
@@ -129,9 +132,10 @@ final class ProjectCommands {
     await _mutator.delete(EntityTypes.project, id);
   }
 
-  /// Дубликат сразу после проекта: поля, кроме избранного, активные разделы,
-  /// незавершённые задачи с подзадачами. Подпроекты не копируются (в Todoist
-  /// их дублируют по одному). [name] — имя копии из интерфейса («Копия …»).
+  /// Дубликат сразу после проекта: поля, кроме избранного, «Отображение»,
+  /// активные разделы, незавершённые задачи с подзадачами. Подпроекты не
+  /// копируются (в Todoist их дублируют по одному). [name] — имя копии из
+  /// интерфейса («Копия …»).
   Future<String> duplicate(String id, {required String name}) async {
     final ws = await _read();
     final source = _alive(ws, id, protectInbox: true);
@@ -151,6 +155,7 @@ final class ProjectCommands {
             : keyForInsert(keys, index + 1),
         ProjectFields.viewStyle: source.viewStyle,
       });
+      await _views.copyProject(id, copy);
       for (final task in ws.children(null, projectId: id)) {
         if (task.isCompleted) continue;
         await _tasks.copyTree(

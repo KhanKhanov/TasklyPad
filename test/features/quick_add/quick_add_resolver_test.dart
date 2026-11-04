@@ -131,6 +131,38 @@ void main() {
     expect(r.draft.labelIds, {'x', urgent});
   });
 
+  test('значение группы — срок, приоритет и дедлайн по умолчанию; токен и '
+      'чип его заменяют, «Без срока» чипом убирает', () {
+    QuickAddResolver group() => QuickAddResolver(
+      ws: ws,
+      defaults: QuickAddDefaults(
+        projectId: inboxProjectId,
+        due: const Due(date: '2026-10-30'),
+        priority: 2,
+        deadline: '2026-11-05',
+      ),
+    );
+    final plain = group().resolve('Pack', ctx).draft;
+    expect(plain.due, const Due(date: '2026-10-30'));
+    expect((plain.priority, plain.deadline), (2, '2026-11-05'));
+
+    final typed = group().resolve('Pack tomorrow p1', ctx).draft;
+    expect((typed.due?.date, typed.priority), ('2026-10-24', 1));
+
+    final chipped = group()
+        .resolve(
+          'Pack',
+          ctx,
+          chips: const ChipChoices(
+            due: (due: null),
+            priority: 3,
+            deadline: (date: null),
+          ),
+        )
+        .draft;
+    expect((chipped.due, chipped.priority, chipped.deadline), (null, 3, null));
+  });
+
   test('умное распознавание выключено — дата остаётся в названии', () {
     final r = resolver().resolve('Pay tomorrow #Work', ctx, smartDates: false);
     expect(r.draft.title, 'Pay tomorrow');

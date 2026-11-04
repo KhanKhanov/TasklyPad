@@ -12,6 +12,9 @@ final class QuickAddDefaults {
     this.sectionId,
     this.parentId,
     this.labelIds = const {},
+    this.due,
+    this.priority,
+    this.deadline,
   });
 
   final String projectId;
@@ -20,6 +23,13 @@ final class QuickAddDefaults {
   /// Подзадача: место задаёт родитель, токены `#` и `/` — текст.
   final String? parentId;
   final Set<String> labelIds;
+
+  /// Значение группы, в которой нажали «Добавить задачу» (help «Sort or
+  /// group tasks»: «Tasks you add to a group get that group's value»);
+  /// токен и выбор кнопкой окна его заменяют.
+  final Due? due;
+  final int? priority;
+  final String? deadline;
 }
 
 /// Что выбрано чипами окна; `null` у поля — не выбиралось.
@@ -226,7 +236,8 @@ final class QuickAddResolver {
     final Due? due;
     if (has(HighlightKind.due)) {
       due = r.noDate ? null : r.due;
-    } else if (chips.due?.due case final picked?) {
+    } else if ((chips.due == null ? defaults.due : chips.due!.due)
+        case final picked?) {
       // Время отрезка `9:30-10:00` ложится на срок из планировщика.
       final rangeTime = r.due?.time;
       due = rangeTime == null || picked.time != null
@@ -249,9 +260,15 @@ final class QuickAddResolver {
       parentId: defaults.parentId,
       labelIds: labelIds,
       newLabels: newLabels,
-      priority: has(HighlightKind.priority) ? r.priority : chips.priority ?? 4,
+      priority: has(HighlightKind.priority)
+          ? r.priority
+          : chips.priority ?? defaults.priority ?? 4,
       due: due,
-      deadline: has(HighlightKind.deadline) ? r.deadline : chips.deadline?.date,
+      deadline: has(HighlightKind.deadline)
+          ? r.deadline
+          : chips.deadline == null
+          ? defaults.deadline
+          : chips.deadline!.date,
       duration: r.duration,
     );
   }

@@ -1014,4 +1014,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get completeResetSubtasks => 'Complete & reset sub-tasks';
+
+  @override
+  String viewOptionsCount(int count) {
+    return 'Display: $count';
+  }
+
+  @override
+  String get viewGrouping => 'Grouping';
+
+  @override
+  String get viewSorting => 'Sorting';
+
+  @override
+  String get viewDirection => 'Ordering';
+
+  @override
+  String get viewResetAll => 'Reset all';
+
+  @override
+  String get groupingNone => 'None';
+
+  @override
+  String get sortingManual => 'Manual';
+
+  @override
+  String get sortingDefault => 'Default';
+
+  @override
+  String get viewByName => 'Name';
+
+  @override
+  String get viewByDate => 'Date';
+
+  @override
+  String get viewByAddedDate => 'Date added';
+
+  @override
+  String get viewByLabel => 'Label';
+
+  @override
+  String get sortAscending => 'Ascending';
+
+  @override
+  String get sortDescending => 'Descending';
+
+  @override
+  String get groupOverdue => 'Overdue';
+
+  @override
+  String get groupNoLabel => 'No label';
+
+  @override
+  String get groupNoAddedDate => 'No date added';
+
+  @override
+  String groupDay(String date, String name) {
+    return '$date · $name';
+  }
 }

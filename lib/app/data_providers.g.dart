@@ -449,7 +449,103 @@ final class ProjectCommandsProvider
   }
 }
 
-String _$projectCommandsHash() => r'0f628598509c0b799dd7276ec75b02d3b4c32138';
+String _$projectCommandsHash() => r'7910f4ac859e50e1ba1d9ac68e3b8116fb839022';
+
+@ProviderFor(viewOptionsRepository)
+final viewOptionsRepositoryProvider = ViewOptionsRepositoryProvider._();
+
+final class ViewOptionsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ViewOptionsRepository,
+          ViewOptionsRepository,
+          ViewOptionsRepository
+        >
+    with $Provider<ViewOptionsRepository> {
+  ViewOptionsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewOptionsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewOptionsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewOptionsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewOptionsRepository create(Ref ref) {
+    return viewOptionsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewOptionsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewOptionsRepository>(value),
+    );
+  }
+}
+
+String _$viewOptionsRepositoryHash() =>
+    r'4c1f018951ec023cea040fff5036527254386689';
+
+@ProviderFor(viewOptionsCommands)
+final viewOptionsCommandsProvider = ViewOptionsCommandsProvider._();
+
+final class ViewOptionsCommandsProvider
+    extends
+        $FunctionalProvider<
+          ViewOptionsCommands,
+          ViewOptionsCommands,
+          ViewOptionsCommands
+        >
+    with $Provider<ViewOptionsCommands> {
+  ViewOptionsCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewOptionsCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewOptionsCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewOptionsCommands> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewOptionsCommands create(Ref ref) {
+    return viewOptionsCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewOptionsCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewOptionsCommands>(value),
+    );
+  }
+}
+
+String _$viewOptionsCommandsHash() =>
+    r'c5db644860d84bb5dab03afebe78ce98afb677df';
 
 @ProviderFor(sectionCommands)
 final sectionCommandsProvider = SectionCommandsProvider._();

@@ -264,6 +264,42 @@ void main() {
     );
   });
 
+  test('задачи метки с «Выполненными задачами» — выполненные после активных, '
+      'позже выполненные выше; в архиве и под выполненным родителем — нет', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p'), _project('old', archived: true)],
+      sections: const [],
+      labels: [_label('x')],
+      tasks: [
+        _task('open', labels: ['x']),
+        _task(
+          'done_early',
+          completed: true,
+          labels: ['x'],
+        ).copyWith(completedAt: '2026-10-01T10:00:00.000Z'),
+        _task(
+          'done_late',
+          completed: true,
+          labels: ['x'],
+        ).copyWith(completedAt: '2026-10-02T10:00:00.000Z'),
+        _task(
+          'archived_done',
+          project: 'old',
+          completed: true,
+          labels: ['x'],
+        ).copyWith(completedAt: '2026-10-03T10:00:00.000Z'),
+        _task('parent', completed: true),
+        _task('open_under_done', parent: 'parent', labels: ['x']),
+      ],
+    );
+    expect(_plain(ws.labelTasks('x')), ['open']);
+    expect(_plain(ws.labelTasks('x', showCompleted: true)), [
+      'open',
+      'done_late',
+      'done_early',
+    ]);
+  });
+
   test('уровни и высоты деревьев', () {
     final ws = Workspace(
       projects: [

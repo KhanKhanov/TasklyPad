@@ -29,6 +29,28 @@ final class ViewOptionsRepository {
           .map((row) => _options(viewType, objectId, row))
           .distinct();
 
+  /// Настройки всех видов, которые когда-либо меняли, сейчас и после каждого
+  /// изменения: одна подписка на таблицу на всё приложение, а не по запросу на
+  /// каждый открытый вид. Вид незнакомого типа (от более новой версии)
+  /// пропускается; вида нет в словаре — у него настройки по умолчанию.
+  Stream<Map<(ViewType, String?), ViewOptions>> watchAll() => _db
+      .select(_db.viewOptions)
+      .watch()
+      .map(
+        (rows) => {
+          for (final row in rows)
+            if (_typeOf(row.viewType) case final type?)
+              (type, row.objectId): _options(type, row.objectId, row),
+        },
+      );
+
+  static ViewType? _typeOf(String? apiName) {
+    for (final type in ViewType.values) {
+      if (type.apiName == apiName) return type;
+    }
+    return null;
+  }
+
   SimpleSelectStatement<$ViewOptionsTable, ViewOptionsRow> _query(
     ViewType viewType,
     String? objectId,

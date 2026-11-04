@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/clock.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/theme_settings_repository.dart';
+import '../data/repositories/view_options_repository.dart';
 import '../data/repositories/workspace_repository.dart';
 import '../domain/conflicts.dart';
 import '../domain/theme_settings.dart';
@@ -15,6 +16,7 @@ import '../features/sections/logic/section_commands.dart';
 import '../features/settings/logic/general_settings_commands.dart';
 import '../features/settings/logic/theme_commands.dart';
 import '../features/tasks/logic/task_commands.dart';
+import '../features/views/logic/view_options_commands.dart';
 import '../sync/conflict_repository.dart';
 import 'sync_providers.dart';
 
@@ -83,6 +85,17 @@ ProjectCommands projectCommands(Ref ref) => ProjectCommands(
   mutator: ref.watch(mutatorProvider),
   read: ref.watch(workspaceRepositoryProvider).load,
   tasks: ref.watch(taskCommandsProvider),
+  views: ref.watch(viewOptionsCommandsProvider),
+);
+
+@Riverpod(keepAlive: true)
+ViewOptionsRepository viewOptionsRepository(Ref ref) =>
+    ViewOptionsRepository(ref.watch(appDatabaseProvider));
+
+@Riverpod(keepAlive: true)
+ViewOptionsCommands viewOptionsCommands(Ref ref) => ViewOptionsCommands(
+  mutator: ref.watch(mutatorProvider),
+  read: ref.watch(viewOptionsRepositoryProvider).load,
 );
 
 @Riverpod(keepAlive: true)

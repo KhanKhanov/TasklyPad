@@ -100,7 +100,7 @@ void main() {
     });
   });
 
-  testWidgets('«View → Completed tasks» показывает выполненную задачу', (
+  testWidgets('«Display → Completed tasks» показывает выполненную задачу', (
     tester,
   ) async {
     await withApp(tester, (device) async {
@@ -110,9 +110,9 @@ void main() {
       await settle(tester);
       expect(row('Done task'), findsNothing);
 
-      await tester.tap(find.byTooltip('Display'));
+      await tester.tap(find.text('Display'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(CheckedPopupMenuItem<void>));
+      await tester.tap(find.byType(CheckboxMenuButton));
       await settle(tester);
       expect(row('Done task'), findsOneWidget);
     });

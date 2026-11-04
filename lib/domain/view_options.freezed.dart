@@ -218,8 +218,8 @@ return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that
 /// @nodoc
 
 
-class _ViewOptions implements ViewOptions {
-  const _ViewOptions({required this.viewType, this.objectId, this.grouping = Grouping.none, this.sorting = Sorting.byDefault, this.sortOrder = SortOrder.asc, this.showCompletedTasks = false});
+class _ViewOptions extends ViewOptions {
+  const _ViewOptions({required this.viewType, this.objectId, this.grouping = Grouping.none, this.sorting = Sorting.byDefault, this.sortOrder = SortOrder.asc, this.showCompletedTasks = false}): super._();
   
 
 @override final  ViewType viewType;

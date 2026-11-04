@@ -1,0 +1,178 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../app/data_providers.dart';
+import '../../../app/theme/app_palette.dart';
+import '../../../domain/view_options.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../common/ui/ui_kit.dart';
+import '../state/view_options.dart';
+
+/// Кнопка «Отображение» в заголовке вида: группировка, сортировка с
+/// направлением, «Выполненные задачи», «Сбросить всё» (help «Sort or group
+/// tasks», решение 2 плана M4). Выбранные сортировка и группировка — числом
+/// на кнопке: «Отображение: 1» (скриншот Todoist для Windows, О-28).
+class ViewOptionsButton extends ConsumerWidget {
+  const ViewOptionsButton({super.key, required this.viewType, this.objectId});
+
+  final ViewType viewType;
+
+  /// Проект или метка; у «Сегодня» и «Предстоящего» — `null`.
+  final String? objectId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final palette = AppPalette.of(context);
+    final options = ref.watch(viewOptionsProvider(viewType, objectId));
+    void save(ViewOptions next) => runCommand(
+      context,
+      () => ref.read(viewOptionsCommandsProvider).save(options, next),
+    );
+
+    Widget choice<T>(T value, T current, String text, ValueChanged<T> pick) =>
+        MenuItemButton(
+          leadingIcon: SizedBox(
+            width: 18,
+            child: value == current
+                ? Icon(Icons.check, size: 18, color: palette.accent)
+                : null,
+          ),
+          onPressed: value == current ? null : () => pick(value),
+          child: Text(text),
+        );
+
+    Widget submenu(String title, String value, List<Widget> children) =>
+        SubmenuButton(
+          menuChildren: children,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title),
+              const SizedBox(width: 16),
+              Text(value, style: TextStyle(color: palette.textSecondary)),
+            ],
+          ),
+        );
+
+    final groupings = _groupings(viewType);
+    // «Вручную» из импорта Todoist — тот же порядок вида.
+    final sorting = options.sorting == Sorting.manual
+        ? Sorting.byDefault
+        : options.sorting;
+    return MenuAnchor(
+      menuChildren: [
+        if (groupings.length > 1)
+          submenu(l10n.viewGrouping, _groupingText(l10n, options.grouping), [
+            for (final g in groupings)
+              choice(
+                g,
+                options.grouping,
+                _groupingText(l10n, g),
+                (g) => save(options.copyWith(grouping: g)),
+              ),
+          ]),
+        submenu(l10n.viewSorting, _sortingText(l10n, viewType, sorting), [
+          for (final s in Sorting.values)
+            if (s != Sorting.manual)
+              choice(
+                s,
+                sorting,
+                _sortingText(l10n, viewType, s),
+                (s) => save(options.copyWith(sorting: s)),
+              ),
+        ]),
+        if (sorting.hasDirection)
+          submenu(l10n.viewDirection, _orderText(l10n, options.sortOrder), [
+            for (final o in SortOrder.values)
+              choice(
+                o,
+                options.sortOrder,
+                _orderText(l10n, o),
+                (o) => save(options.copyWith(sortOrder: o)),
+              ),
+          ]),
+        CheckboxMenuButton(
+          value: options.showCompletedTasks,
+          onChanged: (v) =>
+              save(options.copyWith(showCompletedTasks: v ?? false)),
+          child: Text(l10n.completedTasks),
+        ),
+        const Divider(height: 1),
+        MenuItemButton(
+          onPressed: options.applied == 0
+              ? null
+              : () => runCommand(
+                  context,
+                  () => ref.read(viewOptionsCommandsProvider).resetAll(options),
+                ),
+          child: Text(l10n.viewResetAll),
+        ),
+      ],
+      builder: (context, controller, _) => InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: () => controller.isOpen ? controller.close() : controller.open(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.tune, size: 18, color: palette.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                options.applied == 0
+                    ? l10n.viewOptions
+                    : l10n.viewOptionsCount(options.applied),
+                style: TextStyle(color: palette.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Группировки вида: у «Предстоящего» их нет, «Проект» — вне проекта
+/// (решение 2 плана M4); фильтр — M5.
+List<Grouping> _groupings(ViewType type) => switch (type) {
+  ViewType.upcoming => const [Grouping.none],
+  ViewType.project => [
+    for (final g in Grouping.values)
+      if (g != Grouping.project) g,
+  ],
+  ViewType.today || ViewType.label || ViewType.filter => Grouping.values,
+};
+
+String _groupingText(AppLocalizations l10n, Grouping g) => switch (g) {
+  Grouping.none => l10n.groupingNone,
+  Grouping.dueDate => l10n.viewByDate,
+  Grouping.addedDate => l10n.viewByAddedDate,
+  Grouping.deadline => l10n.fieldDeadline,
+  Grouping.priority => l10n.fieldPriority,
+  Grouping.label => l10n.viewByLabel,
+  Grouping.project => l10n.fieldProject,
+};
+
+/// Порядок вида по умолчанию — «Вручную» там, где ручной порядок есть
+/// (проект, «Сегодня», «Предстоящее»; help «Sort or group tasks»), у метки
+/// и фильтра — «По умолчанию».
+String _sortingText(AppLocalizations l10n, ViewType type, Sorting s) =>
+    switch (s) {
+      Sorting.byDefault || Sorting.manual => switch (type) {
+        ViewType.label || ViewType.filter => l10n.sortingDefault,
+        ViewType.project ||
+        ViewType.today ||
+        ViewType.upcoming => l10n.sortingManual,
+      },
+      Sorting.alphabetically => l10n.viewByName,
+      Sorting.dueDate => l10n.viewByDate,
+      Sorting.addedDate => l10n.viewByAddedDate,
+      Sorting.deadline => l10n.fieldDeadline,
+      Sorting.priority => l10n.fieldPriority,
+    };
+
+String _orderText(AppLocalizations l10n, SortOrder o) => switch (o) {
+  SortOrder.asc => l10n.sortAscending,
+  SortOrder.desc => l10n.sortDescending,
+};
