@@ -315,5 +315,16 @@
   "previousWeek": "Previous week",
   "nextWeek": "Next week",
   "pickDate": "Pick a date",
-  "upcomingDay": "{date} · {relative} · {weekday}"
+  "upcomingDay": "{date} · {relative} · {weekday}",
+  "rejectTooManyLabels": "A task can't have more than 100 labels",
+  "uncompleteTask": "Uncomplete",
+  "selectTasks": "Select tasks",
+  "clearSelection": "Clear selection",
+  "selectedCount": "{n} selected",
+  "tasksCompleted": "{n, plural, =1{1 task completed} other{{n} tasks completed}}",
+  "tasksMoved": "{n, plural, =1{1 task moved} other{{n} tasks moved}}",
+  "tasksDueChanged": "{n, plural, =1{Date changed for 1 task} other{Date changed for {n} tasks}}",
+  "deleteTasksTitle": "Delete tasks?",
+  "deleteTasksBody": "{n, plural, =1{1 task and its sub-tasks will be deleted.} other{{n} tasks and their sub-tasks will be deleted.}}",
+  "selectAll": "Select all"
 }

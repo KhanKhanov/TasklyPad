@@ -113,19 +113,21 @@ final class TaskCommands {
   Future<void> setDescription(String id, String description) =>
       _update(id, {TaskFields.description: description});
 
-  /// Приоритет 1 (P1, высший) … 4 (P4).
-  Future<void> setPriority(String id, int priority) {
+  /// Приоритет 1 (P1, высший) … 4 (P4). [snapshot] — снимок, уже
+  /// прочитанный в той же транзакции (действие над выделенными): иначе
+  /// каждая задача читала бы всю базу заново.
+  Future<void> setPriority(String id, int priority, {Workspace? snapshot}) {
     RangeError.checkValueInInterval(priority, 1, 4, 'priority');
-    return _update(id, {TaskFields.priority: priority});
+    return _update(id, {TaskFields.priority: priority}, snapshot);
   }
 
   /// Срок; `null` убирает срок. Повторяющийся срок, по которому расчёт не
   /// найдёт следующее вхождение (часовое правило без времени, битая строка
   /// правила), — [RejectReason.brokenRecurrence] до записи: иначе выполнение
   /// такой задачи отказало бы потом.
-  Future<Undo> setDue(String id, Due? due) async {
+  Future<Undo> setDue(String id, Due? due, {Workspace? snapshot}) async {
     if (due != null && due.isRecurring) _next(due, _clock.nowWall());
-    await _alive(id);
+    await _alive(id, snapshot);
     final undo = await _mutator.capture([
       _target(id, {TaskFields.due}),
     ]);
@@ -166,8 +168,8 @@ final class TaskCommands {
       });
 
   /// Дедлайн `YYYY-MM-DD`; `null` убирает.
-  Future<void> setDeadline(String id, String? date) =>
-      _update(id, {TaskFields.deadline: _deadlineValue(date)});
+  Future<void> setDeadline(String id, String? date, {Workspace? snapshot}) =>
+      _update(id, {TaskFields.deadline: _deadlineValue(date)}, snapshot);
 
   /// Длительность; `null` убирает.
   Future<void> setDuration(String id, TaskDuration? duration) =>
@@ -179,8 +181,12 @@ final class TaskCommands {
 
   /// Метки задачи ровно [labelIds]: недостающие ставятся, лишние снимаются.
   /// Удалённая метка выполненной задачи в выборе не участвует и остаётся.
-  Future<void> setLabels(String id, Set<String> labelIds) async {
-    final ws = await _read();
+  Future<void> setLabels(
+    String id,
+    Set<String> labelIds, {
+    Workspace? snapshot,
+  }) async {
+    final ws = snapshot ?? await _read();
     final task = await _alive(id, ws);
     final current = {
       for (final l in task.labelIds)
@@ -483,8 +489,8 @@ final class TaskCommands {
   }
 
   /// Удалить (tombstone). Подзадачи скрываются вместе с задачей.
-  Future<void> delete(String id) async {
-    await _alive(id);
+  Future<void> delete(String id, {Workspace? snapshot}) async {
+    await _alive(id, snapshot);
     await _mutator.delete(EntityTypes.task, id);
   }
 
@@ -793,8 +799,12 @@ final class TaskCommands {
         TaskLabelFields.deleted: !linked,
       });
 
-  Future<void> _update(String id, Map<String, Object?> fields) async {
-    await _alive(id);
+  Future<void> _update(
+    String id,
+    Map<String, Object?> fields, [
+    Workspace? snapshot,
+  ]) async {
+    await _alive(id, snapshot);
     await _mutator.update(EntityTypes.task, id, fields);
   }
 

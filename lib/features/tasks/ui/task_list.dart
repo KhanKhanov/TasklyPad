@@ -76,6 +76,9 @@ class TaskList extends StatelessWidget {
           item: item,
           ws: ws,
           collapsible: parentId == null,
+          // Подзадачи в окне задачи не выделяются: панель выделения — под
+          // окном, и её клавиши туда не доходят.
+          selectable: parentId == null,
           showProject: showProject,
           hierarchy: hierarchy,
         ),

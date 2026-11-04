@@ -229,4 +229,25 @@ void main() {
     });
     expect(ops.map((o) => o.field), [ProjectFields.viewStyle]);
   });
+
+  test('combine: поле меняли два шага — «Отменить» возвращает значение до '
+      'первого', () async {
+    final m = dev.services.mutator;
+    final id = await m.create(EntityTypes.task, {
+      TaskFields.content: 'Отчёт',
+      TaskFields.priority: 4,
+    });
+    final target = (
+      entityType: EntityTypes.task,
+      entityId: id,
+      fields: {TaskFields.priority},
+    );
+    final first = await m.capture([target]);
+    await m.update(EntityTypes.task, id, {TaskFields.priority: 2});
+    final second = await m.capture([target]);
+    await m.update(EntityTypes.task, id, {TaskFields.priority: 1});
+
+    await m.combine([first, second])();
+    expect((await dev.taskRow(id))?.priority, 4);
+  });
 }

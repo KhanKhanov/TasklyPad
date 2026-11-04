@@ -189,6 +189,57 @@ final class TaskCommandsProvider
 
 String _$taskCommandsHash() => r'baf2c263653868e9196dc655c0ad0d63f7894108';
 
+/// Действия над выделенными задачами.
+
+@ProviderFor(bulkTaskCommands)
+final bulkTaskCommandsProvider = BulkTaskCommandsProvider._();
+
+/// Действия над выделенными задачами.
+
+final class BulkTaskCommandsProvider
+    extends
+        $FunctionalProvider<
+          BulkTaskCommands,
+          BulkTaskCommands,
+          BulkTaskCommands
+        >
+    with $Provider<BulkTaskCommands> {
+  /// Действия над выделенными задачами.
+  BulkTaskCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'bulkTaskCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$bulkTaskCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<BulkTaskCommands> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  BulkTaskCommands create(Ref ref) {
+    return bulkTaskCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BulkTaskCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BulkTaskCommands>(value),
+    );
+  }
+}
+
+String _$bulkTaskCommandsHash() => r'31d242f4306ca07034b433b9923788aeb2122ca8';
+
 @ProviderFor(settingsRepository)
 final settingsRepositoryProvider = SettingsRepositoryProvider._();
 

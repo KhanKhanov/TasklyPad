@@ -79,9 +79,19 @@ Future<void> editPriority(
   WidgetRef ref,
   Task task,
 ) async {
+  final p = await pickPriority(context);
+  if (p == null || !context.mounted) return;
+  await runCommand(
+    context,
+    () => ref.read(taskCommandsProvider).setPriority(task.id, p),
+  );
+}
+
+/// Окно выбора приоритета: 1 (P1) … 4; `null` — закрыли.
+Future<int?> pickPriority(BuildContext context) {
   final l10n = AppLocalizations.of(context);
   final palette = AppPalette.of(context);
-  final p = await showDialog<int>(
+  return showDialog<int>(
     context: context,
     builder: (context) => SimpleDialog(
       title: Text(l10n.fieldPriority),
@@ -99,10 +109,5 @@ Future<void> editPriority(
           ),
       ],
     ),
-  );
-  if (p == null || !context.mounted) return;
-  await runCommand(
-    context,
-    () => ref.read(taskCommandsProvider).setPriority(task.id, p),
   );
 }

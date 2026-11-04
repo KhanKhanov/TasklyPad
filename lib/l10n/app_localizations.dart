@@ -1921,6 +1921,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{date} · {relative} · {weekday}'**
   String upcomingDay(String date, String relative, String weekday);
+
+  /// Действие отклонено: у задачи стало бы больше 100 меток (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'У задачи не может быть больше 100 меток'**
+  String get rejectTooManyLabels;
+
+  /// «⋯» панели выделения у выполненных задач (help: Uncomplete; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Вернуть'**
+  String get uncompleteTask;
+
+  /// Пункт «⋯» вида на телефоне: режим выделения задач (решение 9 плана M4)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать задачи'**
+  String get selectTasks;
+
+  /// Кнопка панели выделения
+  ///
+  /// In ru, this message translates to:
+  /// **'Снять выделение'**
+  String get clearSelection;
+
+  /// Число выделенных задач на панели выделения (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрано: {n}'**
+  String selectedCount(int n);
+
+  /// Тост после «Выполнить» на панели выделения
+  ///
+  /// In ru, this message translates to:
+  /// **'Выполнено задач: {n}'**
+  String tasksCompleted(int n);
+
+  /// Тост после «Перенести в…» на панели выделения
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенесено задач: {n}'**
+  String tasksMoved(int n);
+
+  /// Тост после «Срок» на панели выделения
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок изменён у задач: {n}'**
+  String tasksDueChanged(int n);
+
+  /// Подтверждение удаления выделенных задач
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить задачи?'**
+  String get deleteTasksTitle;
+
+  /// Текст подтверждения удаления выделенных задач
+  ///
+  /// In ru, this message translates to:
+  /// **'Будет удалено задач: {n} — вместе с подзадачами.'**
+  String deleteTasksBody(int n);
+
+  /// Режим выделения на телефоне: выделить все задачи вида (help: Select All, ru «Выделить все»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выделить все'**
+  String get selectAll;
 }
 
 class _AppLocalizationsDelegate
