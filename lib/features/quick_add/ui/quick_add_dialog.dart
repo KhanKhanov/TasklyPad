@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_toast.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../views/state/upcoming_day.dart';
@@ -79,13 +80,9 @@ Future<void> showQuickAddDialog(
               onClose: () => Navigator.pop(context),
               onAdded: (count) {
                 Navigator.pop(context);
-                messenger?.showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.quickAddTaskAdded),
-                    behavior: SnackBarBehavior.floating,
-                    width: 360,
-                  ),
-                );
+                if (messenger != null) {
+                  showAppToast(messenger, text: l10n.quickAddTaskAdded);
+                }
               },
             ),
           ),

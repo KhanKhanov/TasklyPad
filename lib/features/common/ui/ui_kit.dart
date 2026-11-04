@@ -9,6 +9,7 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import 'app_toast.dart';
 
 /// Перейти на экран; открытая выдвижная панель (узкое окно) закрывается, как
 /// в Todoist на телефоне.
@@ -96,7 +97,7 @@ Future<bool> runGuarded(
   void show(String text) {
     // Экран (или окно задачи) мог закрыться, пока шла запись.
     if (messenger.mounted) {
-      messenger.showSnackBar(SnackBar(content: Text(text)));
+      showAppToast(messenger, text: text);
     }
   }
 

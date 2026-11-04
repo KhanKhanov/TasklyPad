@@ -8,6 +8,7 @@ import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
 import '../../../domain/undo.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_toast.dart';
 import '../../common/ui/ui_kit.dart';
 
 /// Длительность тоста «Отменить»: в help Todoist — «несколько секунд»,
@@ -40,31 +41,26 @@ void showUndoToast(
     unawaited(runGuarded(messenger, l10n, undo.call));
   }
 
+  late final AppToast toast;
   undoByKey = () {
     run();
-    messenger.hideCurrentSnackBar();
+    toast.dismiss();
     return true;
   };
   _currentUndoToast[messenger] = undoByKey;
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: _UndoShortcut(
-          // Уходящий прежний тост ещё на экране, пока новый ждёт очереди:
-          // `Ctrl+Z` отменяет последнее действие, а не то, чей тост виден.
-          onUndo: () => _currentUndoToast[messenger]?.call() ?? false,
-          child: Text(message),
-        ),
-        duration: undoToastDuration,
-        // Тост с кнопкой во Flutter по умолчанию не закрывается сам
-        // (`persist = action != null`); в Todoist он уходит через секунды.
-        persist: false,
-        behavior: SnackBarBehavior.floating,
-        width: 360,
-        action: SnackBarAction(label: l10n.actionUndo, onPressed: run),
-      ),
-    );
+  messenger.hideCurrentSnackBar();
+  toast = showAppToast(
+    messenger,
+    text: message,
+    duration: undoToastDuration,
+    action: (label: l10n.actionUndo, onPressed: run),
+    // Уходящий прежний тост ещё на экране, пока новый ждёт очереди: `Ctrl+Z`
+    // отменяет последнее действие, а не то, чей тост виден.
+    wrap: (body) => _UndoShortcut(
+      onUndo: () => _currentUndoToast[messenger]?.call() ?? false,
+      child: body,
+    ),
+  );
 }
 
 /// Отмена последнего действия с тостом у каждого `ScaffoldMessenger`:
