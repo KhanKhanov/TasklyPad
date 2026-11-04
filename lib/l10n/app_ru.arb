@@ -413,10 +413,6 @@
   "@noDue": {
     "description": "Убрать срок"
   },
-  "pickDate": "Выбрать дату…",
-  "@pickDate": {
-    "description": "Пункт выбора даты"
-  },
   "addTime": "Добавить время",
   "@addTime": {
     "description": "Пункт выбора времени"
@@ -931,7 +927,7 @@
   "nextWeek": "Следующая неделя",
   "@nextWeek": {"description": "Стрелка полосы недели «Предстоящего»"},
   "pickDate": "Выбрать дату",
-  "@pickDate": {"description": "Месяц над полосой недели «Предстоящего» (help: Tap the current month to select a date)"},
+  "@pickDate": {"description": "Месяц над полосой недели «Предстоящего» (help: Tap the current month to select a date) и значок «…» срока в меню строки задачи — планировщик"},
   "upcomingDay": "{date} · {relative} · {weekday}",
   "@upcomingDay": {"description": "Заголовок дня «Сегодня» и «Предстоящего»: дата, «Сегодня» или «Завтра», день недели (О-68)", "placeholders": {"date": {"type": "String"}, "relative": {"type": "String"}, "weekday": {"type": "String"}}}
 }

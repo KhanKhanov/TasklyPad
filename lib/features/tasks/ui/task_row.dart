@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,12 +8,13 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
-import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../shell/ui/shell_keys.dart';
 import 'task_actions.dart';
 import 'task_edits.dart';
 import 'task_panel.dart';
+import 'task_row_menu.dart';
 import 'task_row_parts.dart';
 
 /// Строка задачи, как в Todoist: кружок с обводкой цвета приоритета,
@@ -48,6 +50,9 @@ class TaskRow extends ConsumerStatefulWidget {
 
 class _TaskRowState extends ConsumerState<TaskRow> {
   final FocusNode _focus = ListRowFocusNode();
+
+  /// Кнопка «⋯»: под ней встаёт меню, открытое клавишей `.`.
+  final GlobalKey _menuButton = GlobalKey();
   bool _hover = false;
   bool _focused = false;
   bool _completing = false;
@@ -79,7 +84,19 @@ class _TaskRowState extends ConsumerState<TaskRow> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    RendererBinding.instance.mouseTracker.addListener(_onMouseChanged);
+  }
+
+  /// Мышь подключили или отключили — меняется, виден ли «⋯» без наведения.
+  void _onMouseChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    RendererBinding.instance.mouseTracker.removeListener(_onMouseChanged);
     _focus.dispose();
     super.dispose();
   }
@@ -156,6 +173,10 @@ class _TaskRowState extends ConsumerState<TaskRow> {
         moveTaskTo(context, ref, t);
       case LogicalKeyboardKey.keyY:
         editPriority(context, ref, t);
+      case LogicalKeyboardKey.period:
+        if (_menuButton.currentContext case final button?) {
+          showTaskRowMenu(button, ref, t);
+        }
       default:
         return KeyEventResult.ignored;
     }
@@ -168,6 +189,12 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     final t = _task;
     final item = widget.item;
     final readOnly = _readOnly;
+    // Без мыши наведения нет: на узком экране (решение 1А «Ход M4.7») и
+    // без мыши — на широком сенсорном (О-48) «⋯» виден всегда; долгое
+    // нажатие оставлено перетаскиванию (M4.9).
+    final alwaysMenu =
+        MediaQuery.sizeOf(context).width < wideLayoutWidth ||
+        !RendererBinding.instance.mouseTracker.mouseIsConnected;
     return Focus(
       focusNode: _focus,
       // `j`/`k` и стрелки идут от строки к строке, минуя кнопки внутри неё.
@@ -185,6 +212,18 @@ class _TaskRowState extends ConsumerState<TaskRow> {
               _focus.requestFocus();
               showTaskDialog(context, t.id);
             },
+            // Правый клик — то же меню у курсора (решение 2А «Ход M4.7»).
+            onSecondaryTapUp: readOnly
+                ? null
+                : (details) {
+                    _focus.requestFocus();
+                    showTaskRowMenu(
+                      context,
+                      ref,
+                      t,
+                      at: details.globalPosition,
+                    );
+                  },
             child: Container(
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: palette.divider)),
@@ -221,11 +260,11 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                     ),
                   ),
                   Visibility(
-                    visible: !readOnly && (_hover || _focused),
+                    visible: !readOnly && (_hover || _focused || alwaysMenu),
                     maintainState: true,
                     maintainAnimation: true,
                     maintainSize: true,
-                    child: _TaskMenu(task: t),
+                    child: TaskRowMenuButton(key: _menuButton, task: t),
                   ),
                 ],
               ),
@@ -233,43 +272,6 @@ class _TaskRowState extends ConsumerState<TaskRow> {
           ),
         ),
       ),
-    );
-  }
-}
-
-enum _TaskAction { edit, duplicate, delete }
-
-class _TaskMenu extends ConsumerWidget {
-  const _TaskMenu({required this.task});
-
-  final Task task;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return PopupMenuButton<_TaskAction>(
-      tooltip: l10n.moreActions,
-      iconSize: 20,
-      icon: const Icon(Icons.more_horiz),
-      onSelected: (action) => switch (action) {
-        _TaskAction.edit => showTaskDialog(context, task.id),
-        _TaskAction.duplicate => runCommand(
-          context,
-          () => ref.read(taskCommandsProvider).duplicate(task.id),
-        ),
-        _TaskAction.delete => deleteTask(context, ref, task),
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(value: _TaskAction.edit, child: Text(l10n.actionEdit)),
-        PopupMenuItem(
-          value: _TaskAction.duplicate,
-          child: Text(l10n.actionDuplicate),
-        ),
-        PopupMenuItem(
-          value: _TaskAction.delete,
-          child: Text(l10n.actionDelete),
-        ),
-      ],
     );
   }
 }

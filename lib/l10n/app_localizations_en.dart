@@ -302,9 +302,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDue => 'No date';
 
   @override
-  String get pickDate => 'Pick a date';
-
-  @override
   String get addTime => 'Add time';
 
   @override
@@ -1090,6 +1087,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nextWeek => 'Next week';
+
+  @override
+  String get pickDate => 'Pick a date';
 
   @override
   String upcomingDay(String date, String relative, String weekday) {

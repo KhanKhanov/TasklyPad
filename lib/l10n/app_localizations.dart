@@ -638,12 +638,6 @@ abstract class AppLocalizations {
   /// **'Без срока'**
   String get noDue;
 
-  /// Месяц над полосой недели «Предстоящего» (help: Tap the current month to select a date)
-  ///
-  /// In ru, this message translates to:
-  /// **'Выбрать дату'**
-  String get pickDate;
-
   /// Пункт выбора времени
   ///
   /// In ru, this message translates to:
@@ -1915,6 +1909,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Следующая неделя'**
   String get nextWeek;
+
+  /// Месяц над полосой недели «Предстоящего» (help: Tap the current month to select a date) и значок «…» срока в меню строки задачи — планировщик
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать дату'**
+  String get pickDate;
 
   /// Заголовок дня «Сегодня» и «Предстоящего»: дата, «Сегодня» или «Завтра», день недели (О-68)
   ///
