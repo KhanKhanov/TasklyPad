@@ -302,7 +302,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noDue => 'Без срока';
 
   @override
-  String get pickDate => 'Выбрать дату…';
+  String get pickDate => 'Выбрать дату';
 
   @override
   String get addTime => 'Добавить время';
@@ -1085,5 +1085,28 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String groupDay(String date, String name) {
     return '$date · $name';
+  }
+
+  @override
+  String get sortingSmart => 'Умная';
+
+  @override
+  String get todayView => 'Сегодня';
+
+  @override
+  String get upcomingView => 'Предстоящее';
+
+  @override
+  String get reschedule => 'Перенести';
+
+  @override
+  String get previousWeek => 'Предыдущая неделя';
+
+  @override
+  String get nextWeek => 'Следующая неделя';
+
+  @override
+  String upcomingDay(String date, String relative, String weekday) {
+    return '$date · $relative · $weekday';
   }
 }

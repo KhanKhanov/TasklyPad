@@ -12,15 +12,18 @@ import '../../labels/ui/label_tile.dart';
 import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_tile.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
+import '../../tasks/logic/due_dates.dart';
+import '../../tasks/state/today.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
 import 'sidebar_items.dart';
 
-/// Боковая панель, как в Todoist: «Входящие», «Фильтры и метки», «Избранное»
-/// (проекты и метки), «Мои проекты» деревом. «Конфликты» (нашего дополнения)
-/// видны, только пока есть нерешённые. «Добавить задачу» открывает окно
-/// быстрого добавления; «Поиск», «Сегодня», «Предстоящее» появятся вместе со
-/// своими экранами.
+/// Боковая панель, как в Todoist: «Входящие», «Сегодня» (со счётчиком
+/// сегодняшних и просроченных — допущение О-69), «Предстоящее», «Фильтры и
+/// метки», «Избранное» (проекты и метки), «Мои проекты» деревом.
+/// «Конфликты» (нашего дополнения) видны, только пока есть нерешённые.
+/// «Добавить задачу» открывает окно быстрого добавления; «Поиск» появится
+/// вместе со своим экраном.
 class Sidebar extends ConsumerWidget {
   const Sidebar({super.key, required this.location});
 
@@ -81,6 +84,8 @@ class Sidebar extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final inbox = ws.inbox;
     final favorites = ws.favoriteProjects;
+    // Счётчик «Сегодня» меняется в полночь.
+    final today = ref.watch(todayProvider);
     final favoriteLabels = [
       for (final l in ws.labels)
         if (l.isFavorite) l,
@@ -106,6 +111,20 @@ class Sidebar extends ConsumerWidget {
           selected: location == '/' || location == '/project/${inbox.id}',
           onTap: () => navigate(context, '/'),
         ),
+      SidebarNavItem(
+        icon: Icons.calendar_today_outlined,
+        label: l10n.todayView,
+        count: ws.todayCount(isoDate(today)),
+        selected: location == '/today',
+        onTap: () => navigate(context, '/today'),
+      ),
+      SidebarNavItem(
+        icon: Icons.calendar_month_outlined,
+        label: l10n.upcomingView,
+        count: 0,
+        selected: location == '/upcoming',
+        onTap: () => navigate(context, '/upcoming'),
+      ),
       SidebarNavItem(
         icon: Icons.grid_view_outlined,
         label: l10n.filtersAndLabels,

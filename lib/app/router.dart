@@ -8,6 +8,8 @@ import '../features/projects/ui/project_screen.dart';
 import '../features/projects/ui/projects_screen.dart';
 import '../features/settings/ui/settings_screen.dart';
 import '../features/shell/ui/app_shell.dart';
+import '../features/views/ui/today_screen.dart';
+import '../features/views/ui/upcoming_screen.dart';
 
 part 'router.g.dart';
 
@@ -26,6 +28,16 @@ GoRouter router(Ref ref) {
             path: '/',
             name: 'inbox',
             builder: (context, state) => const ProjectScreen(),
+          ),
+          GoRoute(
+            path: '/today',
+            name: 'today',
+            builder: (context, state) => const TodayScreen(),
+          ),
+          GoRoute(
+            path: '/upcoming',
+            name: 'upcoming',
+            builder: (context, state) => const UpcomingScreen(),
           ),
           GoRoute(
             path: '/project/:id',

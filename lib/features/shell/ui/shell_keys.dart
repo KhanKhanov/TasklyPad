@@ -9,10 +9,11 @@ import '../../tasks/ui/task_actions.dart';
 /// Хоткеи оболочки, как в Todoist: `q` и `Ctrl+N` — быстрое добавление;
 /// `Ctrl+S` — синхронизация; `j`/`↓` и `k`/`↑` без задачи в фокусе — к
 /// первой и последней задаче списка; `m` —
-/// сайдбар; `g`, затем буква — переход: `i` «Входящие», `p` «Мои проекты»,
-/// `v` и `l` «Фильтры и метки»; `o` `s` — «Настройки», `o` `t` — «Тема».
-/// Остальные переходы (`h`, `t`, `u`) появятся вместе с их экранами. Пока
-/// печатают в поле — клавиши уходят в поле.
+/// сайдбар; `g`, затем буква — переход: `i` «Входящие», `t` «Сегодня», `u`
+/// «Предстоящее», `p` «Мои проекты», `v` и `l` «Фильтры и метки»; `o` `s` —
+/// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3` — «Входящие», «Сегодня»,
+/// «Предстоящее». Переход `h` появится вместе с «Главной». Пока печатают в
+/// поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
     super.key,
@@ -57,6 +58,8 @@ class _ShellKeysState extends State<ShellKeys> {
   _routes = {
     LogicalKeyboardKey.keyG: {
       LogicalKeyboardKey.keyI: '/',
+      LogicalKeyboardKey.keyT: '/today',
+      LogicalKeyboardKey.keyU: '/upcoming',
       LogicalKeyboardKey.keyP: '/projects',
       LogicalKeyboardKey.keyV: '/filters-labels',
       LogicalKeyboardKey.keyL: '/filters-labels',
@@ -66,6 +69,14 @@ class _ShellKeysState extends State<ShellKeys> {
       LogicalKeyboardKey.keyS: '/settings',
       LogicalKeyboardKey.keyT: '/settings?section=theme',
     },
+  };
+
+  /// `Ctrl+1/2/3` — «Перейти во Входящие / Сегодня / Предстоящее» (help «Use
+  /// keyboard shortcuts», Windows).
+  static final Map<LogicalKeyboardKey, String> _ctrlRoutes = {
+    LogicalKeyboardKey.digit1: '/',
+    LogicalKeyboardKey.digit2: '/today',
+    LogicalKeyboardKey.digit3: '/upcoming',
   };
 
   bool get _pending => _sinceGo.isRunning && _sinceGo.elapsed <= _goWindow;
@@ -134,6 +145,10 @@ class _ShellKeysState extends State<ShellKeys> {
     }
     if (ctrlOnly && key == LogicalKeyboardKey.keyS) {
       widget.onSync();
+      return KeyEventResult.handled;
+    }
+    if (_ctrlRoutes[key] case final path? when ctrlOnly) {
+      navigate(context, path);
       return KeyEventResult.handled;
     }
     if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {

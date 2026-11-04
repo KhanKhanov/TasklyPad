@@ -45,6 +45,7 @@ Task _task(
   int priority = 4,
   String? date,
   String? time,
+  String? completedAt,
 }) => Task(
   id: id,
   content: id,
@@ -57,6 +58,7 @@ Task _task(
   due: date == null ? null : Due(date: date, time: time),
   isCollapsed: collapsed,
   isCompleted: completed,
+  completedAt: completedAt,
   labelIds: labels,
 );
 
@@ -542,6 +544,61 @@ void main() {
       final days = ws().upcomingDays(today);
       expect(days.keys, [today, '2026-11-04', '2026-11-10', '2028-11-02']);
       expect(_plain(days[today]!), ['allday', 'child', 'nine']);
+    });
+  });
+
+  group('«Выполненные задачи» в «Сегодня» и «Предстоящем» (M4.6)', () {
+    const today = '2026-11-04';
+    Workspace ws() => Workspace(
+      projects: [inbox, _project('p'), _project('old', archived: true)],
+      sections: const [],
+      labels: const [],
+      tasks: [
+        _task('open', date: today),
+        _task(
+          'early',
+          date: '2026-11-10',
+          completed: true,
+          completedAt: '2026-11-04T07:00:00.000Z',
+        ),
+        _task(
+          'late',
+          date: today,
+          completed: true,
+          completedAt: '2026-11-04T18:00:00.000Z',
+        ),
+        _task(
+          'yesterday',
+          date: today,
+          completed: true,
+          completedAt: '2026-11-03T18:00:00.000Z',
+        ),
+        _task(
+          'archived',
+          project: 'old',
+          completed: true,
+          completedAt: '2026-11-04T09:00:00.000Z',
+        ),
+      ],
+    );
+    String utcDay(String utc) => utc.substring(0, 10);
+
+    test('сегодня — выполненные в этот день по времени выполнения, после '
+        'активных, позже выполненные выше; без дня выполнения — только '
+        'активные', () {
+      expect(_plain(ws().todayTasks(today, completedDay: utcDay)), [
+        'open',
+        'late',
+        'early',
+      ]);
+      expect(_plain(ws().todayTasks(today)), ['open']);
+    });
+
+    test('предстоящее — выполненные внизу дня своего срока', () {
+      final days = ws().upcomingDays(today, showCompleted: true);
+      expect(_plain(days[today]!), ['open', 'late', 'yesterday']);
+      expect(_plain(days['2026-11-10']!), ['early']);
+      expect(ws().upcomingDays(today).keys, [today]);
     });
   });
 

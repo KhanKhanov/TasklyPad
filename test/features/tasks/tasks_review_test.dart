@@ -482,12 +482,15 @@ void main() {
       final app = AppCommands(device);
       final today = isoDate(testStart.toLocal());
       await addTask(tester, app, 'Buy milk', due: Due(date: today));
-      expect(find.text('Today'), findsOneWidget);
+      // Срок в строке задачи, а не пункт «Today» сайдбара.
+      Finder inRow(String text) =>
+          find.descendant(of: find.byType(TaskRow), matching: find.text(text));
+      expect(inRow('Today'), findsOneWidget);
 
       device.advance(const Duration(days: 1));
       await tester.pump(const Duration(days: 1));
       await tester.pump();
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(inRow('Yesterday'), findsOneWidget);
     });
   });
 
