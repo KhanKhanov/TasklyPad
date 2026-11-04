@@ -308,5 +308,13 @@
   "groupOverdue": "Overdue",
   "groupNoLabel": "No label",
   "groupNoAddedDate": "No date added",
-  "groupDay": "{date} · {name}"
+  "groupDay": "{date} · {name}",
+  "sortingSmart": "Smart",
+  "todayView": "Today",
+  "upcomingView": "Upcoming",
+  "reschedule": "Reschedule",
+  "previousWeek": "Previous week",
+  "nextWeek": "Next week",
+  "pickDate": "Pick a date",
+  "upcomingDay": "{date} · {relative} · {weekday}"
 }

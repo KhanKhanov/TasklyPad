@@ -135,6 +135,36 @@ final class TaskCommands {
     return undo;
   }
 
+  /// «Перенести» у блока «Просрочено» (решение 10 плана M4): срок задач [ids]
+  /// — на дату [date] одним действием с одним «Отменить». Время, пояс и
+  /// правило повторения каждой задачи остаются, у повторяющейся переносится
+  /// только вхождение — как дата из планировщика ([dueOnDate]); `null` —
+  /// «Без срока» у всех. Меняются только задачи, просроченные в свежем
+  /// снимке по стенным часам устройства: выполненная, удалённая, перенесённая
+  /// или убранная в архив на другом устройстве, пока окно было открыто,
+  /// остаётся как есть — правку, которой пользователь не видел, команда не
+  /// пишет.
+  Future<Undo> rescheduleOverdue(Iterable<String> ids, String? date) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        final wanted = {...ids};
+        final tasks = [
+          for (final t in ws.overdueTasks(isoDate(_clock.nowWall())))
+            if (wanted.contains(t.id)) t,
+        ];
+        final undo = await _mutator.capture([
+          for (final t in tasks) _target(t.id, {TaskFields.due}),
+        ]);
+        for (final t in tasks) {
+          await _mutator.update(EntityTypes.task, t.id, {
+            TaskFields.due: _dueValue(
+              date == null ? null : dueOnDate(t.due, date),
+            ),
+          });
+        }
+        return undo;
+      });
+
   /// Дедлайн `YYYY-MM-DD`; `null` убирает.
   Future<void> setDeadline(String id, String? date) =>
       _update(id, {TaskFields.deadline: _deadlineValue(date)});

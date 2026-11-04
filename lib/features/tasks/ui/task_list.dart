@@ -24,6 +24,7 @@ class TaskList extends StatelessWidget {
     this.addLabel,
     this.canAdd = true,
     this.labelIds = const {},
+    this.due,
     this.showProject = false,
     this.hierarchy = true,
   });
@@ -43,6 +44,9 @@ class TaskList extends StatelessWidget {
   /// Метки новой задачи: на экране метки задача добавляется с ней.
   final Set<String> labelIds;
 
+  /// Срок новой задачи: в «Сегодня» — сегодня, в «Предстоящем» — день.
+  final Due? due;
+
   /// Показать у задач проект и раздел (список из разных проектов).
   final bool showProject;
 
@@ -57,6 +61,7 @@ class TaskList extends StatelessWidget {
     parentId: parentId,
     atTop: top,
     labelIds: labelIds,
+    due: due,
     onClose: () => onAddAt(AddTaskAt.none),
   );
 

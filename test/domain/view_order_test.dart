@@ -166,40 +166,67 @@ void main() {
     );
   });
 
-  test(
-    '«Вручную» вне проекта — порядок вида; «Просрочено» — без порядка дня',
-    () {
-      final tasks = [
-        _task('late', order: 'a', date: '2026-11-04', time: '18:00'),
-        _task('early', order: 'b', date: '2026-11-04', time: '09:00'),
-      ];
-      const manual = TaskOrder(
-        fallback: DefaultOrder.smart,
-        projectRank: _noRank,
-        sorting: Sorting.manual,
+  test('«Вручную» в «Сегодня»: ручной порядок дня первым — выше приоритета и '
+      'времени, задачи без него ниже в умном порядке; у «Просрочено» и метки '
+      '«Вручную» порядок не меняет', () {
+    final tasks = [
+      _task('p1', date: '2026-11-04', time: '08:00', priority: 1),
+      _task('free', date: '2026-11-04', priority: 2),
+      _task('second', date: '2026-11-04', time: '20:00', dayOrder: 'b'),
+      _task('first', date: '2026-11-04', time: '21:00', dayOrder: 'a'),
+    ];
+    TaskOrder manual(DefaultOrder fallback) => TaskOrder(
+      fallback: fallback,
+      projectRank: _noRank,
+      sorting: Sorting.manual,
+    );
+    expect(_sorted(tasks, manual(DefaultOrder.smart)), [
+      'first',
+      'second',
+      'free',
+      'p1',
+    ]);
+    for (final fallback in [DefaultOrder.overdue, DefaultOrder.label]) {
+      expect(
+        _sorted(tasks, manual(fallback)),
+        _sorted(tasks, TaskOrder(fallback: fallback, projectRank: _noRank)),
+        reason: '$fallback',
       );
-      expect(_sorted(tasks, manual), ['early', 'late']);
+    }
+  });
 
-      final day = [
-        _task('x', date: '2026-11-01', dayOrder: 'b', added: '2026-09-01'),
-        _task('y', date: '2026-11-01', dayOrder: 'a', added: '2026-10-01'),
-      ];
-      expect(
-        _sorted(
-          day,
-          const TaskOrder(fallback: DefaultOrder.smart, projectRank: _noRank),
-        ),
-        ['y', 'x'],
-      );
-      expect(
-        _sorted(
-          day,
-          const TaskOrder(fallback: DefaultOrder.overdue, projectRank: _noRank),
-        ),
-        ['x', 'y'],
-      );
-    },
-  );
+  test('«Вручную» без порядка дня — умный порядок; «Просрочено» — без порядка '
+      'дня', () {
+    final tasks = [
+      _task('late', order: 'a', date: '2026-11-04', time: '18:00'),
+      _task('early', order: 'b', date: '2026-11-04', time: '09:00'),
+    ];
+    const manual = TaskOrder(
+      fallback: DefaultOrder.smart,
+      projectRank: _noRank,
+      sorting: Sorting.manual,
+    );
+    expect(_sorted(tasks, manual), ['early', 'late']);
+
+    final day = [
+      _task('x', date: '2026-11-01', dayOrder: 'b', added: '2026-09-01'),
+      _task('y', date: '2026-11-01', dayOrder: 'a', added: '2026-10-01'),
+    ];
+    expect(
+      _sorted(
+        day,
+        const TaskOrder(fallback: DefaultOrder.smart, projectRank: _noRank),
+      ),
+      ['y', 'x'],
+    );
+    expect(
+      _sorted(
+        day,
+        const TaskOrder(fallback: DefaultOrder.overdue, projectRank: _noRank),
+      ),
+      ['x', 'y'],
+    );
+  });
 
   test('порядок метки: приоритет → дата → дедлайн → порядок проектов', () {
     final rank = {'x': 1, 'y': 0, 'z': 2, 'w': 3};
@@ -256,6 +283,35 @@ void main() {
         g(const TaskGroupKey.day(today), ['d3p1', 'd3']),
         g(const TaskGroupKey.day('2026-11-05'), ['d5']),
         g(const TaskGroupKey.empty(), ['none']),
+      ]);
+    });
+
+    test('«Вручную» в «Сегодня» с группировкой по сроку: в дне — ручной '
+        'порядок дня, «Просрочено» — свой порядок без него', () {
+      final tasks = [
+        _task('lateB', date: '2026-11-01', dayOrder: 'a', priority: 3),
+        _task('lateA', date: '2026-11-01', priority: 1),
+        _task('dayB', date: today, priority: 1),
+        _task('dayA', date: today, dayOrder: 'a', priority: 3),
+      ];
+      TaskOrder of(DefaultOrder fallback) => TaskOrder(
+        fallback: fallback,
+        projectRank: _noRank,
+        sorting: Sorting.manual,
+      );
+      final result = [
+        for (final g in groupTasks(
+          tasks,
+          Grouping.dueDate,
+          order: of(DefaultOrder.smart),
+          overdueOrder: of(DefaultOrder.overdue),
+          today: today,
+        ))
+          (g.key, _ids(g.tasks).join(',')),
+      ];
+      expect(result, [
+        g(const TaskGroupKey.overdue(), ['lateA', 'lateB']),
+        g(const TaskGroupKey.day(today), ['dayA', 'dayB']),
       ]);
     });
 

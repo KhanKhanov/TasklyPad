@@ -109,7 +109,19 @@ abstract class ViewOptions with _$ViewOptions {
 
   /// Сколько выбрано сортировок и группировок — «Отображение: N» (help «Sort
   /// or group tasks»: выбранное показывается вверху вида); «Выполненные
-  /// задачи» не считаются — «Сбросить всё» их не снимает.
+  /// задачи» не считаются — «Сбросить всё» их не снимает. У «Предстоящего»
+  /// группировки нет (help «Customize views»): пришедшая импортом не
+  /// действует и не считается.
   int get applied =>
-      (grouping == Grouping.none ? 0 : 1) + (sorting.hasDirection ? 1 : 0);
+      (grouping == Grouping.none || viewType == ViewType.upcoming ? 0 : 1) +
+      (sortingChosen ? 1 : 0);
+
+  /// Выбрана сортировка, отличная от порядка вида по умолчанию. «Вручную» —
+  /// выбор только в «Сегодня» и «Предстоящем», где по умолчанию умный порядок
+  /// (help «Default sorting order»); в проекте «Вручную» и есть умолчание, у
+  /// метки и фильтра её нет.
+  bool get sortingChosen =>
+      sorting.hasDirection ||
+      (sorting == Sorting.manual &&
+          (viewType == ViewType.today || viewType == ViewType.upcoming));
 }

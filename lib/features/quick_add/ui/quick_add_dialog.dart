@@ -3,18 +3,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../tasks/logic/due_dates.dart';
+import '../../tasks/state/today.dart';
+import '../../views/state/upcoming_day.dart';
 import '../logic/quick_add_draft.dart';
 import 'quick_add_composer.dart';
 
 /// Место новой задачи по открытому экрану (решение 2А «Ход M3.6»): проект —
 /// в него, метка — во «Входящие» с этой меткой, остальное — «Входящие».
+/// Срок — в «Сегодня» [today], в «Предстоящем» — выбранный день
+/// [upcomingDay] (план M4.6; help «Plan your week with the Upcoming view»).
 /// `null` — «Входящих» ещё нет (до первого запуска ядра данных).
-QuickAddDefaults? quickAddDefaultsFor(Workspace ws, String location) {
+QuickAddDefaults? quickAddDefaultsFor(
+  Workspace ws,
+  String location, {
+  required String today,
+  String? upcomingDay,
+}) {
   final inbox = ws.inbox;
   if (inbox == null) return null;
   final segments = Uri.parse(location).pathSegments;
+  if (segments case ['today']) {
+    return QuickAddDefaults(
+      projectId: inbox.id,
+      due: Due(date: today),
+    );
+  }
+  if (segments case ['upcoming']) {
+    return QuickAddDefaults(
+      projectId: inbox.id,
+      due: Due(date: upcomingDay ?? today),
+    );
+  }
   if (segments.length == 2) {
     final id = segments[1];
     if (segments.first == 'project') {
@@ -76,6 +99,15 @@ Future<void> showQuickAddDialog(
 /// «Добавить задачу» в сайдбаре).
 void openQuickAdd(BuildContext context, WidgetRef ref, String location) {
   final ws = ref.read(workspaceProvider).value;
-  final defaults = ws == null ? null : quickAddDefaultsFor(ws, location);
+  final defaults = ws == null
+      ? null
+      : quickAddDefaultsFor(
+          ws,
+          location,
+          today: isoDate(ref.read(todayProvider)),
+          upcomingDay: location == '/upcoming'
+              ? ref.read(upcomingDayProvider)
+              : null,
+        );
   if (defaults != null) showQuickAddDialog(context, defaults);
 }

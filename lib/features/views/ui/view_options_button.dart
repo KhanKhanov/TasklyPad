@@ -56,10 +56,12 @@ class ViewOptionsButton extends ConsumerWidget {
         );
 
     final groupings = _groupings(viewType);
-    // «Вручную» из импорта Todoist — тот же порядок вида.
-    final sorting = options.sorting == Sorting.manual
-        ? Sorting.byDefault
-        : options.sorting;
+    final sortings = _sortings(viewType);
+    // «Вручную» там, где это не отдельный выбор (из импорта Todoist), — тот
+    // же порядок вида.
+    final sorting = sortings.contains(options.sorting)
+        ? options.sorting
+        : Sorting.byDefault;
     return MenuAnchor(
       menuChildren: [
         if (groupings.length > 1)
@@ -73,14 +75,13 @@ class ViewOptionsButton extends ConsumerWidget {
               ),
           ]),
         submenu(l10n.viewSorting, _sortingText(l10n, viewType, sorting), [
-          for (final s in Sorting.values)
-            if (s != Sorting.manual)
-              choice(
-                s,
-                sorting,
-                _sortingText(l10n, viewType, s),
-                (s) => save(options.copyWith(sorting: s)),
-              ),
+          for (final s in sortings)
+            choice(
+              s,
+              sorting,
+              _sortingText(l10n, viewType, s),
+              (s) => save(options.copyWith(sorting: s)),
+            ),
         ]),
         if (sorting.hasDirection)
           submenu(l10n.viewDirection, _orderText(l10n, options.sortOrder), [
@@ -154,17 +155,29 @@ String _groupingText(AppLocalizations l10n, Grouping g) => switch (g) {
   Grouping.project => l10n.fieldProject,
 };
 
-/// Порядок вида по умолчанию — «Вручную» там, где ручной порядок есть
-/// (проект, «Сегодня», «Предстоящее»; help «Sort or group tasks»), у метки
-/// и фильтра — «По умолчанию».
+/// Сортировки вида, порядок вида первым. «Вручную» отдельным пунктом — только
+/// в «Сегодня» и «Предстоящем», где по умолчанию умный порядок (help «Default
+/// sorting order»: «Smart sorted by default… You can turn on Manual
+/// sorting»; решение 1А «Ход M4.6»); в проекте ручной порядок и есть
+/// умолчание, у метки и фильтра его нет (help «Sort or group tasks»).
+List<Sorting> _sortings(ViewType type) => [
+  for (final s in Sorting.values)
+    if (s != Sorting.manual ||
+        type == ViewType.today ||
+        type == ViewType.upcoming)
+      s,
+];
+
+/// Порядок вида по умолчанию: в проекте — «Вручную», в «Сегодня» и
+/// «Предстоящем» — «Умная», у метки и фильтра — «По умолчанию».
 String _sortingText(AppLocalizations l10n, ViewType type, Sorting s) =>
     switch (s) {
-      Sorting.byDefault || Sorting.manual => switch (type) {
+      Sorting.byDefault => switch (type) {
         ViewType.label || ViewType.filter => l10n.sortingDefault,
-        ViewType.project ||
-        ViewType.today ||
-        ViewType.upcoming => l10n.sortingManual,
+        ViewType.project => l10n.sortingManual,
+        ViewType.today || ViewType.upcoming => l10n.sortingSmart,
       },
+      Sorting.manual => l10n.sortingManual,
       Sorting.alphabetically => l10n.viewByName,
       Sorting.dueDate => l10n.viewByDate,
       Sorting.addedDate => l10n.viewByAddedDate,

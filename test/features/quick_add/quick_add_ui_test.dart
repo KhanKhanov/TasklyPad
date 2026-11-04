@@ -354,7 +354,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Today'));
+      await tester.tap(find.text('Today').last);
       await tester.pumpAndSettle();
       expect(controller(tester).text, 'Pay rent');
       await press(tester, LogicalKeyboardKey.enter);
@@ -424,7 +424,7 @@ void main() {
 
       await tester.tap(inDialog('Date'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Today'));
+      await tester.tap(find.text('Today').last);
       await tester.pumpAndSettle();
       expect(inDialog('Today'), findsOneWidget);
       expect(controller(tester).text, 'Buy milk');

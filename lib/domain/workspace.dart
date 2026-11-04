@@ -185,23 +185,24 @@ final class Workspace {
         ]
         ..sort((order ?? taskOrder(DefaultOrder.label)).compare)
         ..addAll(
-          showCompleted ? _completedWithLabel(labelId, order) : const [],
+          showCompleted
+              ? _completedWhere(
+                  (t) => t.labelIds.contains(labelId),
+                  order ?? taskOrder(DefaultOrder.label),
+                )
+              : const [],
         );
 
-  /// Выполненные задачи с меткой в активном месте (проект и раздел не в
-  /// архиве); подзадача невыполненная под выполненным родителем не входит.
-  List<Task> _completedWithLabel(String labelId, TaskOrder? order) =>
+  /// Выполненные задачи [test] в активном месте (проект и раздел не в
+  /// архиве), позже выполненные выше, при равенстве — [order]; подзадача
+  /// невыполненная под выполненным родителем не входит.
+  List<Task> _completedWhere(bool Function(Task) test, TaskOrder order) =>
       [
         for (final t in _tasks.values)
-          if (t.isCompleted &&
-              t.labelIds.contains(labelId) &&
-              _inActivePlace(t))
-            t,
+          if (t.isCompleted && test(t) && _inActivePlace(t)) t,
       ]..sort((a, b) {
         final byTime = (b.completedAt ?? '').compareTo(a.completedAt ?? '');
-        return byTime != 0
-            ? byTime
-            : (order ?? taskOrder(DefaultOrder.label)).compare(a, b);
+        return byTime != 0 ? byTime : order.compare(a, b);
       });
 
   /// Сравнение задач вида с порядком [fallback] по умолчанию; порядок
@@ -260,18 +261,20 @@ final class Workspace {
   /// Задачи [tasks] по группам [grouping] ([groupTasks]): порядок меток и
   /// проектов, проект задачи — из этого снимка; [today] — `YYYY-MM-DD`,
   /// [localDay] — день по времени UTC (дата добавления; экран передаёт день
-  /// по часам приложения).
+  /// по часам приложения), [overdueOrder] — порядок «Просрочено».
   List<TaskGroup> groupsOf(
     Iterable<Task> tasks,
     Grouping grouping, {
     required TaskOrder order,
     required String today,
+    TaskOrder? overdueOrder,
     String Function(String utc)? localDay,
   }) => groupTasks(
     tasks,
     grouping,
     order: order,
     today: today,
+    overdueOrder: overdueOrder,
     localDay: localDay,
     labelOrder: [for (final l in _labels.values) l.id],
     projectOrder: _projectOrder,
@@ -291,9 +294,24 @@ final class Workspace {
     order ?? taskOrder(DefaultOrder.overdue),
   );
 
-  /// Задачи со сроком на [today].
-  List<Task> todayTasks(String today, {TaskOrder? order}) =>
-      _dueWhere((date) => date == today, order);
+  /// Задачи со сроком на [today]. [completedDay] задан — после них
+  /// выполненные в этот день (help «Plan your day with the Today view»: «To
+  /// see what you've finished today, turn on Completed tasks»; «at the bottom
+  /// of the task list» — help «View completed tasks»), позже выполненные выше;
+  /// [completedDay] — день по времени выполнения UTC (экран передаёт день по
+  /// часам приложения). Выполненные вхождения повторяющихся — M8 (О-62).
+  List<Task> todayTasks(
+    String today, {
+    TaskOrder? order,
+    String Function(String utc)? completedDay,
+  }) => [
+    ..._dueWhere((date) => date == today, order),
+    if (completedDay != null)
+      ..._completedWhere(
+        (t) => t.completedAt != null && completedDay(t.completedAt!) == today,
+        order ?? taskOrder(DefaultOrder.smart),
+      ),
+  ];
 
   /// Счётчик «Сегодня» в сайдбаре: на сегодня и просроченные (допущение,
   /// О-69).
@@ -305,14 +323,27 @@ final class Workspace {
   /// «Предстоящее»: дни с задачами от [today] на два года вперёд (help «Plan
   /// your week with the Upcoming view»), день → задачи по порядку [order].
   /// У повторяющейся задачи — только ближайшее вхождение: срок задачи и есть
-  /// оно. Дни без задач не выводятся — их рисует экран.
-  Map<String, List<Task>> upcomingDays(String today, {TaskOrder? order}) {
+  /// оно. Дни без задач не выводятся — их рисует экран. [showCompleted] —
+  /// выполненные со сроком в этот день внизу дня, позже выполненные выше
+  /// (help «View completed tasks»: «at the bottom of the task list»; день по
+  /// сроку — допущение, О-69).
+  Map<String, List<Task>> upcomingDays(
+    String today, {
+    TaskOrder? order,
+    bool showCompleted = false,
+  }) {
     final end = '${int.parse(today.substring(0, 4)) + 2}${today.substring(4)}';
+    bool inRange(String date) =>
+        date.compareTo(today) >= 0 && date.compareTo(end) < 0;
     final days = <String, List<Task>>{};
-    for (final t in _dueWhere(
-      (date) => date.compareTo(today) >= 0 && date.compareTo(end) < 0,
-      order,
-    )) {
+    for (final t in [
+      ..._dueWhere(inRange, order),
+      if (showCompleted)
+        ..._completedWhere(
+          (t) => t.due != null && inRange(t.due!.date),
+          order ?? taskOrder(DefaultOrder.smart),
+        ),
+    ]) {
       (days[t.due!.date] ??= []).add(t);
     }
     return {for (final day in days.keys.toList()..sort()) day: days[day]!};

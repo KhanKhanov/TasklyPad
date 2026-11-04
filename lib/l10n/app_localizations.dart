@@ -638,10 +638,10 @@ abstract class AppLocalizations {
   /// **'Без срока'**
   String get noDue;
 
-  /// Пункт выбора даты
+  /// Месяц над полосой недели «Предстоящего» (help: Tap the current month to select a date)
   ///
   /// In ru, this message translates to:
-  /// **'Выбрать дату…'**
+  /// **'Выбрать дату'**
   String get pickDate;
 
   /// Пункт выбора времени
@@ -1808,7 +1808,7 @@ abstract class AppLocalizations {
   /// **'Нет'**
   String get groupingNone;
 
-  /// Сортировка проекта, «Сегодня» и «Предстоящего» (help Manual; О-68)
+  /// Сортировка: ручной порядок — умолчание проекта, выбор в «Сегодня» и «Предстоящем» (help Manual; О-68)
   ///
   /// In ru, this message translates to:
   /// **'Вручную'**
@@ -1879,6 +1879,48 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{date} · {name}'**
   String groupDay(String date, String name);
+
+  /// Сортировка «Сегодня» и «Предстоящего» по умолчанию (help «Default sorting order»: Smart sorted; подпись — О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Умная'**
+  String get sortingSmart;
+
+  /// Вид «Сегодня»: сайдбар, заголовок, кнопка полосы недели «Предстоящего» (help ru)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get todayView;
+
+  /// Вид «Предстоящее»: сайдбар и заголовок (help ru)
+  ///
+  /// In ru, this message translates to:
+  /// **'Предстоящее'**
+  String get upcomingView;
+
+  /// Кнопка блока «Просрочено»: перенести все просроченные (help Reschedule; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенести'**
+  String get reschedule;
+
+  /// Стрелка полосы недели «Предстоящего»
+  ///
+  /// In ru, this message translates to:
+  /// **'Предыдущая неделя'**
+  String get previousWeek;
+
+  /// Стрелка полосы недели «Предстоящего»
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующая неделя'**
+  String get nextWeek;
+
+  /// Заголовок дня «Сегодня» и «Предстоящего»: дата, «Сегодня» или «Завтра», день недели (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'{date} · {relative} · {weekday}'**
+  String upcomingDay(String date, String relative, String weekday);
 }
 
 class _AppLocalizationsDelegate

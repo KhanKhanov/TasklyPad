@@ -25,16 +25,24 @@ typedef DuePick = ({Due? due, bool postpone});
 /// календаря и быстрых вариантов переносит только вхождение. `null` —
 /// пользователь закрыл выбор. Раскладка — [SchedulerLayout]: на компьютере
 /// календарь справа, а не под вариантами (решение 1Б «Ход M3.8»).
+/// [dateOnly] — выбирается только дата («Перенести» сразу многих задач: у
+/// каждой остаются свои время и правило): без «Повторить», текст поля даёт
+/// только дату.
 Future<DuePick?> pickDue(
   BuildContext context,
   WidgetRef ref,
   Due? current, {
   bool canPostpone = false,
   bool newTask = false,
+  bool dateOnly = false,
 }) => showDialog<DuePick>(
   context: context,
-  builder: (_) =>
-      _Scheduler(current: current, canPostpone: canPostpone, newTask: newTask),
+  builder: (_) => _Scheduler(
+    current: current,
+    canPostpone: canPostpone,
+    newTask: newTask,
+    dateOnly: dateOnly,
+  ),
 );
 
 class _Scheduler extends ConsumerStatefulWidget {
@@ -42,10 +50,12 @@ class _Scheduler extends ConsumerStatefulWidget {
     required this.current,
     required this.canPostpone,
     required this.newTask,
+    required this.dateOnly,
   });
 
   final Due? current;
   final bool canPostpone;
+  final bool dateOnly;
 
   /// Срок задачи, которой ещё нет (быстрое добавление): «Время» задаёт время
   /// всей серии.
@@ -83,7 +93,13 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
     setState(() {
       _typed = match == null || (match.due == null && !match.noDate)
           ? null
-          : (due: match.noDate ? null : match.due);
+          : (
+              due: match.noDate
+                  ? null
+                  : widget.dateOnly
+                  ? Due(date: match.due!.date)
+                  : match.due,
+            );
     });
   }
 
@@ -160,13 +176,15 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
         today: today,
         onPicked: (day) => _done(dueOnDate(current, isoDate(day))),
       ),
-      bottom: SchedulerBottomBar(
-        current: current,
-        lang: _lang,
-        now: now,
-        wholeSeries: widget.newTask,
-        onDone: _done,
-      ),
+      bottom: widget.dateOnly
+          ? null
+          : SchedulerBottomBar(
+              current: current,
+              lang: _lang,
+              now: now,
+              wholeSeries: widget.newTask,
+              onDone: _done,
+            ),
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../app/theme/app_palette.dart';
 import '../../../core/clock.dart';
@@ -14,9 +13,9 @@ import '../../common/ui/ui_kit.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/add_task_editor.dart';
-import '../../tasks/ui/due_ui.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_row.dart';
+import 'day_titles.dart';
 
 /// Значение группы, которое получает добавленная в неё задача.
 typedef GroupValue = ({
@@ -45,6 +44,8 @@ class GroupedTaskList extends StatefulWidget {
     required this.onAddAt,
     this.canAdd = true,
     this.showProject = false,
+    this.overdueAction,
+    this.keepsInView,
   });
 
   final List<TaskGroup> groups;
@@ -60,6 +61,16 @@ class GroupedTaskList extends StatefulWidget {
   /// `false` — проект в архиве: задачи только для просмотра.
   final bool canAdd;
   final bool showProject;
+
+  /// Кнопка в заголовке «Просрочено» — «Перенести» в «Сегодня» при
+  /// группировке по сроку (help «Plan your week with the Upcoming view»:
+  /// «Reschedule» видна только при группировке по дате).
+  final Widget? overdueAction;
+
+  /// Задача со значением группы останется в виде; нет — у группы нет
+  /// «Добавить задачу» (в «Сегодня» с «Выполненными задачами» есть группы
+  /// других дней — задача с их сроком из вида сразу бы ушла).
+  final bool Function(GroupValue value)? keepsInView;
 
   @override
   State<GroupedTaskList> createState() => _GroupedTaskListState();
@@ -79,6 +90,9 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
     if (key != null) widget.onAddAt(AddTaskAt.none);
   }
 
+  /// Значение группы [key] поверх места вида: поля, которых группа не
+  /// задаёт, — как у вида (в «Сегодня» задача группы P1 получает и срок
+  /// сегодня, иначе ушла бы из вида).
   GroupValue? _valueOf(TaskGroupKey key) {
     final p = widget.place;
     return switch ((key, widget.grouping)) {
@@ -86,38 +100,38 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
         projectId: p.projectId,
         labelIds: p.labelIds,
         due: Due(date: date),
-        priority: null,
-        deadline: null,
+        priority: p.priority,
+        deadline: p.deadline,
       ),
       (DayGroup(:final date), Grouping.deadline) => (
         projectId: p.projectId,
         labelIds: p.labelIds,
-        due: null,
-        priority: null,
+        due: p.due,
+        priority: p.priority,
         deadline: date,
       ),
       (PriorityGroup(:final priority), _) => (
         projectId: p.projectId,
         labelIds: p.labelIds,
-        due: null,
+        due: p.due,
         priority: priority,
-        deadline: null,
+        deadline: p.deadline,
       ),
       // Удалённая метка видна на выполненных до удаления задачах — новой
       // задаче её не поставить.
       (LabelGroup(:final labelId), _) when widget.ws.label(labelId) != null => (
         projectId: p.projectId,
         labelIds: {...p.labelIds, labelId},
-        due: null,
-        priority: null,
-        deadline: null,
+        due: p.due,
+        priority: p.priority,
+        deadline: p.deadline,
       ),
       (ProjectGroup(:final projectId), _) => (
         projectId: projectId,
         labelIds: p.labelIds,
-        due: null,
-        priority: null,
-        deadline: null,
+        due: p.due,
+        priority: p.priority,
+        deadline: p.deadline,
       ),
       _ => null,
     };
@@ -143,7 +157,12 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
         // Групп нет — некуда нажать «Добавить задачу» группы.
         AddTaskButton(onPressed: () => widget.onAddAt(AddTaskAt.bottom)),
       for (final group in widget.groups) ...[
-        _GroupHeader(group: group, grouping: widget.grouping, ws: widget.ws),
+        _GroupHeader(
+          group: group,
+          grouping: widget.grouping,
+          ws: widget.ws,
+          action: group.key is OverdueGroup ? widget.overdueAction : null,
+        ),
         for (final task in group.tasks)
           TaskRow(
             key: ValueKey('${group.key}/${task.id}'),
@@ -154,7 +173,8 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
             hierarchy: false,
           ),
         if (widget.canAdd)
-          if (_valueOf(group.key) case final value?)
+          if (_valueOf(group.key) case final value?
+              when widget.keepsInView?.call(value) ?? true)
             if (_adding == group.key)
               _editor(value)
             else
@@ -169,11 +189,13 @@ class _GroupHeader extends ConsumerWidget {
     required this.group,
     required this.grouping,
     required this.ws,
+    this.action,
   });
 
   final TaskGroup group;
   final Grouping grouping;
   final Workspace ws;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -182,7 +204,7 @@ class _GroupHeader extends ConsumerWidget {
     final count = group.tasks.where((t) => !t.isCompleted).length;
     final title = switch (group.key) {
       OverdueGroup() => l10n.groupOverdue,
-      DayGroup(:final date) => _dayTitle(
+      DayGroup(:final date) => dayTitle(
         context,
         date,
         ref.watch(todayProvider),
@@ -233,33 +255,16 @@ class _GroupHeader extends ConsumerWidget {
               '$count',
               style: TextStyle(color: palette.textSecondary, fontSize: 12),
             ),
+          if (action case final action?) ...[const Spacer(), action],
         ],
       ),
     );
   }
 }
 
-/// Заголовок дня: «5 нояб. · Завтра», «7 нояб. · пятница» на ближайшую
-/// неделю, дальше и в прошлом — дата (подписи — О-68).
-String _dayTitle(BuildContext context, String date, DateTime today) {
-  final day = parseIsoDate(date);
-  if (day == null) return date;
-  final name = dueLabel(context, date, null, today).text;
-  final relative = switch (dueKind(day, today)) {
-    DueKind.overdueYesterday ||
-    DueKind.today ||
-    DueKind.tomorrow ||
-    DueKind.thisWeek => true,
-    DueKind.overdue || DueKind.later => false,
-  };
-  if (!relative) return name;
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  return AppLocalizations.of(context)
-      .groupDay(DateFormat.MMMd(locale).format(day), name);
-}
-
 /// Группы [grouping] задач [tasks] вида ([Workspace.groupsOf]): «сегодня» —
-/// [today] устройства, день добавления — по часам приложения [clock].
+/// [today] устройства, день добавления — по часам приложения [clock];
+/// [overdueOrder] — порядок «Просрочено».
 List<TaskGroup> groupsFor(
   Workspace ws,
   Iterable<Task> tasks,
@@ -267,24 +272,30 @@ List<TaskGroup> groupsFor(
   required TaskOrder order,
   required DateTime today,
   required AppClock clock,
+  TaskOrder? overdueOrder,
 }) => ws.groupsOf(
   tasks,
   grouping,
   order: order,
   today: isoDate(today),
-  localDay: (utc) {
-    final at = DateTime.tryParse(utc);
-    if (at == null) return utc.length >= 10 ? utc.substring(0, 10) : utc;
-    // Пояс устройства сейчас; у дат по другую сторону перехода на летнее
-    // время день может сдвинуться у задач, добавленных около полуночи.
-    // Округление до минут: два вызова часов расходятся на доли миллисекунды.
-    final offset = Duration(
-      minutes: (clock.nowWall().difference(clock.nowUtc()).inSeconds / 60)
-          .round(),
-    );
-    return isoDate(at.toUtc().add(offset));
-  },
+  overdueOrder: overdueOrder,
+  localDay: localDayBy(clock),
 );
+
+/// День `YYYY-MM-DD` времени UTC ISO-8601 по часам приложения [clock]: дата
+/// добавления в группах, день выполнения в «Сегодня».
+String Function(String utc) localDayBy(AppClock clock) => (utc) {
+  final at = DateTime.tryParse(utc);
+  if (at == null) return utc.length >= 10 ? utc.substring(0, 10) : utc;
+  // Пояс устройства сейчас; у дат по другую сторону перехода на летнее
+  // время день может сдвинуться у задач, добавленных около полуночи.
+  // Округление до минут: два вызова часов расходятся на доли миллисекунды.
+  final offset = Duration(
+    minutes: (clock.nowWall().difference(clock.nowUtc()).inSeconds / 60)
+        .round(),
+  );
+  return isoDate(at.toUtc().add(offset));
+};
 
 /// Id задач групп по порядку, без повторов (задача с двумя метками — в
 /// двух группах), — соседи для `J` / `K` в панели задачи.

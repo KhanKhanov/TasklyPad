@@ -72,9 +72,18 @@ final class TaskOrder {
 
   int _primary(Task a, Task b) => switch (sorting) {
     Sorting.byDefault => 0,
-    // «Вручную» есть только у проекта (решение 2); у «Сегодня» ручной
-    // порядок дня уже в умном, у метки «Вручную» нет — порядок вида.
-    Sorting.manual => fallback == DefaultOrder.manual ? _tree(a, b) : 0,
+    // «Вручную» — в проекте, «Сегодня» и «Предстоящем» (help «Sort or group
+    // tasks»). В «Сегодня» и «Предстоящем» — ручной порядок дня первым,
+    // задачи без него — ниже в умном порядке (решение 1А «Ход M4.6»);
+    // «Просрочено» вручную не сортируется, у метки «Вручную» нет.
+    Sorting.manual => switch (fallback) {
+      DefaultOrder.manual => _tree(a, b),
+      DefaultOrder.smart => _nullsLast(
+        _orNull(a.dayOrderKey),
+        _orNull(b.dayOrderKey),
+      ),
+      DefaultOrder.overdue || DefaultOrder.label => 0,
+    },
     Sorting.alphabetically => _byName(a, b),
     Sorting.dueDate => _byDue(a, b),
     Sorting.addedDate => _nullsLast(a.addedAt, b.addedAt),
@@ -171,7 +180,8 @@ typedef TaskGroup = ({TaskGroupKey key, List<Task> tasks});
 /// новые дни сверху; по приоритету — P1 → P4; по метке — порядок меток
 /// [labelOrder], задача с двумя метками — в обеих, пустая последней; по
 /// проекту — порядок проектов [projectOrder]; выполненные — после активных.
-/// [today] — `YYYY-MM-DD`,
+/// «Просрочено» — порядок [overdueOrder], если задан: просроченные вручную
+/// не сортируются (help «Default sorting order»). [today] — `YYYY-MM-DD`,
 /// [localDay] — день по времени UTC ISO-8601 (дата добавления; по умолчанию
 /// — день по часовому поясу устройства),
 /// [projectOf] — проект задачи по дереву. Пустые группы не выводятся;
@@ -181,6 +191,7 @@ List<TaskGroup> groupTasks(
   Grouping grouping, {
   required TaskOrder order,
   required String today,
+  TaskOrder? overdueOrder,
   List<String> labelOrder = const [],
   List<String> projectOrder = const [],
   String Function(Task)? projectOf,
@@ -249,7 +260,7 @@ List<TaskGroup> groupTasks(
 
   // Выполненные — после активных, позже выполненные выше, как в списке
   // проекта.
-  int byState(Task a, Task b) {
+  int byState(Task a, Task b, TaskOrder order) {
     if (a.isCompleted != b.isCompleted) return a.isCompleted ? 1 : -1;
     if (!a.isCompleted) return order.compare(a, b);
     final byTime = (b.completedAt ?? '').compareTo(a.completedAt ?? '');
@@ -258,7 +269,10 @@ List<TaskGroup> groupTasks(
 
   return [
     for (final key in groups.keys.toList()..sort(compareKeys))
-      (key: key, tasks: groups[key]!..sort(byState)),
+      for (final within in [
+        key is OverdueGroup ? overdueOrder ?? order : order,
+      ])
+        (key: key, tasks: groups[key]!..sort((a, b) => byState(a, b, within))),
   ];
 }
 
