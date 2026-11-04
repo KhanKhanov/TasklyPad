@@ -62,7 +62,9 @@ final class TaskOrder {
   int compare(Task a, Task b) {
     final primary = _primary(a, b);
     if (primary != 0) {
-      return sortOrder == SortOrder.desc ? -primary : primary;
+      // У «Вручную» направления нет — и `desc` из импорта его не разворачивает.
+      final reversed = sortOrder == SortOrder.desc && sorting.hasDirection;
+      return reversed ? -primary : primary;
     }
     final byDefault = _byDefault(a, b);
     return byDefault != 0 ? byDefault : a.id.compareTo(b.id);

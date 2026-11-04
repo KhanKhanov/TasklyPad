@@ -167,10 +167,10 @@ void main() {
       await settle(tester);
       expect(find.text('Week'), findsNothing);
 
-      await tester.tap(find.byTooltip('Display'));
+      await tester.tap(find.text('Display'));
       await tester.pumpAndSettle();
       await tester.tap(
-        find.widgetWithText(CheckedPopupMenuItem<void>, 'Completed tasks'),
+        find.widgetWithText(CheckboxMenuButton, 'Completed tasks'),
       );
       await settle(tester);
       expect(find.text('Week'), findsOneWidget);

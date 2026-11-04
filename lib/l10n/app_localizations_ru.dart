@@ -1028,4 +1028,62 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get completeResetSubtasks => 'Выполнить и снова добавить подзадачи';
+
+  @override
+  String viewOptionsCount(int count) {
+    return 'Отображение: $count';
+  }
+
+  @override
+  String get viewGrouping => 'Группировка';
+
+  @override
+  String get viewSorting => 'Сортировка';
+
+  @override
+  String get viewDirection => 'Направление';
+
+  @override
+  String get viewResetAll => 'Сбросить всё';
+
+  @override
+  String get groupingNone => 'Нет';
+
+  @override
+  String get sortingManual => 'Вручную';
+
+  @override
+  String get sortingDefault => 'По умолчанию';
+
+  @override
+  String get viewByName => 'Название';
+
+  @override
+  String get viewByDate => 'Срок';
+
+  @override
+  String get viewByAddedDate => 'Дата добавления';
+
+  @override
+  String get viewByLabel => 'Метка';
+
+  @override
+  String get sortAscending => 'По возрастанию';
+
+  @override
+  String get sortDescending => 'По убыванию';
+
+  @override
+  String get groupOverdue => 'Просрочено';
+
+  @override
+  String get groupNoLabel => 'Без метки';
+
+  @override
+  String get groupNoAddedDate => 'Без даты добавления';
+
+  @override
+  String groupDay(String date, String name) {
+    return '$date · $name';
+  }
 }

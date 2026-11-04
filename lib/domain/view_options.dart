@@ -65,6 +65,10 @@ enum Sorting {
   /// Значение `sorted_by` в Todoist API; `null` — поля нет.
   final String? apiName;
 
+  /// У сортировки есть направление: у «Вручную» и порядка вида его нет
+  /// (help «Sort or group tasks»: меню направления скрывается).
+  bool get hasDirection => this != byDefault && this != manual;
+
   /// Сортировка по значению API; незнакомое и `null` — [byDefault].
   static Sorting fromApi(String? value) =>
       values.firstWhere((s) => s.apiName == value, orElse: () => byDefault);
@@ -100,4 +104,12 @@ abstract class ViewOptions with _$ViewOptions {
     /// «Выполненные задачи» в списке вида.
     @Default(false) bool showCompletedTasks,
   }) = _ViewOptions;
+
+  const ViewOptions._();
+
+  /// Сколько выбрано сортировок и группировок — «Отображение: N» (help «Sort
+  /// or group tasks»: выбранное показывается вверху вида); «Выполненные
+  /// задачи» не считаются — «Сбросить всё» их не снимает.
+  int get applied =>
+      (grouping == Grouping.none ? 0 : 1) + (sorting.hasDirection ? 1 : 0);
 }

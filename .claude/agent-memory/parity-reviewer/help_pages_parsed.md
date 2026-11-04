@@ -219,6 +219,26 @@ models.py, без docstring) — метки на задаче хранятся �
   workspace; sorted_by alphabetically|assignee|added_date|due_date|deadline|label|priority|project|workspace|manual; sort_order asc|desc; show_completed_tasks bool;
   view_mode list|board|calendar|table. day_orders — "Deprecated", замена user_item_orders (order_key на задачу); схема day_orders в видимой части страницы обрезана.
 
+Разобрано 2026-11-03 (сверка M4.5, «Отображение»; WebFetch — пересказ, цитаты ≤125 симв.):
+- sort-or-group (en): "Manual sorting is only available in projects and in the Today and Upcoming views."; "Filter and label views always use their
+  default sorting order and can't be manually reordered" (буквально — у метки/фильтра порядок вида; можно ли выбрать Name/Date/Priority — НЕ сказано;
+  customize-views про сортировку метки молчит, про группировку метки — "project, label, filter, Inbox, or Today view"); меню направления: iOS "Ordering
+  menu", Android "Direction menu", скрывается при Manual; web-шаги направление не описывают; ru: «Меню упорядочивания» (web/macOS, по пересказу) / «Меню
+  направления» (моб.); "Reset all": "remove all sorting and grouping options" (ru «Сбросить все»), про Completed tasks молчит; индикатор «Display: N» в help НЕТ
+  (только "applied options are shown at the top"); "Add task" внизу каждой группы; "doesn't appear when tasks are grouped by assignee, workspace, or date
+  added" и нет у «Overdue» и групп без значения (Android: в list-раскладке в группы добавлять нельзя); календарь: сортировки/группировки нет.
+  ru-списки: группировка Срок / Дата добавления / Дедлайн / Приоритет / Метка; сортировка Вручную («Вручную (по умолчанию)») / Название / Срок / Дата
+  добавления / Дедлайн / Приоритет; «Нет (по умолчанию)» у группировки. У нас ru «Имя» и «Дата» — расходятся с ru help («Название», «Срок»).
+- use-keyboard-shortcuts «Sort tasks» (Web/macOS/Windows): D "Sort by date", P "Sort by priority", N "Sort by name", R "Sort by assignee"; iOS Option+буква;
+  set или toggle и направление — НЕ описано.
+- view-completed-tasks: Display -> "Completed tasks" есть у проекта, Today, Upcoming (web/desktop); у меток "No separate toggle" (только группировка по метке);
+  фильтры — завершённые в запрос не включить; Reset all и «запоминается ли на вид» — не описано.
+- default-sorting-order: у Today/Upcoming "You can turn on Manual sorting to freely reorder" — Manual отдельный выбор, умолчание — умная сортировка; проекты — "order in
+  which they were added" (не названо Manual; в ru sort-or-group «Вручную (по умолчанию)»).
+- introduction-to-projects (дубликат): копируются "Chosen view", "Chosen sorting, grouping, or filtering options"; не копируются "Completed tasks and archived sections"
+  (про настройку «Выполненные задачи» — молчит). customize-views: Reset all снимает оранжевую точку у общего проекта (возврат к сохранённому виду, Save for everyone).
+- Upcoming: help (sort-or-group, upcoming) НЕ говорит, что группировки/сортировки там нет; "нет группировки у Upcoming" в нашем плане — вывод, не цитата.
+
 **Help НЕ говорит:** что с подзадачами при завершении/удалении родителя; ограничения Входящих; список цветов (hex);
 счётчик «2/5»; что с подпроектами при разархивации; секунды тоста Undo; задачи архивного проекта (только просмотр или нет);
 русские названия цветов; число задач у метки; подтверждение удаления по Shift+Delete; окно/панель задачи; порядок меток.

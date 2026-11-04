@@ -1771,6 +1771,114 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выполнить и снова добавить подзадачи'**
   String get completeResetSubtasks;
+
+  /// Кнопка настроек вида с выбранными сортировкой или группировкой (скриншот Todoist для Windows, О-28)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отображение: {count}'**
+  String viewOptionsCount(int count);
+
+  /// «Отображение» (help ru «Customize views»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Группировка'**
+  String get viewGrouping;
+
+  /// «Отображение» (help ru «Customize views»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сортировка'**
+  String get viewSorting;
+
+  /// «Отображение»: меню направления сортировки (help en Ordering / Direction; подпись — О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Направление'**
+  String get viewDirection;
+
+  /// «Отображение»: убрать сортировку и группировку (help Reset all, ru «Сбросить все»; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить всё'**
+  String get viewResetAll;
+
+  /// Группировка выключена (help None; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет'**
+  String get groupingNone;
+
+  /// Сортировка проекта, «Сегодня» и «Предстоящего» (help Manual; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Вручную'**
+  String get sortingManual;
+
+  /// Сортировка вида без ручного порядка — метка (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'По умолчанию'**
+  String get sortingDefault;
+
+  /// Сортировка по названию (help Name, ru help «Название»; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Название'**
+  String get viewByName;
+
+  /// Сортировка и группировка по сроку (help Date, ru help «Срок»; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок'**
+  String get viewByDate;
+
+  /// Сортировка и группировка по дате добавления (help Date added; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Дата добавления'**
+  String get viewByAddedDate;
+
+  /// Группировка по метке (help Label; О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Метка'**
+  String get viewByLabel;
+
+  /// Направление сортировки (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'По возрастанию'**
+  String get sortAscending;
+
+  /// Направление сортировки (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'По убыванию'**
+  String get sortDescending;
+
+  /// Группа задач со сроком или дедлайном раньше сегодня (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Просрочено'**
+  String get groupOverdue;
+
+  /// Группа задач без меток (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Без метки'**
+  String get groupNoLabel;
+
+  /// Группа задач, у которых дата добавления ещё не пришла с другого устройства (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'Без даты добавления'**
+  String get groupNoAddedDate;
+
+  /// Заголовок группы дня: дата и «Сегодня», «Завтра» или день недели (О-68)
+  ///
+  /// In ru, this message translates to:
+  /// **'{date} · {name}'**
+  String groupDay(String date, String name);
 }
 
 class _AppLocalizationsDelegate

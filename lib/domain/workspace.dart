@@ -171,11 +171,38 @@ final class Workspace {
 
   /// Активные задачи с меткой (с подзадачами, без архивных проектов) в
   /// порядке [order]; по умолчанию — порядок метки help «Default sorting
-  /// order»: приоритет → дата → дедлайн → порядок проектов и задач.
-  List<Task> labelTasks(String labelId, {TaskOrder? order}) => [
-    for (final t in _tasks.values)
-      if (t.labelIds.contains(labelId) && _isActive(t)) t,
-  ]..sort((order ?? taskOrder(DefaultOrder.label)).compare);
+  /// order»: приоритет → дата → дедлайн → порядок проектов и задач. При
+  /// [showCompleted] после них — выполненные с меткой, позже выполненные
+  /// выше, как в списке проекта (решение 2А «Ход M4.5», допущение О-69).
+  List<Task> labelTasks(
+    String labelId, {
+    TaskOrder? order,
+    bool showCompleted = false,
+  }) =>
+      [
+          for (final t in _tasks.values)
+            if (t.labelIds.contains(labelId) && _isActive(t)) t,
+        ]
+        ..sort((order ?? taskOrder(DefaultOrder.label)).compare)
+        ..addAll(
+          showCompleted ? _completedWithLabel(labelId, order) : const [],
+        );
+
+  /// Выполненные задачи с меткой в активном месте (проект и раздел не в
+  /// архиве); подзадача невыполненная под выполненным родителем не входит.
+  List<Task> _completedWithLabel(String labelId, TaskOrder? order) =>
+      [
+        for (final t in _tasks.values)
+          if (t.isCompleted &&
+              t.labelIds.contains(labelId) &&
+              _inActivePlace(t))
+            t,
+      ]..sort((a, b) {
+        final byTime = (b.completedAt ?? '').compareTo(a.completedAt ?? '');
+        return byTime != 0
+            ? byTime
+            : (order ?? taskOrder(DefaultOrder.label)).compare(a, b);
+      });
 
   /// Сравнение задач вида с порядком [fallback] по умолчанию; порядок
   /// проектов и задач (для метки) — из этого снимка.
@@ -594,10 +621,17 @@ final class Workspace {
   /// проекте и в активном разделе.
   bool _isActive(Task t) {
     if (t.isCompleted) return false;
+    for (var p = _taskParent[t.id]; p != null; p = _taskParent[p]) {
+      if (_tasks[p]!.isCompleted) return false;
+    }
+    return _inActivePlace(t);
+  }
+
+  /// Корень задачи — в активном проекте и в активном разделе.
+  bool _inActivePlace(Task t) {
     var root = t;
     for (var p = _taskParent[t.id]; p != null; p = _taskParent[p]) {
       root = _tasks[p]!;
-      if (root.isCompleted) return false;
     }
     final section = _sections[root.sectionId];
     return !_isArchived(_homeProject(root)) && !(section?.isArchived ?? false);

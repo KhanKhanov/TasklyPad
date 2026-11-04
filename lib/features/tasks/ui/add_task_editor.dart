@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../quick_add/logic/quick_add_draft.dart';
 import '../../quick_add/ui/quick_add_composer.dart';
@@ -17,6 +18,9 @@ class AddTaskEditor extends StatelessWidget {
     this.parentId,
     this.atTop = false,
     this.labelIds = const {},
+    this.due,
+    this.priority,
+    this.deadline,
     required this.onClose,
   });
 
@@ -25,6 +29,11 @@ class AddTaskEditor extends StatelessWidget {
   final String? parentId;
   final bool atTop;
   final Set<String> labelIds;
+
+  /// Значение группы — [QuickAddDefaults.due].
+  final Due? due;
+  final int? priority;
+  final String? deadline;
   final VoidCallback onClose;
 
   @override
@@ -43,6 +52,9 @@ class AddTaskEditor extends StatelessWidget {
           sectionId: sectionId,
           parentId: parentId,
           labelIds: labelIds,
+          due: due,
+          priority: priority,
+          deadline: deadline,
         ),
         atTop: atTop,
         onClose: onClose,

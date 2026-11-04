@@ -80,7 +80,9 @@ void main() {
     // разбивает равенство и не меняется с направлением.
     final cases = <(Sorting, SortOrder, List<String>)>[
       (Sorting.byDefault, SortOrder.asc, ['c', 'a', 'b', 'd']),
-      (Sorting.manual, SortOrder.desc, ['d', 'b', 'a', 'c']),
+      // У «Вручную» направления нет (help: меню направления скрывается) —
+      // `desc` из импорта порядок не разворачивает.
+      (Sorting.manual, SortOrder.desc, ['c', 'a', 'b', 'd']),
       // Без учёта регистра, при равенстве — заглавная раньше (допущение).
       (Sorting.alphabetically, SortOrder.asc, ['b', 'c', 'a', 'd']),
       (Sorting.alphabetically, SortOrder.desc, ['d', 'a', 'c', 'b']),

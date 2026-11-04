@@ -2,25 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
-import '../../../app/theme/app_palette.dart';
-import '../../../domain/models.dart';
+import '../../../domain/view_options.dart';
+import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../sections/ui/section_block.dart';
-import '../../sections/ui/section_editor.dart';
-import '../../tasks/state/view_options.dart';
 import '../../shell/ui/shell_keys.dart';
+import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
-import '../../tasks/ui/view_options_button.dart';
-import 'project_menu.dart';
+import '../../views/state/view_options.dart';
+import '../../views/ui/grouped_task_list.dart';
+import '../../views/ui/view_sort_keys.dart';
+import 'project_parts.dart';
 
 /// Экран проекта (и «Входящих»): заголовок с «Отображение» и меню, задачи без
-/// раздела, разделы со своими задачами и «Добавить раздел». Хоткеи `a`,
-/// `Shift+A`, `S` — как в Todoist.
+/// раздела, разделы со своими задачами и «Добавить раздел». Сортировка
+/// «Отображения» — внутри раздела и среди соседей одного родителя; при
+/// группировке группы заменяют разделы (допущение, О-69). Хоткеи `a`,
+/// `Shift+A`, `S`, `D` / `P` / `N` — как в Todoist.
 class ProjectScreen extends ConsumerStatefulWidget {
   /// [projectId] `null` — «Входящие».
   const ProjectScreen({super.key, this.projectId});
@@ -47,12 +50,38 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     _ => AddTaskAt.none,
   };
 
+  TaskOrder _taskOrder(Workspace ws, ViewOptions options) => ws.taskOrder(
+    DefaultOrder.manual,
+    sorting: options.sorting,
+    sortOrder: options.sortOrder,
+  );
+
+  ProjectView _view(Workspace ws, ViewOptions options) => ws.projectView(
+    options.objectId!,
+    showCompleted: options.showCompletedTasks,
+    order: _taskOrder(ws, options),
+  );
+
+  /// Группы проекта: подзадача — в группе своих значений.
+  List<TaskGroup> _groups(Workspace ws, ViewOptions options) => groupsFor(
+    ws,
+    ws.projectTasks(
+      options.objectId!,
+      showCompleted: options.showCompletedTasks,
+    ),
+    options.grouping,
+    order: _taskOrder(ws, options),
+    today: ref.read(todayProvider),
+    clock: ref.read(clockProvider),
+  );
+
   /// Задачи экрана в порядке показа — соседи для `J`/`K` в панели задачи.
   List<String> _order(Workspace ws, String projectId) {
-    final view = ws.projectView(
-      projectId,
-      showCompleted: ref.read(showCompletedProvider(projectId)),
-    );
+    final options = ref.read(viewOptionsProvider(ViewType.project, projectId));
+    if (options.grouping != Grouping.none) {
+      return groupedOrder(_groups(ws, options));
+    }
+    final view = _view(ws, options);
     return [
       for (final item in view.unsectioned) item.value.id,
       for (final (:section, :tasks) in view.sections)
@@ -72,87 +101,69 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       return Center(child: Text(AppLocalizations.of(context).rejectNotFound));
     }
     final archived = ws.isProjectArchived(project.id);
-    final view = ws.projectView(
-      project.id,
-      showCompleted: ref.watch(showCompletedProvider(project.id)),
+    final options = ref.watch(
+      viewOptionsProvider(ViewType.project, project.id),
     );
+    // Подписка: группы по дням меняются в полночь.
+    ref.watch(todayProvider);
+    final grouped = options.grouping != Grouping.none;
     final canAdd = !archived;
-    return Shortcuts(
-      shortcuts: canAdd ? projectShortcuts : const {},
-      child: Actions(
-        actions: {
-          AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
-            blocked: () => ShellKeys.sequencePending(context),
-            () => _openAdd(null, AddTaskAt.bottom),
-          ),
-          AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
-            blocked: () => ShellKeys.sequencePending(context),
-            () => _openAdd(null, AddTaskAt.top),
-          ),
-          AddSectionIntent: HotkeyAction<AddSectionIntent>(
-            blocked: () => ShellKeys.sequencePending(context),
-            () => setState(() {
-              _addingSection = true;
-              _adding = null;
-            }),
-          ),
-        },
-        child: Focus(
-          autofocus: true,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-              child: TaskOrderScope(
-                order: (ws) => _order(ws, project.id),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
-                  children: [
-                    _Header(project: project, archived: archived),
-                    TaskList(
-                      items: view.unsectioned,
-                      ws: ws,
-                      projectId: project.id,
-                      addAt: _addAt(null),
-                      onAddAt: (at) => _openAdd(null, at),
-                      canAdd: canAdd,
-                    ),
-                    if (view.unsectioned.isEmpty && view.sections.isEmpty)
-                      _Empty(),
-                    for (final (:section, :tasks) in view.sections) ...[
-                      SectionBlock(
-                        key: ValueKey(section.id),
-                        section: section,
-                        count: ws.activeTaskCountIn(project.id, section.id),
-                        readOnly: archived,
-                      ),
-                      if (!section.isCollapsed)
-                        TaskList(
-                          key: ValueKey('tasks-${section.id}'),
-                          items: tasks,
-                          ws: ws,
+    return ViewSortKeys(
+      viewType: ViewType.project,
+      objectId: project.id,
+      child: Shortcuts(
+        shortcuts: canAdd ? projectShortcuts : const {},
+        child: Actions(
+          actions: {
+            AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
+              blocked: () => ShellKeys.sequencePending(context),
+              () => _openAdd(null, AddTaskAt.bottom),
+            ),
+            AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
+              blocked: () => ShellKeys.sequencePending(context),
+              () => _openAdd(null, AddTaskAt.top),
+            ),
+            // При группировке разделов не видно — `S` ничего не делает.
+            AddSectionIntent: HotkeyAction<AddSectionIntent>(
+              blocked: () => grouped || ShellKeys.sequencePending(context),
+              () => setState(() {
+                _addingSection = true;
+                _adding = null;
+              }),
+            ),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+                child: TaskOrderScope(
+                  order: (ws) => _order(ws, project.id),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
+                    children: [
+                      ProjectHeader(project: project, archived: archived),
+                      if (grouped)
+                        ..._grouped(ws, options, canAdd: canAdd)
+                      else
+                        ..._sectioned(ws, options, canAdd: canAdd),
+                      if (canAdd && !grouped)
+                        AddSectionButton(
                           projectId: project.id,
-                          sectionId: section.id,
-                          addAt: _addAt(section.id),
-                          onAddAt: (at) => _openAdd(section.id, at),
-                          canAdd: canAdd && !section.isArchived,
+                          open: _addingSection,
+                          // Вызывается и после записи раздела — экран к тому
+                          // времени мог уйти (переход по сайдбару).
+                          onOpen: (v) {
+                            if (!mounted) return;
+                            setState(() {
+                              _addingSection = v;
+                              if (v) _adding = null;
+                            });
+                          },
                         ),
                     ],
-                    if (canAdd)
-                      _AddSection(
-                        projectId: project.id,
-                        open: _addingSection,
-                        // Вызывается и после записи раздела — экран к тому
-                        // времени мог уйти (переход по сайдбару).
-                        onOpen: (v) {
-                          if (!mounted) return;
-                          setState(() {
-                            _addingSection = v;
-                            if (v) _adding = null;
-                          });
-                        },
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -161,95 +172,71 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
       ),
     );
   }
-}
 
-class _Empty extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 32),
-    child: Text(
-      AppLocalizations.of(context).inboxEmpty,
-      textAlign: TextAlign.center,
-      style: TextStyle(color: AppPalette.of(context).textSecondary),
-    ),
-  );
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.project, required this.archived});
-
-  final Project project;
-
-  /// Проект в архиве (сам или через предка) — меню архивного проекта.
-  final bool archived;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              projectTitle(AppLocalizations.of(context), project),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          ViewOptionsButton(viewId: project.id),
-          if (!project.isInbox)
-            ProjectMenuButton(project: project, archived: archived, size: 22),
-        ],
-      ),
-    );
-  }
-}
-
-/// «Добавить раздел» в конце проекта: по нажатию (или `S`) — встроенный
-/// редактор.
-class _AddSection extends ConsumerWidget {
-  const _AddSection({
-    required this.projectId,
-    required this.open,
-    required this.onOpen,
-  });
-
-  final String projectId;
-  final bool open;
-  final ValueChanged<bool> onOpen;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final palette = AppPalette.of(context);
-    if (open) {
-      return SectionEditor(
-        submitLabel: l10n.addSection,
-        onSubmit: (name) async {
-          await ref.read(sectionCommandsProvider).add(projectId, name: name);
-          onOpen(false);
-        },
-        onCancel: () => onOpen(false),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.only(top: 16),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton.icon(
-          onPressed: () => onOpen(true),
-          icon: Icon(Icons.add, color: palette.accent, size: 18),
-          label: Text(
-            l10n.addSection,
-            style: TextStyle(color: palette.textSecondary),
-          ),
+  List<Widget> _grouped(
+    Workspace ws,
+    ViewOptions options, {
+    required bool canAdd,
+  }) {
+    final groups = _groups(ws, options);
+    return [
+      GroupedTaskList(
+        groups: groups,
+        grouping: options.grouping,
+        ws: ws,
+        place: (
+          projectId: options.objectId!,
+          labelIds: const {},
+          due: null,
+          priority: null,
+          deadline: null,
         ),
+        addAt: _addAt(null),
+        onAddAt: (at) => _openAdd(null, at),
+        canAdd: canAdd,
       ),
-    );
+      if (groups.isEmpty && _addAt(null) == AddTaskAt.none)
+        const ProjectEmpty(),
+    ];
+  }
+
+  List<Widget> _sectioned(
+    Workspace ws,
+    ViewOptions options, {
+    required bool canAdd,
+  }) {
+    final projectId = options.objectId!;
+    final view = _view(ws, options);
+    return [
+      TaskList(
+        items: view.unsectioned,
+        ws: ws,
+        projectId: projectId,
+        addAt: _addAt(null),
+        onAddAt: (at) => _openAdd(null, at),
+        canAdd: canAdd,
+      ),
+      if (view.unsectioned.isEmpty && view.sections.isEmpty)
+        const ProjectEmpty(),
+      for (final (:section, :tasks) in view.sections) ...[
+        SectionBlock(
+          key: ValueKey(section.id),
+          section: section,
+          count: ws.activeTaskCountIn(projectId, section.id),
+          readOnly: !canAdd,
+        ),
+        if (!section.isCollapsed)
+          TaskList(
+            key: ValueKey('tasks-${section.id}'),
+            items: tasks,
+            ws: ws,
+            projectId: projectId,
+            sectionId: section.id,
+            addAt: _addAt(section.id),
+            onAddAt: (at) => _openAdd(section.id, at),
+            canAdd: canAdd && !section.isArchived,
+          ),
+      ],
+    ];
   }
 }
