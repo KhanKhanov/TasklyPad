@@ -1095,4 +1095,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String upcomingDay(String date, String relative, String weekday) {
     return '$date · $relative · $weekday';
   }
+
+  @override
+  String get rejectTooManyLabels => 'A task can\'t have more than 100 labels';
+
+  @override
+  String get uncompleteTask => 'Uncomplete';
+
+  @override
+  String get selectTasks => 'Select tasks';
+
+  @override
+  String get clearSelection => 'Clear selection';
+
+  @override
+  String selectedCount(int n) {
+    return '$n selected';
+  }
+
+  @override
+  String tasksCompleted(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tasks completed',
+      one: '1 task completed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tasksMoved(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tasks moved',
+      one: '1 task moved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tasksDueChanged(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Date changed for $n tasks',
+      one: 'Date changed for 1 task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deleteTasksTitle => 'Delete tasks?';
+
+  @override
+  String deleteTasksBody(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tasks and their sub-tasks will be deleted.',
+      one: '1 task and its sub-tasks will be deleted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get selectAll => 'Select all';
 }

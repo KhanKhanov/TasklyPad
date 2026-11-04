@@ -214,60 +214,66 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ViewHeader(
-                        title: l10n.upcomingView,
-                        viewType: ViewType.upcoming,
-                      ),
-                      WeekStrip(
-                        selected: selected,
-                        today: today,
-                        onSelect: _select,
-                      ),
-                      Expanded(
-                        child: TaskOrderScope(
-                          order: _order,
-                          child: NotificationListener<ScrollUpdateNotification>(
-                            // Только сам список: поле ввода редактора дня
-                            // тоже прокручивается (длинное название).
-                            onNotification: (n) {
-                              if (n.depth == 0 &&
-                                  n.metrics.axis == Axis.vertical) {
-                                _scheduleFollow();
-                              }
-                              return false;
-                            },
-                            child: CustomScrollView(
-                              key: _viewport,
-                              controller: _scroll,
-                              // Выбранный день — в начале; при выбранном
-                              // сегодня «Просрочено» — над ним, тоже видно.
-                              center: at == 0 && overdueSliver != null
-                                  ? _overdueKey
-                                  : _centerKey,
-                              slivers: [
-                                if (at > 0) ...[
-                                  ?overdueSliver,
-                                  SliverList.builder(
-                                    itemCount: at,
-                                    itemBuilder: (_, i) => day(at - 1 - i),
+                // Порядок вида и у заголовка: «Выбрать задачи» в его «⋯».
+                child: TaskOrderScope(
+                  order: _order,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ViewHeader(
+                          title: l10n.upcomingView,
+                          viewType: ViewType.upcoming,
+                        ),
+                        WeekStrip(
+                          selected: selected,
+                          today: today,
+                          onSelect: _select,
+                        ),
+                        Expanded(
+                          child: TaskOrderScope(
+                            order: _order,
+                            child:
+                                NotificationListener<ScrollUpdateNotification>(
+                                  // Только сам список: поле ввода редактора дня
+                                  // тоже прокручивается (длинное название).
+                                  onNotification: (n) {
+                                    if (n.depth == 0 &&
+                                        n.metrics.axis == Axis.vertical) {
+                                      _scheduleFollow();
+                                    }
+                                    return false;
+                                  },
+                                  child: CustomScrollView(
+                                    key: _viewport,
+                                    controller: _scroll,
+                                    // Выбранный день — в начале; при выбранном
+                                    // сегодня «Просрочено» — над ним, тоже видно.
+                                    center: at == 0 && overdueSliver != null
+                                        ? _overdueKey
+                                        : _centerKey,
+                                    slivers: [
+                                      if (at > 0) ...[
+                                        ?overdueSliver,
+                                        SliverList.builder(
+                                          itemCount: at,
+                                          itemBuilder: (_, i) =>
+                                              day(at - 1 - i),
+                                        ),
+                                      ] else
+                                        ?overdueSliver,
+                                      centerList,
+                                      const SliverPadding(
+                                        padding: EdgeInsets.only(bottom: 48),
+                                      ),
+                                    ],
                                   ),
-                                ] else
-                                  ?overdueSliver,
-                                centerList,
-                                const SliverPadding(
-                                  padding: EdgeInsets.only(bottom: 48),
                                 ),
-                              ],
-                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

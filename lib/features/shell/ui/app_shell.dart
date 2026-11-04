@@ -8,6 +8,9 @@ import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
+import '../../tasks/state/selection.dart';
+import '../../tasks/ui/selection_keys.dart';
+import '../../tasks/ui/selection_toolbar.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
 import 'shell_keys.dart';
@@ -30,6 +33,27 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   final GlobalKey<ScaffoldState> _scaffold = GlobalKey();
 
+  /// Первая кнопка панели выделения — на неё ведёт `,`.
+  final FocusNode _toolbarFocus = FocusNode();
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Выделение — у вида: другой экран его снимает (решение 9 плана M4).
+    // После кадра: менять провайдер, пока строится дерево, нельзя.
+    if (oldWidget.location != widget.location) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(taskSelectionProvider.notifier).clear();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _toolbarFocus.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -38,51 +62,87 @@ class _AppShellState extends ConsumerState<AppShell> {
     // настроек: подписка держит её состояние и таймеры.
     ref.listen(syncControllerProvider, (_, _) {});
     final location = widget.location;
+    final selecting = ref.watch(taskSelectionProvider.select((s) => s.active));
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideLayoutWidth;
         // Уведомления о конфликтах — тоже на всё время работы приложения.
-        return ConflictNoticeListener(
-          child: ShellKeys(
-            onQuickAdd: () => openQuickAdd(context, ref, location),
-            onSync: () => syncFromShell(context, ref),
-            onToggleSidebar: () {
-              final scaffold = _scaffold.currentState;
-              if (wide) {
-                ref.read(sidebarOpenProvider.notifier).toggle();
-              } else if (scaffold == null) {
-                return;
-              } else if (scaffold.isDrawerOpen) {
-                scaffold.closeDrawer();
-              } else {
-                scaffold.openDrawer();
-              }
-            },
-            child: Scaffold(
-              key: _scaffold,
-              backgroundColor: palette.background,
-              drawer: wide
-                  ? null
-                  : Drawer(
-                      width: _sidebarWidth,
-                      child: Sidebar(location: location),
+        // Системная «Назад» при выделении снимает его, а не уходит с экрана.
+        return PopScope(
+          canPop: !selecting,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) ref.read(taskSelectionProvider.notifier).clear();
+          },
+          child: ConflictNoticeListener(
+            child: ShellKeys(
+              onQuickAdd: () => openQuickAdd(context, ref, location),
+              onSync: () => syncFromShell(context, ref),
+              onToggleSidebar: () {
+                final scaffold = _scaffold.currentState;
+                if (wide) {
+                  ref.read(sidebarOpenProvider.notifier).toggle();
+                } else if (scaffold == null) {
+                  return;
+                } else if (scaffold.isDrawerOpen) {
+                  scaffold.closeDrawer();
+                } else {
+                  scaffold.openDrawer();
+                }
+              },
+              child: Scaffold(
+                key: _scaffold,
+                backgroundColor: palette.background,
+                drawer: wide
+                    ? null
+                    : Drawer(
+                        width: _sidebarWidth,
+                        child: Sidebar(location: location),
+                      ),
+                body: Row(
+                  children: [
+                    if (wide && open)
+                      SizedBox(
+                        width: _sidebarWidth,
+                        child: Sidebar(location: location),
+                      ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _TopBar(showToggle: !wide || !open),
+                          Expanded(
+                            child: SelectionKeys(
+                              toolbarFocus: _toolbarFocus,
+                              child: Stack(
+                                children: [
+                                  // Панель выделения не закрывает конец
+                                  // списка.
+                                  Positioned.fill(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(
+                                        bottom: selecting ? 72 : 0,
+                                      ),
+                                      child: widget.child,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    left: 16,
+                                    right: 16,
+                                    bottom: 16,
+                                    child: Center(
+                                      child: SelectionToolbar(
+                                        focus: _toolbarFocus,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-              body: Row(
-                children: [
-                  if (wide && open)
-                    SizedBox(
-                      width: _sidebarWidth,
-                      child: Sidebar(location: location),
-                    ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _TopBar(showToggle: !wide || !open),
-                        Expanded(child: widget.child),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

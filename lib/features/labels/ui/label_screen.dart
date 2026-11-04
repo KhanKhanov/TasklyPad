@@ -134,7 +134,11 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
                               viewType: ViewType.label,
                               objectId: label.id,
                             ),
-                            LabelMenuButton(label: label, size: 22),
+                            LabelMenuButton(
+                              label: label,
+                              size: 22,
+                              selectTasks: true,
+                            ),
                           ],
                         ),
                       ),

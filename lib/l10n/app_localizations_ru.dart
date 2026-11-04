@@ -1109,4 +1109,47 @@ class AppLocalizationsRu extends AppLocalizations {
   String upcomingDay(String date, String relative, String weekday) {
     return '$date · $relative · $weekday';
   }
+
+  @override
+  String get rejectTooManyLabels => 'У задачи не может быть больше 100 меток';
+
+  @override
+  String get uncompleteTask => 'Вернуть';
+
+  @override
+  String get selectTasks => 'Выбрать задачи';
+
+  @override
+  String get clearSelection => 'Снять выделение';
+
+  @override
+  String selectedCount(int n) {
+    return 'Выбрано: $n';
+  }
+
+  @override
+  String tasksCompleted(int n) {
+    return 'Выполнено задач: $n';
+  }
+
+  @override
+  String tasksMoved(int n) {
+    return 'Перенесено задач: $n';
+  }
+
+  @override
+  String tasksDueChanged(int n) {
+    return 'Срок изменён у задач: $n';
+  }
+
+  @override
+  String get deleteTasksTitle => 'Удалить задачи?';
+
+  @override
+  String deleteTasksBody(int n) {
+    return 'Будет удалено задач: $n — вместе с подзадачами.';
+  }
+
+  @override
+  String get selectAll => 'Выделить все';
 }

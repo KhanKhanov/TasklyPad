@@ -5,18 +5,29 @@ import 'package:go_router/go_router.dart';
 import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../tasks/ui/select_tasks_button.dart';
 import 'label_dialog.dart';
 
-enum _LabelAction { edit, favorite, delete }
+enum _LabelAction { selectTasks, edit, favorite, delete }
 
 /// Меню «⋯» метки, как в Todoist: Редактировать метку, Избранное, Удалить
 /// метку (с подтверждением).
 class LabelMenuButton extends ConsumerWidget {
-  const LabelMenuButton({super.key, required this.label, this.size = 20});
+  const LabelMenuButton({
+    super.key,
+    required this.label,
+    this.size = 20,
+    this.selectTasks = false,
+  });
 
   final Label label;
   final double size;
+
+  /// Меню на экране метки: без мыши первым — «Выбрать задачи» (решение 9
+  /// плана M4).
+  final bool selectTasks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,6 +39,11 @@ class LabelMenuButton extends ConsumerWidget {
       icon: const Icon(Icons.more_horiz),
       onSelected: (action) => _run(context, ref, action),
       itemBuilder: (context) => [
+        if (selectTasks && touchLayout(context))
+          PopupMenuItem(
+            value: _LabelAction.selectTasks,
+            child: Text(l10n.selectTasks),
+          ),
         PopupMenuItem(value: _LabelAction.edit, child: Text(l10n.editLabel)),
         PopupMenuItem(
           value: _LabelAction.favorite,
@@ -52,6 +68,8 @@ class LabelMenuButton extends ConsumerWidget {
     final commands = ref.read(labelCommandsProvider);
     final router = GoRouter.of(context);
     switch (action) {
+      case _LabelAction.selectTasks:
+        startTaskSelection(context, ref);
       case _LabelAction.edit:
         await showLabelDialog(context, label: label);
       case _LabelAction.favorite:

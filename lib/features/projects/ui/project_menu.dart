@@ -5,10 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../tasks/ui/select_tasks_button.dart';
 import 'project_dialog.dart';
 
-enum _ProjectAction { edit, favorite, duplicate, archive, unarchive, delete }
+enum _ProjectAction {
+  selectTasks,
+  edit,
+  favorite,
+  duplicate,
+  archive,
+  unarchive,
+  delete,
+}
 
 /// Меню «⋯» проекта, как в Todoist: Редактировать, Избранное, Дублировать,
 /// Архивировать, Удалить; у архивного — Вернуть из архива и Удалить.
@@ -19,11 +29,16 @@ class ProjectMenuButton extends ConsumerWidget {
     required this.project,
     this.archived = false,
     this.size = 20,
+    this.selectTasks = false,
   });
 
   final Project project;
   final bool archived;
   final double size;
+
+  /// Меню в заголовке проекта: без мыши первым — «Выбрать задачи»
+  /// (решение 9 плана M4).
+  final bool selectTasks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,6 +50,11 @@ class ProjectMenuButton extends ConsumerWidget {
       icon: const Icon(Icons.more_horiz),
       onSelected: (action) => _run(context, ref, action),
       itemBuilder: (context) => [
+        if (selectTasks && !archived && touchLayout(context))
+          PopupMenuItem(
+            value: _ProjectAction.selectTasks,
+            child: Text(l10n.selectTasks),
+          ),
         if (archived) ...[
           PopupMenuItem(
             value: _ProjectAction.unarchive,
@@ -90,6 +110,8 @@ class ProjectMenuButton extends ConsumerWidget {
     }
 
     switch (action) {
+      case _ProjectAction.selectTasks:
+        startTaskSelection(context, ref);
       case _ProjectAction.edit:
         await showProjectDialog(context, project: project);
       case _ProjectAction.favorite:

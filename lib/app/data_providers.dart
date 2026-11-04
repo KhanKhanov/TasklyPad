@@ -15,6 +15,7 @@ import '../features/quick_add/logic/quick_add_commands.dart';
 import '../features/sections/logic/section_commands.dart';
 import '../features/settings/logic/general_settings_commands.dart';
 import '../features/settings/logic/theme_commands.dart';
+import '../features/tasks/logic/bulk_task_commands.dart';
 import '../features/tasks/logic/task_commands.dart';
 import '../features/views/logic/view_options_commands.dart';
 import '../sync/conflict_repository.dart';
@@ -52,6 +53,14 @@ TaskCommands taskCommands(Ref ref) {
         .resetRecurringSubtasks,
   );
 }
+
+/// Действия над выделенными задачами.
+@Riverpod(keepAlive: true)
+BulkTaskCommands bulkTaskCommands(Ref ref) => BulkTaskCommands(
+  mutator: ref.watch(syncServicesProvider).mutator,
+  read: ref.watch(workspaceRepositoryProvider).load,
+  tasks: ref.watch(taskCommandsProvider),
+);
 
 @Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) =>

@@ -246,6 +246,13 @@ use-the-task-view (eDeRDO0C): меню задачи в ОКНЕ задачи (Du
 "Edit" есть только на iOS/Android в меню окна. shortcuts: `.` "More task actions", V "Move to …", T "Set date", Shift+T "Remove date", Y "Change priority level".
 Контекстного меню строки (правый клик) в help нет, кроме Copy link to task.
 
+Разобрано 2026-11-04 (сверка M4.8, выделение; WebFetch — пересказ): add-or-manage-multiple-tasks-in-todoist-PcPoskdUp (en+ru): панель внизу слева направо Date
+(ru «Срок») / Move to («Перенести в») / Labels («Метки», "Adds a label") / Delete ("after you confirm") / ⋯: Priority, Assign to, Deadline, Complete (у одних выполненных
+"Uncomplete"; в ru не приведено), Duplicate, Open in new window (только desktop, ru «Открыть в новом окне»); ⋯ скрыт "when none of its actions apply" (выполненные+невыполненные);
+Date "Schedules a date and time"; Ctrl+Shift и клик по первой и последней; моб.: ⋯ проекта -> "Select Tasks" (ru «Выбрать задачи»), "Select All" (ru «Выделить все»), iOS long press
+"Select Task"; моб. меню внизу: Complete/Delete/Duplicate "X tasks" прямо в меню; снятие выделения в статье НЕ описано; drag выделенных — проект, web/desktop. shortcuts (Windows):
+"Select focused task" X/Ctrl+Click, "Select multiple tasks" Ctrl+Click/Shift+Click, "," toolbar focus, Shift+Delete, Esc = "Dismiss/Cancel" (General) и "Close task view".
+
 **Help НЕ говорит:** что с подзадачами при завершении/удалении родителя; ограничения Входящих; список цветов (hex);
 счётчик «2/5»; что с подпроектами при разархивации; секунды тоста Undo; задачи архивного проекта (только просмотр или нет);
 русские названия цветов; число задач у метки; подтверждение удаления по Shift+Delete; окно/панель задачи; порядок меток.

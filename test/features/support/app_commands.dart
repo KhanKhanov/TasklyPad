@@ -9,6 +9,7 @@ import 'package:planner/features/quick_add/logic/quick_add_commands.dart';
 import 'package:planner/features/sections/logic/section_commands.dart';
 import 'package:planner/features/settings/logic/general_settings_commands.dart';
 import 'package:planner/features/settings/logic/theme_commands.dart';
+import 'package:planner/features/tasks/logic/bulk_task_commands.dart';
 import 'package:planner/features/tasks/logic/task_commands.dart';
 import 'package:planner/features/views/logic/view_options_commands.dart';
 
@@ -25,6 +26,7 @@ final class AppCommands {
       resetRecurringSubtasks: SettingsRepository(device.db)
           .resetRecurringSubtasks,
     );
+    bulk = BulkTaskCommands(mutator: mutator, read: repo.load, tasks: tasks);
     viewsRepo = ViewOptionsRepository(device.db);
     views = ViewOptionsCommands(mutator: mutator, read: viewsRepo.load);
     projects = ProjectCommands(
@@ -56,6 +58,7 @@ final class AppCommands {
   late final ThemeCommands theme;
   late final ThemeSettingsRepository themeRepo;
   late final TaskCommands tasks;
+  late final BulkTaskCommands bulk;
   late final ViewOptionsRepository viewsRepo;
   late final ViewOptionsCommands views;
   late final ProjectCommands projects;

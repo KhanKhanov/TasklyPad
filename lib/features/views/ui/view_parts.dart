@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/view_options.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/layout.dart';
+import '../../tasks/ui/select_tasks_button.dart';
 import 'view_options_button.dart';
 
 // Общие части экранов «Сегодня» и «Предстоящее».
@@ -31,6 +33,7 @@ class ViewHeader extends StatelessWidget {
           ),
         ),
         ViewOptionsButton(viewType: viewType),
+        if (touchLayout(context)) const SelectTasksMenuButton(),
       ],
     ),
   );

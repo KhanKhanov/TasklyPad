@@ -227,3 +227,27 @@ class _Chip extends StatelessWidget {
     );
   }
 }
+
+/// Шеврон слева от кружка: свернуть или развернуть подзадачи; [onToggle]
+/// `null` — подзадач нет, место пустое, чтобы кружки стояли в столбик.
+class CollapseToggle extends StatelessWidget {
+  const CollapseToggle({super.key, required this.collapsed, this.onToggle});
+
+  final bool collapsed;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 24,
+    height: 40,
+    child: onToggle == null
+        ? null
+        : IconButton(
+            padding: EdgeInsets.zero,
+            iconSize: 18,
+            color: AppPalette.of(context).textSecondary,
+            icon: Icon(collapsed ? Icons.chevron_right : Icons.expand_more),
+            onPressed: onToggle,
+          ),
+  );
+}
