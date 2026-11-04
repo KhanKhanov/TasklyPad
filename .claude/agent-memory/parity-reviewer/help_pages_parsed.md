@@ -239,6 +239,13 @@ models.py, без docstring) — метки на задаче хранятся �
   (про настройку «Выполненные задачи» — молчит). customize-views: Reset all снимает оранжевую точку у общего проекта (возврат к сохранённому виду, Save for everyone).
 - Upcoming: help (sort-or-group, upcoming) НЕ говорит, что группировки/сортировки там нет; "нет группировки у Upcoming" в нашем плане — вывод, не цитата.
 
+Разобрано 2026-11-04 (сверка M4.7, меню строки; WebFetch — пересказ): introduction-to-tasks-080OAXric (URL найден WebSearch; -tdkEyJp5 — навигация):
+«Click the three dots icon to the right of the task name» (web); right-click в проекте — только "Copy link to task"; iOS long press — context menu; Move to…,
+Duplicate, Delete (+подтверждение, "no option to undo"); даты в меню не перечислены. set-a-priority: «Select the priority level ... from the Priority section».
+use-the-task-view (eDeRDO0C): меню задачи в ОКНЕ задачи (Duplicate, Copy link to task, ..., Delete; у повторяющихся Complete / Complete & reset sub-tasks / Complete forever);
+"Edit" есть только на iOS/Android в меню окна. shortcuts: `.` "More task actions", V "Move to …", T "Set date", Shift+T "Remove date", Y "Change priority level".
+Контекстного меню строки (правый клик) в help нет, кроме Copy link to task.
+
 **Help НЕ говорит:** что с подзадачами при завершении/удалении родителя; ограничения Входящих; список цветов (hex);
 счётчик «2/5»; что с подпроектами при разархивации; секунды тоста Undo; задачи архивного проекта (только просмотр или нет);
 русские названия цветов; число задач у метки; подтверждение удаления по Shift+Delete; окно/панель задачи; порядок меток.

@@ -302,9 +302,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noDue => 'Без срока';
 
   @override
-  String get pickDate => 'Выбрать дату';
-
-  @override
   String get addTime => 'Добавить время';
 
   @override
@@ -1104,6 +1101,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get nextWeek => 'Следующая неделя';
+
+  @override
+  String get pickDate => 'Выбрать дату';
 
   @override
   String upcomingDay(String date, String relative, String weekday) {
