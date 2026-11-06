@@ -951,5 +951,7 @@
   "deleteTasksBody": "Будет удалено задач: {n} — вместе с подзадачами.",
   "@deleteTasksBody": {"description": "Текст подтверждения удаления выделенных задач", "placeholders": {"n": {"type": "int"}}},
   "selectAll": "Выделить все",
-  "@selectAll": {"description": "Режим выделения на телефоне: выделить все задачи вида (help: Select All, ru «Выделить все»)"}
+  "@selectAll": {"description": "Режим выделения на телефоне: выделить все задачи вида (help: Select All, ru «Выделить все»)"},
+  "dragHandleHint": "Перетащите, чтобы переместить",
+  "@dragHandleHint": {"description": "Подсказка ручки перетаскивания слева от задачи (help: «Click and hold the drag handle beside the task»)"}
 }

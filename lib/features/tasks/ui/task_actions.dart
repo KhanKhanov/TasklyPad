@@ -164,8 +164,9 @@ Future<void> deleteTask(BuildContext context, WidgetRef ref, Task task) async {
 
 /// Действие с отменой (выполнение, перенос, смена срока): тост после
 /// успеха. Действие ничего не изменило (повторное нажатие) — тоста нет:
-/// иначе пустая отмена заменила бы тост первого нажатия.
-Future<void> runWithUndo(
+/// иначе пустая отмена заменила бы тост первого нажатия. Результат — отмена
+/// сделанного; `null`, если действие отказало или ничего не изменило.
+Future<UndoAction?> runWithUndo(
   BuildContext context,
   String message,
   Future<UndoAction> Function() action,
@@ -175,9 +176,9 @@ Future<void> runWithUndo(
   UndoAction? undo;
   await runGuarded(messenger, l10n, () async => undo = await action());
   final done = undo;
-  if (done != null && !done.isEmpty && messenger.mounted) {
-    showUndoToast(messenger, l10n, message, done);
-  }
+  if (done == null || done.isEmpty) return null;
+  if (messenger.mounted) showUndoToast(messenger, l10n, message, done);
+  return done;
 }
 
 /// Пользователь сейчас печатает в поле: однобуквенные хоткеи не действуют.

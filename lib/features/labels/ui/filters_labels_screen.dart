@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../common/ui/layout.dart';
 import 'label_dialog.dart';
+import 'label_drag.dart';
 import 'label_tile.dart';
 
 /// Страница «Фильтры и метки», как в Todoist: раздел «Метки» с «+» и
@@ -69,10 +70,14 @@ class FiltersLabelsScreen extends StatelessWidget {
                 ),
               ),
             for (final label in labels)
-              LabelTile(
+              LabelDragTile(
                 key: ValueKey(label.id),
                 label: label,
-                count: ws.labelTaskCount(label.id),
+                labels: labels,
+                child: LabelTile(
+                  label: label,
+                  count: ws.labelTaskCount(label.id),
+                ),
               ),
           ],
         ),

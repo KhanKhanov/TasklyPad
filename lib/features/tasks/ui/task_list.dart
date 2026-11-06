@@ -4,6 +4,7 @@ import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
 import 'add_task_editor.dart';
+import 'task_drag.dart';
 import 'task_row.dart';
 
 /// Где открыт редактор «Добавить задачу» в списке.
@@ -27,6 +28,8 @@ class TaskList extends StatelessWidget {
     this.due,
     this.showProject = false,
     this.hierarchy = true,
+    this.drop,
+    this.gutter = false,
   });
 
   final List<TreeItem<Task>> items;
@@ -55,6 +58,17 @@ class TaskList extends StatelessWidget {
   /// задачи другие соседи, и правка прошла бы незаметно.
   final bool hierarchy;
 
+  /// Что можно делать при перетаскивании задач списка; `null` — ничего: ни
+  /// ручки, ни места броска (архив, группировка, сортировка с направлением).
+  final TaskListDrop? drop;
+
+  /// Слева оставлено поле под ручку ([dragGutter]): экран сдвинул отступ
+  /// списка на него, и строки со «Добавить задачу» занимают его место.
+  /// Включено у любого списка с [drop].
+  final bool gutter;
+
+  bool get _gutter => gutter || drop != null;
+
   Widget _editor(bool top) => AddTaskEditor(
     projectId: projectId,
     sectionId: sectionId,
@@ -65,30 +79,58 @@ class TaskList extends StatelessWidget {
     onClose: () => onAddAt(AddTaskAt.none),
   );
 
+  /// Редактор или кнопка «Добавить задачу» в конце списка: слот «в конец».
+  Widget _end(Widget add, {bool top = false}) => TaskEndSlot(
+    drop: drop,
+    items: items,
+    atStart: top,
+    child: _gutter
+        ? Padding(
+            padding: const EdgeInsets.only(left: dragGutter),
+            child: add,
+          )
+        : add,
+  );
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      if (canAdd && addAt == AddTaskAt.top) _editor(true),
+      if (canAdd && addAt == AddTaskAt.top) _end(_editor(true), top: true),
       for (final item in items)
-        TaskRow(
-          key: ValueKey(item.value.id),
-          item: item,
-          ws: ws,
-          collapsible: parentId == null,
-          // Подзадачи в окне задачи не выделяются: панель выделения — под
-          // окном, и её клавиши туда не доходят.
-          selectable: parentId == null,
-          showProject: showProject,
-          hierarchy: hierarchy,
+        _row(
+          TaskRow(
+            key: ValueKey(item.value.id),
+            item: item,
+            ws: ws,
+            collapsible: parentId == null,
+            // Подзадачи в окне задачи не выделяются: панель выделения — под
+            // окном, и её клавиши туда не доходят.
+            selectable: parentId == null,
+            showProject: showProject,
+            hierarchy: hierarchy,
+          ),
+          item,
         ),
       if (canAdd && addAt == AddTaskAt.bottom)
-        _editor(false)
+        _end(_editor(false))
       else if (canAdd)
-        AddTaskButton(
-          label: addLabel,
-          onPressed: () => onAddAt(AddTaskAt.bottom),
+        _end(
+          AddTaskButton(
+            label: addLabel,
+            onPressed: () => onAddAt(AddTaskAt.bottom),
+          ),
         ),
     ],
   );
+
+  Widget _row(TaskRow row, TreeItem<Task> item) => _gutter
+      ? TaskDragRow(
+          key: ValueKey(item.value.id),
+          item: item,
+          items: items,
+          drop: drop,
+          child: row,
+        )
+      : row;
 }

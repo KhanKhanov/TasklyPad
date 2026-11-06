@@ -49,6 +49,47 @@ final class TreeItem<T> {
   String toString() => 'TreeItem($value, depth: $depth, children: $childCount)';
 }
 
+/// Куда встанет элемент, брошенный на линию перед [index] плоского дерева
+/// [items] (показанные строки без самих переносимых): родитель, сосед слева и
+/// глубина. [wantedDepth] — глубина, которую просит указатель; она зажимается
+/// между глубиной следующей строки (её родитель не меняется) и глубиной
+/// предыдущей плюс один, а сверху — пределом [maxLevels] с учётом высоты
+/// переносимого поддерева [movedHeight]. [baseDepth] — глубина корней списка
+/// (подзадачи в окне задачи). `null` — места нет: предел уровней.
+({String? parentId, String? afterId, int depth})? treeDropPlace<T>(
+  List<TreeItem<T>> items,
+  String Function(T item) idOf, {
+  required int index,
+  required int wantedDepth,
+  required int movedHeight,
+  required int maxLevels,
+  int baseDepth = 0,
+}) {
+  final previous = index > 0 ? items[index - 1] : null;
+  final next = index < items.length ? items[index] : null;
+  final lowest = next?.depth ?? baseDepth;
+  final highest = previous == null ? baseDepth : previous.depth + 1;
+  final limit = maxLevels - movedHeight;
+  final top = highest < limit ? highest : limit;
+  if (top < lowest) return null;
+  final depth = wantedDepth < lowest
+      ? lowest
+      : wantedDepth > top
+      ? top
+      : wantedDepth;
+  String? parentId;
+  String? afterId;
+  for (var i = index - 1; i >= 0; i--) {
+    final item = items[i];
+    if (item.depth == depth && afterId == null) afterId = idOf(item.value);
+    if (item.depth < depth) {
+      parentId = idOf(item.value);
+      break;
+    }
+  }
+  return (parentId: parentId, afterId: afterId, depth: depth);
+}
+
 /// Разложить [roots] и их потомков ([childrenOf] — уже упорядоченные дети)
 /// в список для показа. Потомки элемента, для которого [collapsed] вернул
 /// `true`, не выводятся, но учитываются в [TreeItem.childCount].

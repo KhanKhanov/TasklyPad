@@ -14,12 +14,16 @@ import '../../shell/ui/shell_keys.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_actions.dart';
+import '../../tasks/ui/task_drag.dart';
+import '../../tasks/ui/task_drop_places.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
 import '../state/view_options.dart';
 import 'day_titles.dart';
 import 'grouped_task_list.dart';
 import 'overdue_block.dart';
+import 'tomorrow_drop_zone.dart';
+import 'view_groups.dart';
 import 'view_parts.dart';
 import 'view_sort_keys.dart';
 
@@ -47,11 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final today = ref.read(todayProvider);
     final iso = isoDate(today);
     final clock = ref.read(clockProvider);
-    TaskOrder order(DefaultOrder fallback) => ws.taskOrder(
-      fallback,
-      sorting: options.sorting,
-      sortOrder: options.sortOrder,
-    );
+    TaskOrder order(DefaultOrder fallback) => _taskOrder(ws, options, fallback);
     final overdue = ws.overdueTasks(iso, order: order(DefaultOrder.overdue));
     final tasks = ws.todayTasks(
       iso,
@@ -76,6 +76,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
+  TaskOrder _taskOrder(
+    Workspace ws,
+    ViewOptions options,
+    DefaultOrder fallback,
+  ) => ws.taskOrder(
+    fallback,
+    sorting: options.sorting,
+    sortOrder: options.sortOrder,
+  );
+
   List<String> _order(Workspace ws) {
     final content = _content(ws, _options());
     return content.groups.isEmpty
@@ -90,6 +100,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return watch ? ref.watch(provider) : ref.read(provider);
   }
 
+  /// Заголовок дня под «Просрочено»: на него можно бросить просроченную, когда
+  /// на сегодня активных задач нет (решение 3А «Ход M4.9»).
+  Widget _dayHeader(Widget header, String date, bool drags) =>
+      drags ? DayDropSlot(date: date, child: header) : header;
+
   @override
   Widget build(BuildContext context) => WorkspaceView(builder: _build);
 
@@ -103,6 +118,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final due = Due(date: isoDate(today));
     final content = _content(ws, options);
     final grouped = options.grouping != Grouping.none;
+    final drags = options.allowsDrag;
+    final tomorrow = isoDate(DateTime(today.year, today.month, today.day + 1));
     final empty =
         content.overdue.isEmpty &&
         content.today.isEmpty &&
@@ -131,61 +148,117 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 constraints: const BoxConstraints(maxWidth: contentMaxWidth),
                 child: TaskOrderScope(
                   order: _order,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
-                    children: [
-                      ViewHeader(
-                        title: l10n.todayView,
-                        viewType: ViewType.today,
-                      ),
-                      if (grouped)
-                        GroupedTaskList(
-                          groups: content.groups,
-                          grouping: options.grouping,
-                          ws: ws,
-                          place: (
-                            projectId: inbox.id,
-                            labelIds: const {},
-                            due: due,
-                            priority: null,
-                            deadline: null,
-                          ),
-                          addAt: _addAt,
-                          onAddAt: (at) => setState(() => _addAt = at),
-                          showProject: true,
-                          keepsInView: (value) => value.due == due,
-                          overdueAction: options.grouping == Grouping.dueDate
-                              ? RescheduleButton(
-                                  ids: [
-                                    for (final g in content.groups)
-                                      if (g.key is OverdueGroup)
-                                        for (final t in g.tasks) t.id,
-                                  ],
-                                )
-                              : null,
-                        )
-                      else ...[
-                        if (content.overdue.isNotEmpty) ...[
-                          OverdueBlock(tasks: content.overdue, ws: ws),
-                          DayHeader(
-                            title: fullDayTitle(context, due.date, today),
-                          ),
-                        ],
-                        TaskList(
-                          // Плоский список: подзадача — своей строкой.
-                          items: [
-                            for (final t in content.today) TreeItem(t, 0, 0),
-                          ],
-                          ws: ws,
-                          projectId: inbox.id,
-                          due: due,
-                          showProject: true,
-                          hierarchy: false,
-                          addAt: _addAt,
-                          onAddAt: (at) => setState(() => _addAt = at),
+                  child: CustomScrollView(
+                    slivers: [
+                      // Слева 12 + поле под ручку 20 у строк и заголовков.
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 32, 0),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            DragGutter(
+                              child: ViewHeader(
+                                title: l10n.todayView,
+                                viewType: ViewType.today,
+                              ),
+                            ),
+                            if (grouped)
+                              DragGutter(
+                                child: GroupedTaskList(
+                                  groups: content.groups,
+                                  grouping: options.grouping,
+                                  ws: ws,
+                                  place: (
+                                    projectId: inbox.id,
+                                    labelIds: const {},
+                                    due: due,
+                                    priority: null,
+                                    deadline: null,
+                                  ),
+                                  addAt: _addAt,
+                                  onAddAt: (at) => setState(() => _addAt = at),
+                                  showProject: true,
+                                  keepsInView: (value) => value.due == due,
+                                  overdueAction:
+                                      options.grouping == Grouping.dueDate
+                                      ? RescheduleButton(
+                                          ids: [
+                                            for (final g in content.groups)
+                                              if (g.key is OverdueGroup)
+                                                for (final t in g.tasks) t.id,
+                                          ],
+                                        )
+                                      : null,
+                                ),
+                              )
+                            else ...[
+                              if (content.overdue.isNotEmpty) ...[
+                                OverdueBlock(
+                                  tasks: content.overdue,
+                                  ws: ws,
+                                  draggable: drags,
+                                ),
+                                DragGutter(
+                                  child: _dayHeader(
+                                    DayHeader(
+                                      title: fullDayTitle(
+                                        context,
+                                        due.date,
+                                        today,
+                                      ),
+                                    ),
+                                    due.date,
+                                    drags,
+                                  ),
+                                ),
+                              ],
+                              TaskList(
+                                // Плоский список: подзадача — своей строкой.
+                                items: [
+                                  for (final t in content.today)
+                                    TreeItem(t, 0, 0),
+                                ],
+                                ws: ws,
+                                projectId: inbox.id,
+                                due: due,
+                                showProject: true,
+                                hierarchy: false,
+                                addAt: _addAt,
+                                onAddAt: (at) => setState(() => _addAt = at),
+                                gutter: true,
+                                // Всё ниже последней активной строки — зона
+                                // «на завтра».
+                                drop: drags
+                                    ? DayDrop(
+                                        date: due.date,
+                                        sorting: options.sorting,
+                                        order: _taskOrder(
+                                          ws,
+                                          options,
+                                          DefaultOrder.smart,
+                                        ),
+                                        tomorrow: tomorrow,
+                                        tomorrowLabel: l10n.dueTomorrow,
+                                      )
+                                    : null,
+                              ),
+                            ],
+                            if (empty) const DragGutter(child: ViewEmpty()),
+                          ]),
                         ),
-                      ],
-                      if (empty) const ViewEmpty(),
+                      ),
+                      if (drags && !grouped)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 12),
+                            child: TomorrowDropZone(
+                              date: tomorrow,
+                              label: l10n.dueTomorrow,
+                            ),
+                          ),
+                        )
+                      else
+                        const SliverToBoxAdapter(child: SizedBox(height: 48)),
                     ],
                   ),
                 ),

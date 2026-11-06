@@ -1987,6 +1987,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выделить все'**
   String get selectAll;
+
+  /// Подсказка ручки перетаскивания слева от задачи (help: «Click and hold the drag handle beside the task»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Перетащите, чтобы переместить'**
+  String get dragHandleHint;
 }
 
 class _AppLocalizationsDelegate

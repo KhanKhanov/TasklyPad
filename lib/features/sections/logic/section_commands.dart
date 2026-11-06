@@ -113,6 +113,46 @@ final class SectionCommands {
     return undo;
   }
 
+  /// Перетаскивание раздела внутри проекта: сразу после [afterId] (`null` —
+  /// первым), вместе с задачами (help «Introduction to sections»: «Drag a
+  /// section and all its tasks»). Пишется только порядок раздела: задачи
+  /// вычисляются по разделу. Архивный раздел не переставляется: его место —
+  /// после активных. Без «Отменить» (решение 8 плана M4).
+  Future<void> reorder(String id, {String? afterId}) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        final section = _alive(ws, id);
+        if (section.isArchived) {
+          throw const CommandRejected(RejectReason.notFound);
+        }
+        final active = ws.sectionsOf(section.projectId ?? ws.inbox!.id);
+        final others = [
+          for (final s in active)
+            if (s.id != id) s,
+        ];
+        final after = others.indexWhere((s) => s.id == afterId);
+        final index = afterId == null
+            ? 0
+            : after < 0
+            ? others.length
+            : after + 1;
+        if (active.indexWhere((s) => s.id == id) == index) return;
+        final keys = insertionKeys(
+          [for (final s in others) s.orderKey],
+          index,
+          1,
+        );
+        for (final (i, key) in keys.rekeyed.indexed) {
+          if (key == null) continue;
+          await _mutator.update(EntityTypes.section, others[i].id, {
+            SectionFields.orderKey: key,
+          });
+        }
+        await _mutator.update(EntityTypes.section, id, {
+          SectionFields.orderKey: keys.inserted.single,
+        });
+      });
+
   /// Дубликат сразу после раздела, с незавершёнными задачами. [name] — имя
   /// копии из интерфейса («Копия …»).
   Future<String> duplicate(String id, {required String name}) async {

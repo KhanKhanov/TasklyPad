@@ -1,1 +1,2 @@
 - [Разобранные страницы help](help_pages_parsed.md) — какие страницы Todoist help прочитаны и какие факты help не подтверждает
+- [Help: перетаскивание](help_drag_and_drop.md) — факты и пробелы help по drag-and-drop задач, проектов, разделов, меток (M4.9–M4.10)

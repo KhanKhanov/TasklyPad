@@ -9,55 +9,73 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../tasks/ui/scheduler_dialog.dart';
 import '../../tasks/ui/task_actions.dart';
+import '../../tasks/ui/task_drag.dart';
 import '../../tasks/ui/task_row.dart';
 
 /// Блок «Просрочено» в «Сегодня» и «Предстоящем»: заголовок, справа
 /// «Перенести», задачи плоским списком с проектом. Порядок — умный без
 /// ручного порядка дня (help «Default sorting order»: «Overdue tasks can't be
-/// manually sorted»).
+/// manually sorted»). Задачи блока можно только брать — на день, в зону «на
+/// завтра» и на проект в сайдбаре (решение 3А «Ход M4.9»); перестановки нет.
 class OverdueBlock extends StatelessWidget {
-  const OverdueBlock({super.key, required this.tasks, required this.ws});
+  const OverdueBlock({
+    super.key,
+    required this.tasks,
+    required this.ws,
+    this.draggable = true,
+  });
 
   final List<Task> tasks;
   final Workspace ws;
 
+  /// `false` — перетаскивание вида выключено (сортировка с направлением).
+  final bool draggable;
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final items = [for (final t in tasks) TreeItem(t, 0, 0)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: palette.divider)),
-          ),
-          height: 40,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(context).groupOverdue,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: palette.textPrimary,
-                    fontWeight: FontWeight.w700,
+        DragGutter(
+          child: Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: palette.divider)),
+            ),
+            height: 40,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(context).groupOverdue,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              RescheduleButton(ids: [for (final t in tasks) t.id]),
-            ],
+                RescheduleButton(ids: [for (final t in tasks) t.id]),
+              ],
+            ),
           ),
         ),
-        for (final task in tasks)
-          TaskRow(
-            key: ValueKey('overdue/${task.id}'),
-            item: TreeItem(task, 0, 0),
-            ws: ws,
-            collapsible: false,
-            showProject: true,
-            hierarchy: false,
+        for (final item in items)
+          TaskDragRow(
+            key: ValueKey('overdue/${item.value.id}'),
+            item: item,
+            items: items,
+            drop: draggable ? const OverdueDrop() : null,
+            child: TaskRow(
+              item: item,
+              ws: ws,
+              collapsible: false,
+              showProject: true,
+              hierarchy: false,
+            ),
           ),
       ],
     );

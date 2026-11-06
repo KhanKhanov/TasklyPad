@@ -107,6 +107,17 @@ abstract class ViewOptions with _$ViewOptions {
 
   const ViewOptions._();
 
+  /// Задачи вида можно перетаскивать: не метка и не фильтр, нет группировки
+  /// и сортировки с направлением (help «Sort or group tasks»: «If a grouping
+  /// option is applied to a project or view, you can't drag or manually
+  /// reorder»; «Filter and label views ... can't be manually reordered»). У
+  /// «Предстоящего» группировка не действует (из импорта), как и в [applied].
+  bool get allowsDrag =>
+      viewType != ViewType.label &&
+      viewType != ViewType.filter &&
+      (grouping == Grouping.none || viewType == ViewType.upcoming) &&
+      !sorting.hasDirection;
+
   /// Сколько выбрано сортировок и группировок — «Отображение: N» (help «Sort
   /// or group tasks»: выбранное показывается вверху вида); «Выполненные
   /// задачи» не считаются — «Сбросить всё» их не снимает. У «Предстоящего»

@@ -223,28 +223,33 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     final palette = AppPalette.of(context);
     return [
       Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        // Слева 0: подзадачам нужно поле под ручку перетаскивания, остальное
+        // сдвинуто на 16 само.
+        padding: const EdgeInsets.fromLTRB(0, 16, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TaskCheckCircle(task: task, enabled: !readOnly),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TaskTitleField(
-                    controller: _content,
-                    focusNode: _contentFocus,
-                    readOnly: readOnly,
-                    completed: task.isCompleted,
-                    onSubmitted: _saveContent,
+            Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TaskCheckCircle(task: task, enabled: !readOnly),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TaskTitleField(
+                      controller: _content,
+                      focusNode: _contentFocus,
+                      readOnly: readOnly,
+                      completed: task.isCompleted,
+                      onSubmitted: _saveContent,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 34),
+              padding: const EdgeInsets.only(left: 50),
               child: TextField(
                 controller: _description,
                 focusNode: _descriptionFocus,

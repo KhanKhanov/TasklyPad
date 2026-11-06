@@ -5,6 +5,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../common/ui/drag_layer.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
@@ -32,6 +33,9 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   final GlobalKey<ScaffoldState> _scaffold = GlobalKey();
+
+  /// Содержимое окна без нижнего уведомления: тут ищется место броска.
+  final GlobalKey _bodyKey = GlobalKey();
 
   /// Первая кнопка панели выделения — на неё ведёт `,`.
   final FocusNode _toolbarFocus = FocusNode();
@@ -89,59 +93,65 @@ class _AppShellState extends ConsumerState<AppShell> {
                   scaffold.openDrawer();
                 }
               },
-              child: Scaffold(
-                key: _scaffold,
-                backgroundColor: palette.background,
-                drawer: wide
-                    ? null
-                    : Drawer(
-                        width: _sidebarWidth,
-                        child: Sidebar(location: location),
-                      ),
-                body: Row(
-                  children: [
-                    if (wide && open)
-                      SizedBox(
-                        width: _sidebarWidth,
-                        child: Sidebar(location: location),
-                      ),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          _TopBar(showToggle: !wide || !open),
-                          Expanded(
-                            child: SelectionKeys(
-                              toolbarFocus: _toolbarFocus,
-                              child: Stack(
-                                children: [
-                                  // Панель выделения не закрывает конец
-                                  // списка.
-                                  Positioned.fill(
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                        bottom: selecting ? 72 : 0,
-                                      ),
-                                      child: widget.child,
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: 16,
-                                    right: 16,
-                                    bottom: 16,
-                                    child: Center(
-                                      child: SelectionToolbar(
-                                        focus: _toolbarFocus,
+              // Один приёмник перетаскивания на всё окно: списки, сайдбар.
+              child: DragLayer(
+                // На узком экране сайдбар — выдвижная панель вне тела `Scaffold`.
+                hitRoot: wide ? _bodyKey : null,
+                child: Scaffold(
+                  key: _scaffold,
+                  backgroundColor: palette.background,
+                  drawer: wide
+                      ? null
+                      : Drawer(
+                          width: _sidebarWidth,
+                          child: Sidebar(location: location),
+                        ),
+                  body: Row(
+                    key: _bodyKey,
+                    children: [
+                      if (wide && open)
+                        SizedBox(
+                          width: _sidebarWidth,
+                          child: Sidebar(location: location),
+                        ),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _TopBar(showToggle: !wide || !open),
+                            Expanded(
+                              child: SelectionKeys(
+                                toolbarFocus: _toolbarFocus,
+                                child: Stack(
+                                  children: [
+                                    // Панель выделения не закрывает конец
+                                    // списка.
+                                    Positioned.fill(
+                                      child: Padding(
+                                        padding: EdgeInsets.only(
+                                          bottom: selecting ? 72 : 0,
+                                        ),
+                                        child: widget.child,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    Positioned(
+                                      left: 16,
+                                      right: 16,
+                                      bottom: 16,
+                                      child: Center(
+                                        child: SelectionToolbar(
+                                          focus: _toolbarFocus,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

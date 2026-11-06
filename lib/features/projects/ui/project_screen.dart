@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../domain/models.dart';
 import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../common/ui/drag_source.dart';
 import '../../sections/ui/section_block.dart';
+import '../../sections/ui/section_drag.dart';
 import '../../shell/ui/shell_keys.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_actions.dart';
+import '../../tasks/ui/task_drag.dart';
+import '../../tasks/ui/task_drop_places.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
 import '../../views/state/view_options.dart';
 import '../../views/ui/grouped_task_list.dart';
+import '../../views/ui/view_groups.dart';
 import '../../views/ui/view_sort_keys.dart';
 import 'project_parts.dart';
 
@@ -141,26 +147,34 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
                 child: TaskOrderScope(
                   order: (ws) => _order(ws, project.id),
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
+                    // Слева 12 + поле под ручку 20 у каждой строки: геометрия прежняя.
+                    padding: const EdgeInsets.fromLTRB(12, 8, 32, 48),
                     children: [
-                      ProjectHeader(project: project, archived: archived),
+                      DragGutter(
+                        child: ProjectHeader(
+                          project: project,
+                          archived: archived,
+                        ),
+                      ),
                       if (grouped)
                         ..._grouped(ws, options, canAdd: canAdd)
                       else
                         ..._sectioned(ws, options, canAdd: canAdd),
                       if (canAdd && !grouped)
-                        AddSectionButton(
-                          projectId: project.id,
-                          open: _addingSection,
-                          // Вызывается и после записи раздела — экран к тому
-                          // времени мог уйти (переход по сайдбару).
-                          onOpen: (v) {
-                            if (!mounted) return;
-                            setState(() {
-                              _addingSection = v;
-                              if (v) _adding = null;
-                            });
-                          },
+                        DragGutter(
+                          child: AddSectionButton(
+                            projectId: project.id,
+                            open: _addingSection,
+                            // Вызывается и после записи раздела — экран к тому
+                            // времени мог уйти (переход по сайдбару).
+                            onOpen: (v) {
+                              if (!mounted) return;
+                              setState(() {
+                                _addingSection = v;
+                                if (v) _adding = null;
+                              });
+                            },
+                          ),
                         ),
                     ],
                   ),
@@ -180,23 +194,25 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   }) {
     final groups = _groups(ws, options);
     return [
-      GroupedTaskList(
-        groups: groups,
-        grouping: options.grouping,
-        ws: ws,
-        place: (
-          projectId: options.objectId!,
-          labelIds: const {},
-          due: null,
-          priority: null,
-          deadline: null,
+      DragGutter(
+        child: GroupedTaskList(
+          groups: groups,
+          grouping: options.grouping,
+          ws: ws,
+          place: (
+            projectId: options.objectId!,
+            labelIds: const {},
+            due: null,
+            priority: null,
+            deadline: null,
+          ),
+          addAt: _addAt(null),
+          onAddAt: (at) => _openAdd(null, at),
+          canAdd: canAdd,
         ),
-        addAt: _addAt(null),
-        onAddAt: (at) => _openAdd(null, at),
-        canAdd: canAdd,
       ),
       if (groups.isEmpty && _addAt(null) == AddTaskAt.none)
-        const ProjectEmpty(),
+        const DragGutter(child: ProjectEmpty()),
     ];
   }
 
@@ -207,6 +223,15 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   }) {
     final projectId = options.objectId!;
     final view = _view(ws, options);
+    // Перетаскивание: проект не в архиве, без сортировки с направлением.
+    final drags = canAdd && options.allowsDrag;
+    final active = [
+      for (final (:section, tasks: _) in view.sections)
+        if (!section.isArchived) section,
+    ];
+    ProjectDrop? drop(String? sectionId) => drags
+        ? ProjectDrop(ws: ws, projectId: projectId, sectionId: sectionId)
+        : null;
     return [
       TaskList(
         items: view.unsectioned,
@@ -215,28 +240,61 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         addAt: _addAt(null),
         onAddAt: (at) => _openAdd(null, at),
         canAdd: canAdd,
+        drop: drop(null),
+        gutter: true,
       ),
       if (view.unsectioned.isEmpty && view.sections.isEmpty)
-        const ProjectEmpty(),
+        const DragGutter(child: ProjectEmpty()),
       for (final (:section, :tasks) in view.sections) ...[
-        SectionBlock(
-          key: ValueKey(section.id),
+        sectionHeaderSlot(
+          // Разделы переставляются и при сортировке: она действует внутри
+          // раздела; архивные — не источник и не цель.
+          enabled: canAdd && !section.isArchived,
           section: section,
-          count: ws.activeTaskCountIn(projectId, section.id),
-          readOnly: !canAdd,
+          projectId: projectId,
+          sections: active,
+          child: drags && !section.isArchived
+              ? SectionDropSlot(
+                  projectId: projectId,
+                  sectionId: section.id,
+                  child: _sectionBlock(ws, projectId, section, !canAdd),
+                )
+              : _sectionBlock(ws, projectId, section, !canAdd),
         ),
         if (!section.isCollapsed)
-          TaskList(
-            key: ValueKey('tasks-${section.id}'),
-            items: tasks,
-            ws: ws,
+          sectionTasksSlot(
+            enabled: canAdd && !section.isArchived,
+            section: section,
             projectId: projectId,
-            sectionId: section.id,
-            addAt: _addAt(section.id),
-            onAddAt: (at) => _openAdd(section.id, at),
-            canAdd: canAdd && !section.isArchived,
+            child: TaskList(
+              key: ValueKey('tasks-${section.id}'),
+              items: tasks,
+              ws: ws,
+              projectId: projectId,
+              sectionId: section.id,
+              addAt: _addAt(section.id),
+              onAddAt: (at) => _openAdd(section.id, at),
+              canAdd: canAdd && !section.isArchived,
+              drop: section.isArchived ? null : drop(section.id),
+              gutter: true,
+            ),
           ),
       ],
     ];
   }
+
+  Widget _sectionBlock(
+    Workspace ws,
+    String projectId,
+    Section section,
+    bool readOnly,
+  ) => DragBlocker(
+    // Слот броска задач стоит снаружи: пока тащат, «⋯» заголовка не оживает.
+    child: SectionBlock(
+      key: ValueKey(section.id),
+      section: section,
+      count: ws.activeTaskCountIn(projectId, section.id),
+      readOnly: readOnly,
+    ),
+  );
 }
