@@ -1152,4 +1152,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get selectAll => 'Выделить все';
+
+  @override
+  String get dragHandleHint => 'Перетащите, чтобы переместить';
 }

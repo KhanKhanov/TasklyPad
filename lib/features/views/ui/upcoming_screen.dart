@@ -12,6 +12,7 @@ import '../../shell/ui/shell_keys.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_actions.dart';
+import '../../tasks/ui/task_drag.dart';
 import '../../tasks/ui/task_order.dart';
 import '../state/upcoming_day.dart';
 import '../state/view_options.dart';
@@ -86,18 +87,7 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
   void _followScroll() {
     final viewport = _viewport.currentContext?.findRenderObject();
     if (viewport is! RenderBox) return;
-    String? top;
-    double? topY;
-    String? first;
-    double? firstY;
-    for (final MapEntry(key: date, value: context) in _days.entries) {
-      final box = context.findRenderObject();
-      if (box is! RenderBox || !box.attached) continue;
-      final y = box.localToGlobal(Offset.zero, ancestor: viewport).dy;
-      if (y <= 1 && (topY == null || y > topY)) (top, topY) = (date, y);
-      if (firstY == null || y < firstY) (first, firstY) = (date, y);
-    }
-    final day = top ?? first;
+    final day = topVisibleDay(_days, viewport);
     if (day != null && day != ref.read(upcomingDayProvider)) {
       ref.read(upcomingDayProvider.notifier).select(day);
     }
@@ -145,7 +135,13 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
     final inbox = ws.inbox;
     if (inbox == null) return Center(child: Text(l10n.rejectNotFound));
     // Подписки: настройки вида и смена дня в полночь.
-    ref.watch(viewOptionsProvider(ViewType.upcoming, null));
+    final options = ref.watch(viewOptionsProvider(ViewType.upcoming, null));
+    final drags = options.allowsDrag;
+    final dayOrder = ws.taskOrder(
+      DefaultOrder.smart,
+      sorting: options.sorting,
+      sortOrder: options.sortOrder,
+    );
     final today = ref.watch(todayProvider);
     final selected = parseIsoDate(ref.watch(upcomingDayProvider)) ?? today;
     final anchor = switch (_anchor) {
@@ -174,6 +170,9 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
           ws: ws,
           inboxId: inbox.id,
           adding: _adding == date,
+          drop: drags
+              ? DayDrop(date: date, sorting: options.sorting, order: dayOrder)
+              : null,
           onAdding: (open) => setState(() {
             _adding = open ? date : null;
             if (open) ref.read(upcomingDayProvider.notifier).select(date);
@@ -186,7 +185,7 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
         ? null
         : SliverToBoxAdapter(
             key: _overdueKey,
-            child: OverdueBlock(tasks: overdue, ws: ws),
+            child: OverdueBlock(tasks: overdue, ws: ws, draggable: drags),
           );
     final centerList = SliverList.builder(
       key: _centerKey,
@@ -218,18 +217,23 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
                 child: TaskOrderScope(
                   order: _order,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 0),
+                    // Слева 12 + поле под ручку 20 у строк и заголовков.
+                    padding: const EdgeInsets.fromLTRB(12, 8, 32, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ViewHeader(
-                          title: l10n.upcomingView,
-                          viewType: ViewType.upcoming,
+                        DragGutter(
+                          child: ViewHeader(
+                            title: l10n.upcomingView,
+                            viewType: ViewType.upcoming,
+                          ),
                         ),
-                        WeekStrip(
-                          selected: selected,
-                          today: today,
-                          onSelect: _select,
+                        DragGutter(
+                          child: WeekStrip(
+                            selected: selected,
+                            today: today,
+                            onSelect: _select,
+                          ),
                         ),
                         Expanded(
                           child: TaskOrderScope(

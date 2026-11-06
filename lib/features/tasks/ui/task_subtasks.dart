@@ -4,6 +4,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import 'task_drag.dart';
 import 'task_list.dart';
 import 'task_order.dart';
 
@@ -40,41 +41,45 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Text(
-              l10n.subtasks,
-              style: TextStyle(
-                color: palette.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            // Прогресс, как в окне задачи Todoist (блог «New task view»).
-            if (progress.total > 0) ...[
-              const SizedBox(width: 10),
-              SizedBox.square(
-                dimension: 14,
-                child: CircularProgressIndicator(
-                  value: progress.done / progress.total,
-                  strokeWidth: 2.5,
-                  color: palette.accent,
-                  backgroundColor: palette.divider,
+        Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Row(
+            children: [
+              Text(
+                l10n.subtasks,
+                style: TextStyle(
+                  color: palette.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                '${progress.done}/${progress.total}',
-                style: TextStyle(color: palette.textSecondary, fontSize: 12),
+              // Прогресс, как в окне задачи Todoist (блог «New task view»).
+              if (progress.total > 0) ...[
+                const SizedBox(width: 10),
+                SizedBox.square(
+                  dimension: 14,
+                  child: CircularProgressIndicator(
+                    value: progress.done / progress.total,
+                    strokeWidth: 2.5,
+                    color: palette.accent,
+                    backgroundColor: palette.divider,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${progress.done}/${progress.total}',
+                  style: TextStyle(color: palette.textSecondary, fontSize: 12),
+                ),
+              ],
+              const Spacer(),
+              TextButton(
+                onPressed: () =>
+                    setState(() => _showCompleted = !_showCompleted),
+                child: Text(
+                  _showCompleted ? l10n.hideCompleted : l10n.showCompleted,
+                ),
               ),
             ],
-            const Spacer(),
-            TextButton(
-              onPressed: () => setState(() => _showCompleted = !_showCompleted),
-              child: Text(
-                _showCompleted ? l10n.hideCompleted : l10n.showCompleted,
-              ),
-            ),
-          ],
+          ),
         ),
         TaskOrderScope(
           order: (ws) => [
@@ -93,6 +98,17 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
             onAddAt: (v) => setState(() => _addAt = v),
             addLabel: l10n.addSubtask,
             canAdd: !widget.readOnly,
+            // Подзадачи переставляются и меняют уровень, но из родителя не
+            // выходят; в архиве — только просмотр.
+            gutter: true,
+            drop: widget.readOnly
+                ? null
+                : ProjectDrop(
+                    ws: ws,
+                    projectId: ws.rootProjectOf(task.id),
+                    parentId: task.id,
+                    baseDepth: ws.taskDepth(task.id),
+                  ),
           ),
         ),
       ],

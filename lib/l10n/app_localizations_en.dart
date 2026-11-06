@@ -1162,4 +1162,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectAll => 'Select all';
+
+  @override
+  String get dragHandleHint => 'Drag to move';
 }

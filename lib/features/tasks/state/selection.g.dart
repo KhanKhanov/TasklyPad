@@ -47,7 +47,7 @@ final class TaskSelectionProvider
   }
 }
 
-String _$taskSelectionHash() => r'7e91e1d4fa29ec2bf4c13c205e0144510e840742';
+String _$taskSelectionHash() => r'cd1f09e85f1b63614d8fe8ce6dabc1e1de7bb015';
 
 /// Выделение задач. Сбрасывается при смене вида (оболочка) и после действия
 /// над выделенными.

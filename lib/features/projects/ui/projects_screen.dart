@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import 'project_dialog.dart';
+import 'project_drag.dart';
 import 'project_tile.dart';
 
 /// Экран «Мои проекты», как в Todoist: активные проекты деревом, а при
@@ -28,6 +29,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
     final archived = ws.archivedProjects;
+    final tree = ws.projectTree();
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -79,13 +81,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   archived: true,
                 ),
             ] else
-              for (final item in ws.projectTree())
-                ProjectTile(
+              for (final item in tree)
+                ProjectDragTile(
                   key: ValueKey(item.value.id),
-                  project: item.value,
-                  count: ws.activeTaskCount(item.value.id),
-                  depth: item.depth,
-                  childCount: item.childCount,
+                  item: item,
+                  items: tree,
+                  ws: ws,
+                  surface: 'screen',
+                  child: ProjectTile(
+                    project: item.value,
+                    count: ws.activeTaskCount(item.value.id),
+                    depth: item.depth,
+                    childCount: item.childCount,
+                  ),
                 ),
           ],
         ),

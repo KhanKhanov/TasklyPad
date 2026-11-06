@@ -10,10 +10,12 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../labels/ui/label_tile.dart';
 import '../../projects/ui/project_dialog.dart';
+import '../../projects/ui/project_drag.dart';
 import '../../projects/ui/project_tile.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
+import '../../tasks/ui/task_drop_places.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
 import 'sidebar_items.dart';
@@ -86,6 +88,7 @@ class Sidebar extends ConsumerWidget {
     final favorites = ws.favoriteProjects;
     // Счётчик «Сегодня» меняется в полночь.
     final today = ref.watch(todayProvider);
+    final tree = ws.projectTree();
     final favoriteLabels = [
       for (final l in ws.labels)
         if (l.isFavorite) l,
@@ -103,13 +106,17 @@ class Sidebar extends ConsumerWidget {
           openQuickAdd(context, ref, location);
         },
       ),
+      // Бросок задач на проект — в конец его задач без раздела.
       if (inbox != null)
-        SidebarNavItem(
-          icon: Icons.inbox_outlined,
-          label: l10n.inbox,
-          count: ws.activeTaskCount(inbox.id),
-          selected: location == '/' || location == '/project/${inbox.id}',
-          onTap: () => navigate(context, '/'),
+        ProjectDropSlot(
+          projectId: inbox.id,
+          child: SidebarNavItem(
+            icon: Icons.inbox_outlined,
+            label: l10n.inbox,
+            count: ws.activeTaskCount(inbox.id),
+            selected: location == '/' || location == '/project/${inbox.id}',
+            onTap: () => navigate(context, '/'),
+          ),
         ),
       SidebarNavItem(
         icon: Icons.calendar_today_outlined,
@@ -154,11 +161,14 @@ class Sidebar extends ConsumerWidget {
       if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
         SidebarGroupHeader(label: l10n.favorites),
         for (final p in favorites)
-          ProjectTile(
+          ProjectDropSlot(
             key: ValueKey('fav-${p.id}'),
-            project: p,
-            count: ws.activeTaskCount(p.id),
-            selected: location == '/project/${p.id}',
+            projectId: p.id,
+            child: ProjectTile(
+              project: p,
+              count: ws.activeTaskCount(p.id),
+              selected: location == '/project/${p.id}',
+            ),
           ),
         for (final l in favoriteLabels)
           LabelTile(
@@ -178,14 +188,24 @@ class Sidebar extends ConsumerWidget {
           onPressed: () => showProjectDialog(context),
         ),
       ),
-      for (final item in ws.projectTree())
-        ProjectTile(
+      for (final item in tree)
+        ProjectDropSlot(
           key: ValueKey(item.value.id),
-          project: item.value,
-          count: ws.activeTaskCount(item.value.id),
-          depth: item.depth,
-          childCount: item.childCount,
-          selected: location == '/project/${item.value.id}',
+          projectId: item.value.id,
+          // Проект тянется за всю строку; задачи на него по-прежнему падают.
+          child: ProjectDragTile(
+            item: item,
+            items: tree,
+            ws: ws,
+            surface: 'side',
+            child: ProjectTile(
+              project: item.value,
+              count: ws.activeTaskCount(item.value.id),
+              depth: item.depth,
+              childCount: item.childCount,
+              selected: location == '/project/${item.value.id}',
+            ),
+          ),
         ),
     ];
   }

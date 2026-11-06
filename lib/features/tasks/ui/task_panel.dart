@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../domain/workspace.dart';
+import '../../common/ui/drag_layer.dart';
 import 'task_actions.dart';
 import 'task_dialog.dart';
 import 'task_order.dart';
@@ -91,15 +92,19 @@ class _TaskPanelState extends ConsumerState<TaskPanel> {
     // Свой ScaffoldMessenger: тосты окна видны поверх затемнения и не
     // теряются при переходе к соседней задаче.
     return ScaffoldMessenger(
-      child: Focus(
-        focusNode: _keys,
-        autofocus: true,
-        onKeyEvent: _onKey,
-        child: TaskDialog(
-          key: ValueKey(_id),
-          taskId: _id,
-          onPrevious: previous == null ? null : () => _go(previous),
-          onNext: next == null ? null : () => _go(next),
+      // Перетаскивание подзадач внутри окна: свой приёмник, бросок вне окна
+      // ничего не делает.
+      child: DragLayer(
+        child: Focus(
+          focusNode: _keys,
+          autofocus: true,
+          onKeyEvent: _onKey,
+          child: TaskDialog(
+            key: ValueKey(_id),
+            taskId: _id,
+            onPrevious: previous == null ? null : () => _go(previous),
+            onNext: next == null ? null : () => _go(next),
+          ),
         ),
       ),
     );

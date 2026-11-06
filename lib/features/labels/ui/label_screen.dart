@@ -18,6 +18,7 @@ import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_order.dart';
 import '../../views/state/view_options.dart';
 import '../../views/ui/grouped_task_list.dart';
+import '../../views/ui/view_groups.dart';
 import '../../views/ui/view_options_button.dart';
 import '../../views/ui/view_sort_keys.dart';
 import 'label_menu.dart';
