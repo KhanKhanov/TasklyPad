@@ -43,4 +43,31 @@ void main() {
     );
     expect(upcoming.applied, 0);
   });
+
+  group('allowsDrag', () {
+    final cases = <(ViewType, Grouping, Sorting, bool)>[
+      (ViewType.project, Grouping.none, Sorting.byDefault, true),
+      (ViewType.today, Grouping.none, Sorting.byDefault, true),
+      (ViewType.today, Grouping.none, Sorting.manual, true),
+      (ViewType.upcoming, Grouping.none, Sorting.manual, true),
+      // Группировка у «Предстоящего» не действует (из импорта).
+      (ViewType.upcoming, Grouping.priority, Sorting.byDefault, true),
+      (ViewType.project, Grouping.priority, Sorting.byDefault, false),
+      (ViewType.today, Grouping.dueDate, Sorting.byDefault, false),
+      (ViewType.project, Grouping.none, Sorting.alphabetically, false),
+      (ViewType.upcoming, Grouping.none, Sorting.priority, false),
+      (ViewType.label, Grouping.none, Sorting.byDefault, false),
+      (ViewType.filter, Grouping.none, Sorting.byDefault, false),
+    ];
+    for (final (type, grouping, sorting, want) in cases) {
+      test('$type, $grouping, $sorting → $want', () {
+        final options = ViewOptions(
+          viewType: type,
+          grouping: grouping,
+          sorting: sorting,
+        );
+        expect(options.allowsDrag, want);
+      });
+    }
+  });
 }

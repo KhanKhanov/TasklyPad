@@ -151,6 +151,38 @@ List<String?> rekeyInOrder(List<String> keys) {
   return result;
 }
 
+/// Ключи для вставки [count] элементов на место [index] списка [keys],
+/// упорядоченного как на экране: перетаскивание одной или нескольких строк.
+/// [inserted] — ключи новых, подряд; [rekeyed] — новые ключи остальных (`null`
+/// — ключ остаётся). Меняются только не возрастающие ключи: равные
+/// (параллельные вставки на двух устройствах) и неверные, в том числе вдали
+/// от места вставки — порядок заодно становится строгим. Возрастающие ключи
+/// не переписываются.
+({List<String> inserted, List<String?> rekeyed}) insertionKeys(
+  List<String> keys,
+  int index,
+  int count,
+) {
+  RangeError.checkValueInInterval(index, 0, keys.length, 'index');
+  // Пустой ключ на месте вставки: [rekeyInOrder] считает его неверным и
+  // выдаёт новый, а равным соседям справа — следующие за ним.
+  final withGap = rekeyInOrder([
+    ...keys.sublist(0, index),
+    '',
+    ...keys.sublist(index),
+  ]);
+  String? effective(int i) =>
+      withGap[i] ?? _validKey(keys[i > index ? i - 1 : i]);
+  return (
+    inserted: keysBetween(
+      index == 0 ? null : effective(index - 1),
+      index == keys.length ? null : effective(index + 1),
+      count,
+    ),
+    rekeyed: [...withGap.sublist(0, index), ...withGap.sublist(index + 1)],
+  );
+}
+
 String? _validKey(String key) => key.isEmpty || key.endsWith('0') ? null : key;
 
 /// Ключ для добавления в конец списка [keys].

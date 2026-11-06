@@ -52,13 +52,28 @@ final class BulkTaskCommands {
 
   /// «Перенести в…» — в конец проекта или раздела, в порядке [ids].
   Future<Undo> move(List<String> ids, String projectId, String? sectionId) =>
-      _mutator.batch(() async {
-        final ws = await _read();
-        return _mutator.combine([
-          for (final id in _roots(ws, ids))
-            await _tasks.move(id, projectId: projectId, sectionId: sectionId),
-        ]);
-      });
+      moveMany(ids, projectId: projectId, sectionId: sectionId);
+
+  /// Поставить выделенные подряд на одно место (перетаскивание, «Перенести
+  /// в…»), в порядке [ids]; место — как у [TaskCommands.placeAll].
+  Future<Undo> moveMany(
+    List<String> ids, {
+    String? projectId,
+    String? sectionId,
+    String? parentId,
+    String? afterId,
+    bool atTop = false,
+  }) => _mutator.batch(() async {
+    final roots = _roots(await _read(), ids);
+    return _tasks.placeAll(
+      roots,
+      projectId: projectId,
+      sectionId: sectionId,
+      parentId: parentId,
+      afterId: afterId,
+      atTop: atTop,
+    );
+  });
 
   /// «Метки» добавляют [labelIds] к меткам каждой задачи (help: «Adds a
   /// label»); снятых нет. Задача, у которой прибавились бы метки сверх

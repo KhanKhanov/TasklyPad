@@ -4,6 +4,8 @@ import '../../../data/projection/entity_fields.dart';
 import '../../../domain/models.dart';
 import '../../../domain/recurrence.dart';
 import '../../../domain/rules.dart';
+import '../../../domain/view_options.dart';
+import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import 'due_dates.dart';
@@ -104,9 +106,12 @@ final class TaskCommands {
     final text = content.trim();
     if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
     if (due != null && due.isRecurring) _next(due, _clock.nowWall());
-    await _update(id, {
-      TaskFields.content: text,
-      TaskFields.due: _dueValue(due),
+    await _mutator.batch(() async {
+      final task = await _alive(id);
+      await _mutator.update(EntityTypes.task, id, {
+        TaskFields.content: text,
+        ..._dueFields(task, due),
+      });
     });
   }
 
@@ -127,15 +132,92 @@ final class TaskCommands {
   /// такой задачи отказало бы потом.
   Future<Undo> setDue(String id, Due? due, {Workspace? snapshot}) async {
     if (due != null && due.isRecurring) _next(due, _clock.nowWall());
-    await _alive(id, snapshot);
+    return _mutator.batch(() async {
+      final task = await _alive(id, snapshot);
+      final undo = await _mutator.capture([_dueTarget(task, due)]);
+      await _mutator.update(EntityTypes.task, id, _dueFields(task, due));
+      return undo;
+    });
+  }
+
+  /// Бросок на другой день («Предстоящее», зона «завтра» в «Сегодня»): только
+  /// дата вхождения, как в планировщике ([dueOnDate]), время, пояс и правило
+  /// остаются (решение 8 плана M4). Тот же день — без записи и с пустой
+  /// отменой: тоста без видимой перемены нет.
+  Future<Undo> moveToDay(String id, String date) => _mutator.batch(() async {
+    final ws = await _read();
+    final task = await _alive(id, ws);
+    if (task.due?.date == date) return _mutator.capture(const []);
+    return setDue(id, dueOnDate(task.due, date), snapshot: ws);
+  });
+
+  /// Бросок на место в дне [date] («Сегодня», «Предстоящее»): сразу после
+  /// [afterId] (`null` — первой), с датой дня, если задача с другого дня.
+  /// Порядок задаёт `day_order_key` (решение 8 плана M4). При [sorting]
+  /// «Вручную» место — среди всех задач дня, при «Умной» — среди задач с теми
+  /// же сроком, приоритетом и дедлайном: выше ручного порядка они сильнее
+  /// (решение 1А «Ход M4.9»).
+  ///
+  /// Задачи без ключа стоят после задач с ключом, поэтому ключ получают все
+  /// задачи выше места, а хвост без ключа остаётся без записей. [afterId] —
+  /// строка над местом броска: из группы выше — первой в своей группе, из
+  /// группы ниже — последней. Сортировка с направлением — ошибка вызывающего
+  /// кода: там порядок дня не действует ([ViewOptions.allowsDrag]).
+  Future<Undo> reorderInDay(
+    String id,
+    String date, {
+    String? afterId,
+    Sorting sorting = Sorting.byDefault,
+  }) => _mutator.batch(() async {
+    if (sorting.hasDirection) {
+      throw ArgumentError.value(sorting, 'sorting', 'порядок дня не действует');
+    }
+    final ws = await _read();
+    final task = await _alive(id, ws);
+    final sameDay = task.due?.date == date;
+    final due = dueOnDate(task.due, date);
+    if (!sameDay && due.isRecurring) _next(due, _clock.nowWall());
+    final moved = task.copyWith(due: due);
+    final order = ws.taskOrder(DefaultOrder.smart, sorting: sorting);
+    bool inClass(Task t) =>
+        sorting == Sorting.manual || order.sameBeforeDayOrder(moved, t);
+    final full = ws.todayTasks(date, order: order);
+    final others = [
+      for (final t in full)
+        if (t.id != id && inClass(t)) t,
+    ];
+    final at = afterId == null ? -1 : full.indexWhere((t) => t.id == afterId);
+    final index = afterId == null
+        ? 0
+        : at < 0
+        ? others.length
+        : full.take(at + 1).where((t) => t.id != id && inClass(t)).length;
+    final before = full.takeWhile((t) => t.id != id).where(inClass).length;
+    if (sameDay && before == index) return _mutator.capture(const []);
+    final keys = [for (final t in others) t.dayOrderKey];
+    final lastKeyed = keys.lastIndexWhere((k) => k.isNotEmpty);
+    final cut = index > lastKeyed + 1 ? index : lastKeyed + 1;
+    final place = insertionKeys(keys.sublist(0, cut), index, 1);
+    final rekeyed = [
+      for (final (i, key) in place.rekeyed.indexed)
+        if (key != null) (others[i].id, key),
+    ];
     final undo = await _mutator.capture([
-      _target(id, {TaskFields.due}),
+      _target(id, {if (!sameDay) TaskFields.due, TaskFields.dayOrderKey}),
+      for (final (other, _) in rekeyed)
+        _target(other, {TaskFields.dayOrderKey}),
     ]);
+    for (final (other, key) in rekeyed) {
+      await _mutator.update(EntityTypes.task, other, {
+        TaskFields.dayOrderKey: key,
+      });
+    }
     await _mutator.update(EntityTypes.task, id, {
-      TaskFields.due: _dueValue(due),
+      if (!sameDay) TaskFields.due: _dueValue(due),
+      TaskFields.dayOrderKey: place.inserted.single,
     });
     return undo;
-  }
+  });
 
   /// «Перенести» у блока «Просрочено» (решение 10 плана M4): срок задач [ids]
   /// — на дату [date] одним действием с одним «Отменить». Время, пояс и
@@ -154,15 +236,16 @@ final class TaskCommands {
           for (final t in ws.overdueTasks(isoDate(_clock.nowWall())))
             if (wanted.contains(t.id)) t,
         ];
+        Due? moved(Task t) => date == null ? null : dueOnDate(t.due, date);
         final undo = await _mutator.capture([
-          for (final t in tasks) _target(t.id, {TaskFields.due}),
+          for (final t in tasks) _dueTarget(t, moved(t)),
         ]);
         for (final t in tasks) {
-          await _mutator.update(EntityTypes.task, t.id, {
-            TaskFields.due: _dueValue(
-              date == null ? null : dueOnDate(t.due, date),
-            ),
-          });
+          await _mutator.update(
+            EntityTypes.task,
+            t.id,
+            _dueFields(t, moved(t)),
+          );
         }
         return undo;
       });
@@ -268,7 +351,7 @@ final class TaskCommands {
         : const <String>[];
     final undo = await _mutator.capture(
       [
-        _target(task.id, {TaskFields.due}),
+        _dueTarget(task, next),
         for (final s in reset)
           _target(s, {
             TaskFields.isCompleted,
@@ -293,9 +376,7 @@ final class TaskCommands {
       // Запись могла быть удалена «Отменить» — выполнение возвращает её.
       CompletionFields.deleted: false,
     });
-    await _mutator.update(EntityTypes.task, task.id, {
-      TaskFields.due: _dueValue(next),
-    });
+    await _mutator.update(EntityTypes.task, task.id, _dueFields(task, next));
     for (final s in reset) {
       await _mutator.update(EntityTypes.task, s, {
         TaskFields.isCompleted: false,
@@ -322,12 +403,8 @@ final class TaskCommands {
     // Сначала само правило: битое — отказ даже у выполненной задачи.
     final next = postponedDue(due, _clock.nowWall());
     if (task.isCompleted || next == null) return _mutator.capture(const []);
-    final undo = await _mutator.capture([
-      _target(id, {TaskFields.due}),
-    ]);
-    await _mutator.update(EntityTypes.task, id, {
-      TaskFields.due: _dueValue(next),
-    });
+    final undo = await _mutator.capture([_dueTarget(task, next)]);
+    await _mutator.update(EntityTypes.task, id, _dueFields(task, next));
     return undo;
   });
 
@@ -503,16 +580,43 @@ final class TaskCommands {
     String? parentId,
     String? afterId,
     bool atTop = false,
-  }) async {
+  }) => placeAll(
+    [id],
+    projectId: projectId,
+    sectionId: sectionId,
+    parentId: parentId,
+    afterId: afterId,
+    atTop: atTop,
+  );
+
+  /// Поставить задачи [roots] с подзадачами подряд на одно место: «Перенести
+  /// в…» и перетаскивание, одной или нескольких (решение 8 плана M4). Каждая
+  /// задача — одна правка: место и ключ одним действием, поэтому перенос на
+  /// другом устройстве даёт одну карточку. Проект, раздел и родитель пишутся,
+  /// только если место меняется: у подзадач они намеренно устаревшие
+  /// (SYNC_DESIGN «Специальные случаи»), и перестановка на месте спорила бы
+  /// с их правками. Равные ключи соседей разводятся здесь же (О-8). Задачи
+  /// уже на этом месте — без записи и с пустой отменой.
+  Future<Undo> placeAll(
+    List<String> roots, {
+    String? projectId,
+    String? sectionId,
+    String? parentId,
+    String? afterId,
+    bool atTop = false,
+  }) => _mutator.batch(() async {
     final ws = await _read();
-    await _alive(id, ws);
-    final subtree = ws.taskSubtree(id);
+    for (final id in roots) {
+      await _alive(id, ws);
+    }
     if (parentId != null) {
-      if (subtree.contains(parentId)) {
-        throw const CommandRejected(RejectReason.cycle);
-      }
-      if (ws.taskDepth(parentId) + ws.taskHeight(id) > Limits.taskLevels) {
-        throw const CommandRejected(RejectReason.tooDeep);
+      for (final id in roots) {
+        if (ws.taskSubtree(id).contains(parentId)) {
+          throw const CommandRejected(RejectReason.cycle);
+        }
+        if (ws.taskDepth(parentId) + ws.taskHeight(id) > Limits.taskLevels) {
+          throw const CommandRejected(RejectReason.tooDeep);
+        }
       }
     }
     final place = _place(
@@ -521,32 +625,95 @@ final class TaskCommands {
       sectionId: sectionId,
       parentId: parentId,
     );
-    final siblings = [
-      for (final t in ws.children(
-        parentId,
-        projectId: place.projectId,
-        sectionId: place.sectionId,
-      ))
-        if (t.id != id) t,
+    final moved = roots.toSet();
+    final siblings = ws.children(
+      parentId,
+      projectId: place.projectId,
+      sectionId: place.sectionId,
+    );
+    final others = [
+      for (final t in siblings)
+        if (!moved.contains(t.id)) t,
     ];
-    // Пишутся поля только самой задачи: проект и раздел подзадач вычисляются
-    // по дереву (Workspace.rootProjectOf). Запись в подзадачи спорила бы с
-    // их параллельными правками и удалением на другом устройстве.
+    final index = _insertIndex(siblings, moved, afterId: afterId, atTop: atTop);
+    final target = [
+      for (final t in others.take(index)) t.id,
+      ...roots,
+      for (final t in others.skip(index)) t.id,
+    ];
+    if (_sameOrder(target, [for (final t in siblings) t.id])) {
+      return _mutator.capture(const []);
+    }
+    final keys = insertionKeys(
+      [for (final t in others) t.orderKey],
+      index,
+      roots.length,
+    );
+    final rekeyed = [
+      for (final (i, key) in keys.rekeyed.indexed)
+        if (key != null) (others[i].id, key),
+    ];
+    bool samePlace(String id) =>
+        ws.taskParent(id) == parentId &&
+        (parentId != null ||
+            (ws.rootProjectOf(id) == place.projectId &&
+                ws.rootSectionOf(id)?.id == place.sectionId));
+    // Только то, что правка пишет: лишнее поле откатило бы перенос с другого
+    // устройства, пока виден тост.
     final undo = await _mutator.capture([
-      _target(id, {
-        TaskFields.projectId,
-        TaskFields.sectionId,
-        TaskFields.parentId,
-        TaskFields.orderKey,
-      }),
+      for (final id in roots)
+        _target(id, {
+          if (!samePlace(id)) ...{
+            TaskFields.projectId,
+            TaskFields.sectionId,
+            TaskFields.parentId,
+          },
+          TaskFields.orderKey,
+        }),
+      for (final (other, _) in rekeyed) _target(other, {TaskFields.orderKey}),
     ]);
-    await _mutator.update(EntityTypes.task, id, {
-      TaskFields.projectId: place.projectId,
-      TaskFields.sectionId: place.sectionId,
-      TaskFields.parentId: parentId,
-      TaskFields.orderKey: _keyFor(siblings, afterId: afterId, atTop: atTop),
-    });
+    for (final (other, key) in rekeyed) {
+      await _mutator.update(EntityTypes.task, other, {
+        TaskFields.orderKey: key,
+      });
+    }
+    for (final (i, id) in roots.indexed) {
+      await _mutator.update(EntityTypes.task, id, {
+        if (!samePlace(id)) ...{
+          TaskFields.projectId: place.projectId,
+          TaskFields.sectionId: place.sectionId,
+          TaskFields.parentId: parentId,
+        },
+        TaskFields.orderKey: keys.inserted[i],
+      });
+    }
     return undo;
+  });
+
+  /// Место среди соседей без [moved]: после [afterId] (переносимый [afterId]
+  /// — на его месте), в начало при [atTop] или в конец. Считается по
+  /// соседям, а не по экрану: скрытые выполненные место не сдвигают.
+  static int _insertIndex(
+    List<Task> siblings,
+    Set<String> moved, {
+    String? afterId,
+    bool atTop = false,
+  }) {
+    final at = afterId == null
+        ? -1
+        : siblings.indexWhere((t) => t.id == afterId);
+    if (at < 0) {
+      return atTop ? 0 : siblings.where((t) => !moved.contains(t.id)).length;
+    }
+    return siblings.take(at + 1).where((t) => !moved.contains(t.id)).length;
+  }
+
+  static bool _sameOrder(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Сделать подзадачей предыдущей задачи (Ctrl+]); в конец её подзадач.
@@ -580,10 +747,10 @@ final class TaskCommands {
     );
   }
 
-  /// Поднять выше соседа (перетаскивание — M4). `false` — задача уже первая.
+  /// Поднять выше соседа. `false` — задача уже первая.
   Future<bool> moveUp(String id) => _shift(id, up: true);
 
-  /// Опустить ниже соседа (перетаскивание — M4). `false` — задача уже последняя.
+  /// Опустить ниже соседа. `false` — задача уже последняя.
   Future<bool> moveDown(String id) => _shift(id, up: false);
 
   /// Дубликат задачи с незавершёнными подзадачами и метками — сразу после
@@ -813,6 +980,22 @@ final class TaskCommands {
     if (task == null) throw const CommandRejected(RejectReason.notFound);
     return task;
   }
+
+  /// Поля срока: ручной порядок дня относится к дню — срок на другой дате
+  /// снимает `day_order_key` той же правкой (О-71), иначе ключ старого дня
+  /// поставил бы задачу выше задач нового. Время внутри дня ключ не снимает.
+  static Map<String, Object?> _dueFields(Task task, Due? due) => {
+    TaskFields.due: _dueValue(due),
+    if (task.due?.date != due?.date) TaskFields.dayOrderKey: null,
+  };
+
+  /// Что возвращает «Отменить» после смены срока на [due]: только то, что
+  /// правка пишет ([_dueFields]). Лишнее поле откатило бы правку, пришедшую с
+  /// другого устройства, пока виден тост.
+  static UndoTarget _dueTarget(Task task, Due? due) => _target(task.id, {
+    TaskFields.due,
+    if (task.due?.date != due?.date) TaskFields.dayOrderKey,
+  });
 
   static UndoTarget _target(String id, Set<String> fields) =>
       (entityType: EntityTypes.task, entityId: id, fields: fields);

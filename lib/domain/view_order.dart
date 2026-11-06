@@ -70,6 +70,14 @@ final class TaskOrder {
     return byDefault != 0 ? byDefault : a.id.compareTo(b.id);
   }
 
+  /// В умном порядке [a] и [b] различает только ручной порядок дня: тот же
+  /// срок, приоритет и дедлайн (help «Default sorting order»). Перестановка
+  /// при «Умной» возможна только среди таких задач (решение 1А «Ход M4.9»).
+  bool sameBeforeDayOrder(Task a, Task b) =>
+      _byDue(a, b) == 0 &&
+      _byPriority(a, b) == 0 &&
+      _nullsLast(a.deadline, b.deadline) == 0;
+
   int _primary(Task a, Task b) => switch (sorting) {
     Sorting.byDefault => 0,
     // «Вручную» — в проекте, «Сегодня» и «Предстоящем» (help «Sort or group

@@ -52,4 +52,83 @@ void main() {
       [('a', 0, 2), ('a1', 1, 1), ('a2', 1, 0), ('b', 0, 0)],
     );
   });
+
+  group('treeDropPlace', () {
+    // a
+    //   b
+    //     c
+    // d
+    const items = [
+      TreeItem('a', 0, 1),
+      TreeItem('b', 1, 1),
+      TreeItem('c', 2, 0),
+      TreeItem('d', 0, 0),
+    ];
+    ({String? parentId, String? afterId, int depth})? place(
+      int index,
+      int depth, {
+      int height = 1,
+      int max = 4,
+    }) => treeDropPlace(
+      items,
+      (String s) => s,
+      index: index,
+      wantedDepth: depth,
+      movedHeight: height,
+      maxLevels: max,
+    );
+
+    final cases =
+        <(String, int, int, ({String? parentId, String? afterId, int depth})?)>[
+          (
+            'в начало — корень',
+            0,
+            0,
+            (parentId: null, afterId: null, depth: 0),
+          ),
+          (
+            'глубже первой строки нельзя',
+            0,
+            3,
+            (parentId: null, afterId: null, depth: 0),
+          ),
+          (
+            'под a первым — следующая b держит глубину 1',
+            1,
+            0,
+            (parentId: 'a', afterId: null, depth: 1),
+          ),
+          ('после c вровень', 3, 2, (parentId: 'b', afterId: 'c', depth: 2)),
+          ('после c под c', 3, 3, (parentId: 'c', afterId: null, depth: 3)),
+          ('после c корнем', 3, 0, (parentId: null, afterId: 'a', depth: 0)),
+          ('в конец корнем', 4, 0, (parentId: null, afterId: 'd', depth: 0)),
+          ('в конец под d', 4, 1, (parentId: 'd', afterId: null, depth: 1)),
+        ];
+    for (final (name, index, depth, want) in cases) {
+      test(name, () => expect(place(index, depth), want));
+    }
+
+    test('предел уровней зажимает глубину', () {
+      expect(place(3, 3, max: 3), (parentId: 'b', afterId: 'c', depth: 2));
+      expect(place(3, 3, height: 2), (parentId: 'b', afterId: 'c', depth: 2));
+    });
+
+    test('места нет: следующая строка глубже предела', () {
+      expect(place(2, 2, height: 3), isNull);
+    });
+
+    test('baseDepth — подзадачи в окне задачи не выходят выше', () {
+      const sub = [TreeItem('x', 1, 0), TreeItem('y', 1, 0)];
+      final result = treeDropPlace(
+        sub,
+        (String s) => s,
+        index: 2,
+        wantedDepth: 0,
+        movedHeight: 1,
+        maxLevels: 4,
+        baseDepth: 1,
+      );
+      expect(result, (parentId: null, afterId: 'y', depth: 1));
+    });
+  });
 }

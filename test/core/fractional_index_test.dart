@@ -162,4 +162,59 @@ void main() {
       expectIncreasing(apply(const ['', 'a0', 'b']));
     });
   });
+
+  group('insertionKeys', () {
+    void expectIncreasing(List<String> keys) {
+      for (var i = 1; i < keys.length; i++) {
+        expect(keys[i].compareTo(keys[i - 1]) > 0, isTrue, reason: '$keys');
+      }
+    }
+
+    List<String> apply(
+      List<String> keys,
+      int index,
+      ({List<String> inserted, List<String?> rekeyed}) place,
+    ) => [
+      for (var i = 0; i < index; i++) place.rekeyed[i] ?? keys[i],
+      ...place.inserted,
+      for (var i = index; i < keys.length; i++) place.rekeyed[i] ?? keys[i],
+    ];
+
+    test('обычное место — соседи не меняются', () {
+      final keys = sequence(4);
+      for (var index = 0; index <= keys.length; index++) {
+        for (final count in [1, 2, 10]) {
+          final place = insertionKeys(keys, index, count);
+          expect(place.inserted, hasLength(count));
+          expect(place.rekeyed.every((k) => k == null), isTrue);
+          expectIncreasing(apply(keys, index, place));
+        }
+      }
+    });
+
+    test('равные соседи — можно встать на любое место, порядок строгий', () {
+      const keys = ['V', 'V', 'V', 'X'];
+      for (var index = 0; index <= keys.length; index++) {
+        final place = insertionKeys(keys, index, 2);
+        expectIncreasing(apply(keys, index, place));
+      }
+    });
+
+    test(
+      'неверные ключи (пустой, на 0) получают новый; верный хвост — нет',
+      () {
+        const keys = ['V', '', 'W0', 'X', 'Y'];
+        final place = insertionKeys(keys, 1, 1);
+        expectIncreasing(apply(keys, 1, place));
+        expect(place.rekeyed[3], isNull);
+        expect(place.rekeyed[4], isNull);
+      },
+    );
+
+    test('пустой список', () {
+      final place = insertionKeys(const [], 0, 3);
+      expect(place.rekeyed, isEmpty);
+      expectIncreasing(place.inserted);
+    });
+  });
 }
