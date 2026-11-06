@@ -96,6 +96,58 @@ final class ProjectCommands {
     return undo;
   }
 
+  /// Перетаскивание проекта: сразу после [afterId] (`null` — первым) на уровне
+  /// [parentId] (`null` — верхний), с подпроектами. Проект перетаскивается сам,
+  /// без ручки; уровень — сдвигом, три уровня (help «Introduction to
+  /// projects», «Create a sub-project»). Родитель пишется, только если он
+  /// другой; равные ключи соседей разводятся здесь же (О-8). Без «Отменить»:
+  /// help говорит о нём только у задач (решение 8 плана M4).
+  Future<void> reorder(String id, {String? parentId, String? afterId}) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        _alive(ws, id, protectInbox: true);
+        if (parentId != null) {
+          if (ws.projectSubtree(id).contains(parentId)) {
+            throw const CommandRejected(RejectReason.cycle);
+          }
+          _checkParent(ws, parentId, height: ws.projectHeight(id));
+          if (ws.isProjectArchived(parentId)) {
+            throw const CommandRejected(RejectReason.notFound);
+          }
+        }
+        final level = [
+          for (final p in ws.childProjects(parentId))
+            if (!p.isInbox) p,
+        ];
+        final others = [
+          for (final p in level)
+            if (p.id != id) p,
+        ];
+        final after = others.indexWhere((p) => p.id == afterId);
+        final index = afterId == null
+            ? 0
+            : after < 0
+            ? others.length
+            : after + 1;
+        final sameParent = ws.projectParent(id) == parentId;
+        if (sameParent && level.indexWhere((p) => p.id == id) == index) return;
+        final keys = insertionKeys(
+          [for (final p in others) p.orderKey],
+          index,
+          1,
+        );
+        for (final (i, key) in keys.rekeyed.indexed) {
+          if (key == null) continue;
+          await _mutator.update(EntityTypes.project, others[i].id, {
+            ProjectFields.orderKey: key,
+          });
+        }
+        await _mutator.update(EntityTypes.project, id, {
+          if (!sameParent) ProjectFields.parentId: parentId,
+          ProjectFields.orderKey: keys.inserted.single,
+        });
+      });
+
   /// Архивировать — подпроекты уходят в архив вместе с ним.
   Future<void> archive(String id) =>
       _update(id, {ProjectFields.isArchived: true}, protectInbox: true);

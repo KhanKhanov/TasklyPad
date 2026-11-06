@@ -58,6 +58,41 @@ final class LabelCommands {
   Future<void> setFavorite(String id, bool favorite) =>
       _update(id, {LabelFields.isFavorite: favorite});
 
+  /// Перетаскивание метки на странице «Фильтры и метки»: сразу после [afterId]
+  /// (`null` — первой). Порядок меток перетаскиванием в help не описан
+  /// (допущение, О-69).
+  Future<void> reorder(String id, {String? afterId}) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        _alive(ws, id);
+        final all = ws.labels;
+        final others = [
+          for (final l in all)
+            if (l.id != id) l,
+        ];
+        final after = others.indexWhere((l) => l.id == afterId);
+        final index = afterId == null
+            ? 0
+            : after < 0
+            ? others.length
+            : after + 1;
+        if (all.indexWhere((l) => l.id == id) == index) return;
+        final keys = insertionKeys(
+          [for (final l in others) l.orderKey],
+          index,
+          1,
+        );
+        for (final (i, key) in keys.rekeyed.indexed) {
+          if (key == null) continue;
+          await _mutator.update(EntityTypes.label, others[i].id, {
+            LabelFields.orderKey: key,
+          });
+        }
+        await _mutator.update(EntityTypes.label, id, {
+          LabelFields.orderKey: keys.inserted.single,
+        });
+      });
+
   /// Удалить (tombstone) одной op; связи не трогаются. Что видно на задачах
   /// после удаления — SYNC_DESIGN «Специальные случаи».
   Future<void> delete(String id) async {
