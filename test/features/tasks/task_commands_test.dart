@@ -145,18 +145,57 @@ void main() {
     },
   );
 
-  test('uncomplete — возвращённая задача встаёт в конец незавершённых '
-      '(item_uncomplete в Todoist API)', () async {
+  test('uncomplete — возвращённая задача встаёт на прежнее место, ключ '
+      'порядка не пишется (решение 4А «M4.10a»)', () async {
     final a = await app.tasks.add(content: 'a');
     await app.tasks.add(content: 'b');
     await app.tasks.add(content: 'c');
+    final key = (await app.read()).task(a)!.orderKey;
     await app.tasks.complete(a);
     await app.tasks.uncomplete(a);
-    expect(await inboxOrder(), ['b', 'c', 'a']);
+    expect(await inboxOrder(), ['a', 'b', 'c']);
+    expect((await app.read()).task(a)!.orderKey, key);
   });
 
-  test('uncomplete — архивный раздел корневой задачи возвращается и встаёт '
-      'в конец разделов; отмена возвращает как было', () async {
+  test('uncomplete — соседи переставлены, пока задача выполнена → встаёт '
+      'по своему ключу', () async {
+    await app.tasks.add(content: 'a');
+    final b = await app.tasks.add(content: 'b');
+    await app.tasks.add(content: 'c');
+    await app.tasks.add(content: 'd');
+    await app.tasks.complete(b);
+    // «d» — в начало: b по-прежнему между a и c.
+    final d = (await app.read()).projectView(inboxProjectId).unsectioned.last;
+    await app.tasks.move(d.value.id, projectId: inboxProjectId, atTop: true);
+    await app.tasks.uncomplete(b);
+    expect(await inboxOrder(), ['d', 'a', 'b', 'c']);
+  });
+
+  test('uncomplete — ключ совпал с ключом активного соседа → новый ключ '
+      'только у возвращённой, на том же месте', () async {
+    final a = await app.tasks.add(content: 'a');
+    final b = await app.tasks.add(content: 'b');
+    final c = await app.tasks.add(content: 'c');
+    await app.tasks.complete(b);
+    // Другое устройство поставило «c» на тот же ключ, что у «b».
+    final ws = await app.read();
+    await device.services.mutator.update(EntityTypes.task, c, {
+      TaskFields.orderKey: ws.task(b)!.orderKey,
+    });
+    final before = (await app.read()).task(a)!.orderKey;
+    await app.tasks.uncomplete(b);
+    final after = await app.read();
+    expect(after.task(b)!.orderKey, isNot(after.task(c)!.orderKey));
+    expect(after.task(a)!.orderKey, before);
+    // Место — как при равных ключах (ключ, затем id): b и c рядом за a.
+    final order = await inboxOrder();
+    expect(order.first, 'a');
+    expect(order.sublist(1).toSet(), {'b', 'c'});
+    expect(order.indexOf('b') < order.indexOf('c'), b.compareTo(c) < 0);
+  });
+
+  test('uncomplete — архивный раздел корневой задачи возвращается на прежнее '
+      'место; отмена возвращает как было', () async {
     final p = await app.projects.add(name: 'Работа');
     final s1 = await app.sections.add(p, name: 'Старое');
     await app.sections.add(p, name: 'Неделя');
@@ -176,7 +215,8 @@ void main() {
 
     final undo = await app.tasks.uncomplete(t);
     ws = await app.read();
-    expect([for (final s in ws.sectionsOf(p)) s.name], ['Неделя', 'Старое']);
+    expect([for (final s in ws.sectionsOf(p)) s.name], ['Старое', 'Неделя']);
+    expect(ws.section(s1)!.orderKey, before.section);
     expect(ws.task(t)!.isCompleted, isFalse);
     // Возвращается только эта задача: остальные задачи архивного раздела
     // остались завершёнными (help «Introduction to sections»).
@@ -191,14 +231,14 @@ void main() {
     expect(ws.task(t)!.completedAt, before.completedAt);
   });
 
-  test('uncomplete подзадачи — завершённый родитель встаёт в конец своих '
-      'незавершённых соседей', () async {
+  test('uncomplete подзадачи — завершённый родитель возвращается на прежнее '
+      'место среди соседей', () async {
     final parent = await app.tasks.add(content: 'Родитель');
     final child = await app.tasks.add(content: 'Ребёнок', parentId: parent);
     await app.tasks.add(content: 'b');
     await app.tasks.complete(parent);
     await app.tasks.uncomplete(child);
-    expect(await inboxOrder(), ['b', 'Родитель', 'Ребёнок']);
+    expect(await inboxOrder(), ['Родитель', 'Ребёнок', 'b']);
   });
 
   test('uncomplete незавершённой задачи — ни одной op, раздел из архива не '

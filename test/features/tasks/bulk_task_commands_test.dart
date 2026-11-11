@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/models.dart';
 import 'package:planner/domain/rules.dart';
 
@@ -329,5 +330,26 @@ void main() {
     final ws = await app.read();
     expect(ws.task(empty)!.labelIds, [labels.first]);
     expect(ws.task(full)!.labelIds, hasLength(Limits.labelsPerTask + 1));
+  });
+
+  test('«Вернуть» двух выполненных с одинаковым ключом → ключи разные, у '
+      'соседа ключ прежний (решение 4А «M4.10a»)', () async {
+    final a = await app.tasks.add(content: 'a');
+    final b = await app.tasks.add(content: 'b');
+    final c = await app.tasks.add(content: 'c');
+    await app.bulk.complete([b, c]);
+    // Другое устройство поставило «c» на ключ «b».
+    final key = (await app.read()).task(b)!.orderKey;
+    await device.services.mutator.update(EntityTypes.task, c, {
+      TaskFields.orderKey: key,
+    });
+    final aKey = (await app.read()).task(a)!.orderKey;
+
+    await app.bulk.uncomplete([b, c]);
+    final ws = await app.read();
+    expect(ws.task(b)!.isCompleted, isFalse);
+    expect(ws.task(c)!.isCompleted, isFalse);
+    expect(ws.task(b)!.orderKey, isNot(ws.task(c)!.orderKey));
+    expect(ws.task(a)!.orderKey, aKey);
   });
 }
