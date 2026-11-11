@@ -50,7 +50,7 @@ dependencies:
   home_widget: ^0.10.0
   window_manager: ^0.5.2
   tray_manager: ^0.8.3
-  hotkey_manager: ^0.2.3
+  hotkey_manager: ^0.3.0
   # Выбор папки синхронизации системным диалогом (Windows; Android — SAF в M6)
   file_selector: ^1.1.0
 
