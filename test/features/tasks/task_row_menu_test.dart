@@ -106,7 +106,27 @@ void main() {
       expect((await load(tester, app, id)).due?.date, '2026-10-24');
       expect(find.text('Due date changed'), findsOneWidget);
 
+      // Меню ещё открыто (решение 2А «M4.10a»): «Undo» в тосте нажимается
+      // сквозь него.
+      expect(find.text('Move to…'), findsOneWidget);
       await pick(tester, find.text('Undo'));
+      expect((await load(tester, app, id)).due, isNull);
+    });
+  });
+
+  testWidgets('меню открыто после «Tomorrow» — `Ctrl+Z` отменяет срок', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await pick(tester, find.byTooltip('Tomorrow'));
+      expect(find.text('Move to…'), findsOneWidget);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await settle(tester);
       expect((await load(tester, app, id)).due, isNull);
     });
   });
@@ -199,12 +219,18 @@ void main() {
       await openByKey(tester, 'Milk');
       await pick(tester, find.text('Move to…'));
       expect(find.byType(Dialog), findsOneWidget);
+      // «Перенести в…» закрывает меню (уточнение 12.11.2026 к решению 2А).
+      expect(find.text('Labels'), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
 
       await openByKey(tester, 'Milk');
       await pick(tester, find.text('Labels'));
       expect(find.byType(Dialog), findsOneWidget);
+      // «Метки» меню не закрывают: оно под окном.
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Labels'), findsOneWidget);
     });
   });
 
@@ -214,6 +240,7 @@ void main() {
       await addTask(tester, app, 'Milk');
       await openByKey(tester, 'Milk');
       await pick(tester, find.text('Duplicate'));
+      expect(find.text('Move to…'), findsNothing);
       final ws = (await tester.runAsync(app.repo.load))!;
       expect(
         ws.projectTasks(ws.inbox!.id).where((t) => t.content == 'Milk'),
@@ -238,6 +265,89 @@ void main() {
       );
       final ws = (await tester.runAsync(app.repo.load))!;
       expect(ws.task(id), isNull);
+      expect(find.text('Move to…'), findsNothing);
+    });
+  });
+
+  bool iconSelected(WidgetTester tester, String tooltip) => tester
+      .widget<IconButton>(
+        find.ancestor(
+          of: find.byTooltip(tooltip),
+          matching: find.byType(IconButton),
+        ),
+      )
+      .isSelected!;
+
+  testWidgets('«Priority 1» → меню открыто, отмечен P1; «Tomorrow» следом — '
+      'тоже без закрытия (решение 2А «M4.10a»)', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await pick(tester, find.byTooltip('Priority 1'));
+      expect(find.text('Move to…'), findsOneWidget);
+      expect(iconSelected(tester, 'Priority 1'), isTrue);
+      expect(iconSelected(tester, 'Priority 4'), isFalse);
+
+      await pick(tester, find.byTooltip('Tomorrow'));
+      expect(find.text('Move to…'), findsOneWidget);
+      final task = await load(tester, app, id);
+      expect(task.priority, 1);
+      expect(task.due?.date, '2026-10-24');
+    });
+  });
+
+  testWidgets('«Labels» → окно поверх меню; после «Done» меню открыто', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await tester.runAsync(() => app.labels.add(name: 'home'));
+      await settle(tester);
+      await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await pick(tester, find.text('Labels'));
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'home'));
+      await tester.pumpAndSettle();
+      await pick(tester, find.text('Done'));
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('Move to…'), findsOneWidget);
+    });
+  });
+
+  testWidgets('Esc → меню закрыто', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Move to…'), findsNothing);
+    });
+  });
+
+  testWidgets('щелчок вне меню → закрыто', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      // Пустое место области экрана, где стоит меню (справа от сайдбара).
+      await tester.tapAt(const Offset(1050, 760));
+      await tester.pumpAndSettle();
+      expect(find.text('Move to…'), findsNothing);
+    });
+  });
+
+  testWidgets('задачу удалили, пока меню открыто → меню закрыто', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await tester.runAsync(() => app.tasks.delete(id));
+      await settle(tester);
+      expect(find.text('Move to…'), findsNothing);
     });
   });
 
@@ -328,6 +438,11 @@ void main() {
       );
       final ws = (await tester.runAsync(app.repo.load))!;
       expect(ws.rootProjectOf(id), work);
+      // Меню закрыто до переноса, а тост «Undo» всё равно виден и работает.
+      expect(find.text('Move to…'), findsNothing);
+      await pick(tester, find.text('Undo'));
+      final back = (await tester.runAsync(app.repo.load))!;
+      expect(back.rootProjectOf(id), back.inbox!.id);
     });
   });
 
@@ -374,6 +489,57 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Move to…'), findsNothing);
       expect((await load(tester, app, id)).content, 'Report');
+    });
+  });
+
+  testWidgets('«Сегодня»: срок «Tomorrow» — строка ушла из списка, меню '
+      'открыто; «Delete» из того же меню → подтверждение, задача удалена', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(
+        tester,
+        app,
+        'Milk',
+        due: const Due(date: '2026-10-23'),
+      );
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await settle(tester);
+      await openByKey(tester, 'Milk');
+      await pick(tester, find.byTooltip('Tomorrow'));
+      expect(find.byType(TaskRow), findsNothing);
+      expect(find.text('Delete'), findsOneWidget);
+
+      await pick(tester, find.text('Delete'));
+      await pick(
+        tester,
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Delete'),
+        ),
+      );
+      final ws = (await tester.runAsync(app.repo.load))!;
+      expect(ws.task(id), isNull);
+      expect(find.text('Move to…'), findsNothing);
+    });
+  });
+
+  testWidgets('«Labels» открыто поверх меню, а задачу удалили → после окна '
+      'меню закрыто', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final id = await addTask(tester, app, 'Milk');
+      await openByKey(tester, 'Milk');
+      await pick(tester, find.text('Labels'));
+      await tester.runAsync(() => app.tasks.delete(id));
+      await settle(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('Move to…'), findsNothing);
     });
   });
 }

@@ -43,15 +43,28 @@ Future<void> removeDue(BuildContext context, WidgetRef ref, Task task) async {
 }
 
 /// Перенести в проект или раздел — с тостом «Отменить».
-Future<void> moveTaskTo(BuildContext context, WidgetRef ref, Task task) async {
-  final ws = ref.read(workspaceProvider).value;
+Future<void> moveTaskTo(BuildContext context, WidgetRef ref, Task task) =>
+    moveTaskWith(
+      context,
+      ProviderScope.containerOf(context, listen: false),
+      task,
+    );
+
+/// [moveTaskTo] с контейнером провайдеров: для вызова после закрытия меню,
+/// когда `ref` пункта меню уже не живёт.
+Future<void> moveTaskWith(
+  BuildContext context,
+  ProviderContainer container,
+  Task task,
+) async {
+  final ws = container.read(workspaceProvider).value;
   if (ws == null) return;
   final target = await pickPlace(context, ws);
   if (target == null || !context.mounted) return;
   await runWithUndo(
     context,
     AppLocalizations.of(context).taskMoved,
-    () => ref
+    () => container
         .read(taskCommandsProvider)
         .move(
           task.id,
