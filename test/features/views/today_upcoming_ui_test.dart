@@ -14,6 +14,7 @@ import 'package:planner/features/views/ui/week_strip.dart';
 
 import '../../app/support/pump_app.dart';
 import '../support/app_commands.dart';
+import '../support/view_options_finders.dart';
 
 // «Сегодня» и «Предстоящее» (план M4.6). Часы теста — пятница 23.10.2026,
 // неделя полосы — 19–25 октября. Локаль — en.
@@ -173,7 +174,7 @@ void main() {
       expect(find.text('Smart'), findsNWidgets(2));
       await tester.tap(find.text('Manual'));
       await settle(tester);
-      expect(find.text('Display: 1'), findsOneWidget);
+      expect(badge('1'), findsOneWidget);
       final view = (await tester.runAsync(
         () => app.viewsRepo.load(ViewType.today),
       ))!;
