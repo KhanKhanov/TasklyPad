@@ -12,11 +12,49 @@ import 'task_order.dart';
 /// Открыть панель задачи. На desktop — окно поверх списка (допущение О-4:
 /// в help не сказано, окно это или боковая панель). Соседи для `J`/`K` —
 /// из [TaskOrderScope] списка, откуда открыли.
+///
+/// Окно появляется из середины с половины своего размера и проявляется, а
+/// закрывается (в том числе `Esc`) так же обратно — решение 7А «M4.10a»
+/// plans/m4; в help анимации нет.
 Future<void> showTaskDialog(BuildContext context, String taskId) {
   final order = TaskOrderScope.maybeOf(context);
-  return showDialog<void>(
+  return showGeneralDialog<void>(
     context: context,
-    builder: (_) => TaskPanel(taskId: taskId, order: order),
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black54,
+    transitionDuration: panelTransitionDuration,
+    pageBuilder: (_, _, _) => SafeArea(
+      child: TaskPanel(taskId: taskId, order: order),
+    ),
+    transitionBuilder: panelTransition,
+  );
+}
+
+/// Длительность появления и ухода панели задачи (уточнения пользователя
+/// 12.11.2026: медленнее первых 200 мс, появление — ещё медленнее).
+const Duration panelTransitionDuration = Duration(milliseconds: 500);
+
+/// Масштаб 0.5 → 1 и проявление; при системном «уменьшить движение» —
+/// сразу, без анимации, как у уведомлений.
+Widget panelTransition(
+  BuildContext context,
+  Animation<double> animation,
+  Animation<double> secondary,
+  Widget child,
+) {
+  if (MediaQuery.disableAnimationsOf(context)) return child;
+  // `drive`, а не `CurvedAnimation`: та подписывается на анимацию маршрута
+  // при каждой сборке.
+  // Плавно в начале и в конце в обе стороны: у `easeOutCubic` открытие
+  // проходит почти весь путь в первой половине времени и выглядит резким.
+  final curved = animation.drive(CurveTween(curve: Curves.easeInOutCubic));
+  return FadeTransition(
+    opacity: curved,
+    child: ScaleTransition(
+      scale: curved.drive(Tween<double>(begin: 0.5, end: 1)),
+      child: child,
+    ),
   );
 }
 
