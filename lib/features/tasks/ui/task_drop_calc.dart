@@ -113,7 +113,7 @@ DropPlace? _projectPlace(
     shown,
     (task) => task.id,
     index: index,
-    wantedDepth: payload.depth + (query.delta.dx / taskIndentStep).round(),
+    wantedDepth: payload.depth + payload.indentShift(query.delta.dx),
     movedHeight: height,
     maxLevels: Limits.taskLevels,
     baseDepth: drop.baseDepth,

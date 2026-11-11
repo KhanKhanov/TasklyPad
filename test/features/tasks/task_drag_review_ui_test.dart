@@ -167,7 +167,7 @@ void main() {
       );
       // Вернулись прыжком: сдвиг считается от места, где взяли, а не где
       // указатель вошёл обратно.
-      await mouse.moveTo(belowHalf(tester, 'Alpha', dx: 30));
+      await mouse.moveTo(belowHalf(tester, 'Alpha', dx: 40));
       await tester.pump(const Duration(milliseconds: 16));
       await mouse.up();
       await tester.pumpAndSettle();

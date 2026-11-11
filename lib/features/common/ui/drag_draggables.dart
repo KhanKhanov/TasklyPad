@@ -6,7 +6,8 @@ import 'drag_slots.dart';
 
 /// Запоминает, где началось перетаскивание, в [DragPayload.startAt]: уровень
 /// задачи считается от сдвига указателя, а не от места входа в окно. Образ
-/// стоит под указателем (как `pointerDragAnchorStrategy`).
+/// стоит под указателем (как `pointerDragAnchorStrategy`), а у
+/// [AnchoredPayload] — на месте строки.
 Offset recordStartAnchor(
   Draggable<Object> draggable,
   BuildContext context,
@@ -14,6 +15,12 @@ Offset recordStartAnchor(
 ) {
   final data = draggable.data;
   if (data is DragPayload) data.startAt = position;
+  if (data is AnchoredPayload) {
+    final box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize) {
+      return data.ghostAnchor(box.globalToLocal(position));
+    }
+  }
   return Offset.zero;
 }
 

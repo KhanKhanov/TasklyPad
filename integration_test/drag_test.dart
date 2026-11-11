@@ -157,7 +157,7 @@ void main() {
     await shot(tester, 'm49-1-order');
 
     // Подзадача: «Позвонить» — сдвиг вправо под «Вынести мусор».
-    await mouseDrag(tester, names[3], belowHalf(tester, names[2], dx: 30));
+    await mouseDrag(tester, names[3], belowHalf(tester, names[2], dx: 40));
     await saved('подзадача', (ws) => ws.task(ids[3])?.parentId == ids[2]);
     await shot(tester, 'm49-2-subtask');
 

@@ -17,6 +17,18 @@ abstract interface class DragPayload {
   set startAt(Offset? value);
 }
 
+/// Груз, образ которого стоит не под указателем, а на месте строки, за
+/// которую взялись: указатель остаётся в той же точке образа, что и строки.
+abstract interface class AnchoredPayload implements DragPayload {
+  /// Точка образа под указателем, если взялись в точке [grab] источника;
+  /// запоминается в [anchor].
+  Offset ghostAnchor(Offset grab);
+
+  /// Точка образа под указателем в этом перетаскивании: угол образа плюс она —
+  /// сам указатель.
+  Offset get anchor;
+}
+
 /// Куда бросят и как это показать. Создаётся слотом на каждое движение;
 /// пишет в данные только [perform] (через команды, не напрямую).
 abstract interface class DropPlace {
