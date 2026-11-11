@@ -12,14 +12,16 @@ import '../../tasks/ui/task_actions.dart';
 /// сайдбар; `g`, затем буква — переход: `i` «Входящие», `t` «Сегодня», `u`
 /// «Предстоящее», `p` «Мои проекты», `v` и `l` «Фильтры и метки»; `o` `s` —
 /// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3` — «Входящие», «Сегодня»,
-/// «Предстоящее». Переход `h` появится вместе с «Главной». Пока печатают в
-/// поле — клавиши уходят в поле.
+/// «Предстоящее»; `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
+/// появится вместе с «Главной». Пока печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
     super.key,
     required this.onToggleSidebar,
     required this.onQuickAdd,
     required this.onSync,
+    required this.onBack,
+    required this.onForward,
     required this.child,
   });
 
@@ -28,6 +30,11 @@ class ShellKeys extends StatefulWidget {
 
   /// `Ctrl+S` — «Синхронизировать».
   final VoidCallback onSync;
+
+  /// `Alt+←` и `Alt+→` — «Назад» и «Вперёд» (help «Use keyboard shortcuts»,
+  /// Windows).
+  final VoidCallback onBack;
+  final VoidCallback onForward;
   final Widget child;
 
   @override
@@ -149,6 +156,19 @@ class _ShellKeysState extends State<ShellKeys> {
     }
     if (_ctrlRoutes[key] case final path? when ctrlOnly) {
       navigate(context, path);
+      return KeyEventResult.handled;
+    }
+    final altOnly =
+        keys.isAltPressed &&
+        !keys.isControlPressed &&
+        !keys.isShiftPressed &&
+        !keys.isMetaPressed;
+    if (altOnly && key == LogicalKeyboardKey.arrowLeft) {
+      widget.onBack();
+      return KeyEventResult.handled;
+    }
+    if (altOnly && key == LogicalKeyboardKey.arrowRight) {
+      widget.onForward();
       return KeyEventResult.handled;
     }
     if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {
