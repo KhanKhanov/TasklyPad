@@ -14,6 +14,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.raised,
     required this.selected,
     required this.onSelected,
+    required this.selectedBorder,
+    required this.selectedShadow,
     required this.divider,
     required this.outline,
     required this.accent,
@@ -40,6 +42,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   /// Текст и значок выбранного пункта.
   final Color onSelected;
+
+  /// Рамка выбранного пункта сайдбара (решение 12Б M4.10a).
+  final Color selectedBorder;
+
+  /// Тень выбранного пункта сайдбара — эффект объёма.
+  final Color selectedShadow;
   final Color divider;
   final Color outline;
 
@@ -78,6 +86,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       raised: c(raised, other.raised),
       selected: c(selected, other.selected),
       onSelected: c(onSelected, other.onSelected),
+      selectedBorder: c(selectedBorder, other.selectedBorder),
+      selectedShadow: c(selectedShadow, other.selectedShadow),
       divider: c(divider, other.divider),
       outline: c(outline, other.outline),
       accent: c(accent, other.accent),
