@@ -121,6 +121,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get addSection => 'Добавить раздел';
 
   @override
+  String get newSection => 'Новый раздел';
+
+  @override
   String get sectionNameHint => 'Название раздела';
 
   @override

@@ -121,6 +121,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSection => 'Add section';
 
   @override
+  String get newSection => 'New section';
+
+  @override
   String get sectionNameHint => 'Name this section';
 
   @override

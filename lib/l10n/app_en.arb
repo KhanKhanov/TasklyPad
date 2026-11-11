@@ -33,6 +33,7 @@
   "deleteProjectTitle": "Delete project?",
   "deleteProjectBody": "\"{name}\" and all its tasks will be deleted.",
   "addSection": "Add section",
+  "newSection": "New section",
   "sectionNameHint": "Name this section",
   "archiveSectionTitle": "Archive section?",
   "archiveSectionBody": "\"{name}\" will be archived and its tasks marked complete.",
