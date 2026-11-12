@@ -983,5 +983,19 @@
   "timeDialogTitle": "Время",
   "@timeDialogTitle": {"description": "Окно «Время» планировщика: время и длительность (help «Set a task duration»)"},
   "fieldTime": "Время",
-  "@fieldTime": {"description": "Поле времени в окне «Время»"}
+  "@fieldTime": {"description": "Поле времени в окне «Время»"},
+  "linkOpenFailed": "Не удалось открыть ссылку",
+  "@linkOpenFailed": {"description": "Тост: ссылку из названия или описания открыть нельзя (схема не http/https/mailto или нет приложения)"},
+  "formatBold": "Жирный",
+  "@formatBold": {"description": "Панель форматирования при выделении (help «Format text in a Todoist task»); русские подписи — О-68"},
+  "formatItalic": "Курсив",
+  "formatStrikethrough": "Зачёркнутый",
+  "formatCode": "Код",
+  "formatLink": "Ссылка",
+  "@formatLink": {"description": "Кнопка панели форматирования и заголовок окна адреса ссылки"},
+  "formatQuote": "Цитата",
+  "linkAddress": "Адрес",
+  "@linkAddress": {"description": "Поле адреса в окне «Ссылка»"},
+  "removeLink": "Убрать ссылку",
+  "@removeLink": {"description": "Корзина в окне «Ссылка»: ссылка убирается, текст остаётся"}
 }

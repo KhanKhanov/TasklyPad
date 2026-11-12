@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../domain/markdown_text.dart';
 import '../../../domain/models.dart';
 import '../../../domain/undo.dart';
 import '../../../l10n/app_localizations.dart';
@@ -151,7 +152,7 @@ Future<void> deleteTask(BuildContext context, WidgetRef ref, Task task) async {
   final ok = await confirmAction(
     context,
     title: l10n.deleteTaskTitle,
-    body: l10n.deleteTaskBody(task.content),
+    body: l10n.deleteTaskBody(plainText(task.content)),
     action: l10n.actionDelete,
     danger: true,
   );

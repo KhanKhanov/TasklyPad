@@ -341,5 +341,14 @@
   "durationHint": "For example, 90, 1h 30m or 1:30",
   "removeDuration": "Remove duration",
   "timeDialogTitle": "Time",
-  "fieldTime": "Time"
+  "fieldTime": "Time",
+  "linkOpenFailed": "Couldn't open the link",
+  "formatBold": "Bold",
+  "formatItalic": "Italic",
+  "formatStrikethrough": "Strikethrough",
+  "formatCode": "Code",
+  "formatLink": "Link",
+  "formatQuote": "Quote",
+  "linkAddress": "Address",
+  "removeLink": "Remove link"
 }

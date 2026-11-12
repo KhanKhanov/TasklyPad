@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/app/app.dart';
 import 'package:planner/app/data_providers.dart';
+import 'package:planner/app/platform_providers.dart';
 import 'package:planner/app/sync_providers.dart';
 import 'package:planner/data/repositories/theme_settings_repository.dart';
 import 'package:planner/features/projects/ui/project_screen.dart';
@@ -12,11 +13,13 @@ import 'package:planner/platform/conflict_notifier.dart';
 
 import '../../sync/support/devices.dart';
 import 'fake_conflict_notifier.dart';
+import 'fake_link_opener.dart';
 
 /// Запустить приложение на устройстве с базой в памяти — тем же ядром
 /// данных (`startSync`), что и настоящий запуск — выполнить [body] и
 /// закрыть всё внутри теста. [overrides] — фейки поверх (выбор папки,
-/// синхронизация); уведомления ОС — всегда фейк ([notifier]).
+/// синхронизация); уведомления ОС и открытие ссылок — всегда фейки
+/// ([notifier], [links]).
 ///
 /// Закрытие — здесь, а не в `addTearDown`: поток запроса drift при отписке
 /// ставит таймер, и он должен сработать до проверки «таймеров не осталось»,
@@ -29,6 +32,7 @@ Future<void> withApp(
   Size size = const Size(1100, 800),
   List<Override> overrides = const [],
   ConflictNotifier? notifier,
+  FakeLinkOpener? links,
   Future<void> Function(TestDevice device)? before,
   void Function()? firstFrame,
 }) async {
@@ -49,6 +53,7 @@ Future<void> withApp(
         conflictNotificationsProvider.overrideWithValue(
           notifier ?? FakeConflictNotifier(),
         ),
+        linkOpenerProvider.overrideWithValue(links ?? FakeLinkOpener()),
         ...overrides,
       ],
       child: const PlannerApp(),

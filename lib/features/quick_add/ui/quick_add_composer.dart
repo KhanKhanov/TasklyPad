@@ -12,6 +12,7 @@ import '../state/quick_add_controller.dart';
 import 'paste_lines_dialog.dart';
 import 'quick_add_chips.dart';
 import 'quick_add_field.dart';
+import '../../common/ui/markdown_keys.dart';
 import '../../common/ui/text_limit.dart';
 
 /// Редактор быстрого добавления — один на окно `q` и встроенные «Добавить
@@ -195,17 +196,23 @@ class _QuickAddComposerState extends ConsumerState<QuickAddComposer> {
             ],
           ),
           if (_showDescription)
-            TextField(
+            MarkdownKeys(
               controller: _description,
               focusNode: _descriptionFocus,
-              inputFormatters: const [TextLimit(Limits.description)],
-              decoration: InputDecoration(
-                hintText: l10n.descriptionHint,
-                border: InputBorder.none,
-                isDense: true,
+              blocks: true,
+              max: Limits.description,
+              child: TextField(
+                controller: _description,
+                focusNode: _descriptionFocus,
+                inputFormatters: const [TextLimit(Limits.description)],
+                decoration: InputDecoration(
+                  hintText: l10n.descriptionHint,
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                style: TextStyle(color: palette.textSecondary, fontSize: 13),
+                onSubmitted: (_) => _submit(),
               ),
-              style: TextStyle(color: palette.textSecondary, fontSize: 13),
-              onSubmitted: (_) => _submit(),
             ),
           const SizedBox(height: 8),
           if (ws != null)

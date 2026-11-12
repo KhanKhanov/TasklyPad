@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/markdown_text.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
@@ -43,7 +44,7 @@ class TaskDialogTopBar extends ConsumerWidget {
     final path = [
       if (project != null) projectTitle(l10n, project),
       ?ws.rootSectionOf(task.id)?.name,
-      ?parent?.content,
+      if (parent != null) plainText(parent.content),
     ].join(' › ');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),

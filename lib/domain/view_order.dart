@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'markdown_text.dart';
 import 'models.dart';
 import 'view_options.dart';
 
@@ -47,8 +48,8 @@ final class TaskOrder {
   final Sorting sorting;
   final SortOrder sortOrder;
 
-  /// Имя задачи для сортировки по имени — функцией: в названии будет
-  /// markdown (M4.12), и сравнивать нужно видимый текст.
+  /// Имя задачи для сортировки по имени — функцией; по умолчанию видимый
+  /// текст названия без символов markdown ([plainText]).
   final String Function(Task) nameOf;
 
   /// Место задачи в порядке проектов и задач деревом — для порядка метки и
@@ -56,7 +57,7 @@ final class TaskOrder {
   /// несравнимы, у соседей место повторяет ключ.
   final int Function(Task) projectRank;
 
-  static String _content(Task t) => t.content;
+  static String _content(Task t) => plainText(t.content);
 
   /// Отрицательное — [a] выше [b].
   int compare(Task a, Task b) {

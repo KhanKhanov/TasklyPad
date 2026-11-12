@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
-import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
@@ -12,10 +11,9 @@ import 'task_dialog_layout.dart';
 import 'task_dialog_top_bar.dart';
 import 'task_fields.dart';
 import 'task_subtasks.dart';
+import 'task_description_field.dart';
 import 'task_title_field.dart';
 import 'task_row_parts.dart';
-import '../../common/ui/text_limit.dart';
-import '../../../domain/rules.dart';
 
 /// Панель задачи, как в Todoist: слева путь «проект › раздел», название,
 /// описание и подзадачи; справа — поля ([TaskFields]); меню — Дублировать,
@@ -48,6 +46,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   final FocusNode _descriptionFocus = FocusNode();
   bool _closing = false;
 
+  /// Поле удерживается окном «Ссылка» панели форматирования: фокус у окна,
+  /// но поле в работе — не сохраняется и не получает значение из базы.
+  bool _contentHeld = false;
+  bool _descriptionHeld = false;
+
   // Значения, которые сейчас стоят в полях из базы. Сохраняем, только если
   // пользователь изменил текст относительно них, — а не относительно базы:
   // пока курсор в поле, правка с другого устройства в поле не подставляется,
@@ -59,10 +62,12 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   void initState() {
     super.initState();
     _contentFocus.addListener(() {
-      if (!_contentFocus.hasFocus) _saveContent();
+      if (!_contentFocus.hasFocus && !_contentHeld) _saveContent();
     });
     _descriptionFocus.addListener(() {
-      if (!_descriptionFocus.hasFocus) _saveDescription();
+      if (!_descriptionFocus.hasFocus && !_descriptionHeld) {
+        _saveDescription();
+      }
     });
   }
 
@@ -167,11 +172,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
   /// Подставить значения из базы, пока поле не в работе: правка с другого
   /// устройства видна сразу, а набираемый текст не перебивается.
   void _sync(Task task) {
-    if (!_contentFocus.hasFocus) {
+    if (!_contentFocus.hasFocus && !_contentHeld) {
       _contentBase = task.content;
       if (_content.text != task.content) _content.reset(task.content);
     }
-    if (!_descriptionFocus.hasFocus) {
+    if (!_descriptionFocus.hasFocus && !_descriptionHeld) {
       _descriptionBase = task.description;
       if (_description.text != task.description) {
         _description.text = task.description;
@@ -221,8 +226,6 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
     Task task,
     bool readOnly,
   ) {
-    final l10n = AppLocalizations.of(context);
-    final palette = AppPalette.of(context);
     return [
       Padding(
         // Слева 0: подзадачам нужно поле под ручку перетаскивания, остальное
@@ -242,6 +245,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                     child: TaskTitleField(
                       controller: _content,
                       focusNode: _contentFocus,
+                      onHold: (held) => _contentHeld = held,
                       readOnly: readOnly,
                       completed: task.isCompleted,
                       onSubmitted: _saveContent,
@@ -252,18 +256,11 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
             ),
             Padding(
               padding: const EdgeInsets.only(left: 50),
-              child: TextField(
+              child: TaskDescriptionField(
                 controller: _description,
                 focusNode: _descriptionFocus,
+                onHold: (held) => _descriptionHeld = held,
                 readOnly: readOnly,
-                maxLines: null,
-                inputFormatters: const [TextLimit(Limits.description)],
-                decoration: InputDecoration(
-                  hintText: l10n.descriptionHint,
-                  border: InputBorder.none,
-                  isDense: true,
-                ),
-                style: TextStyle(color: palette.textSecondary, fontSize: 14),
               ),
             ),
             const SizedBox(height: 16),

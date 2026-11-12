@@ -131,6 +131,22 @@ final RegExp _dashRange = RegExp(
 /// Знаки в конце имени — не имя: `#Работа,`.
 final RegExp _trailingPunctuation = RegExp(r'[,.;:!?]+$');
 
+/// Markdown, внутри которого токены и даты не ищутся: код `` `…` ``, ссылка
+/// `[текст](адрес)` целиком и адрес без скобок (допущение О-69: help о
+/// разборе внутри разметки молчит). Иначе `today` из адреса стал бы сроком,
+/// а ссылка порвалась бы.
+final RegExp _markdownLiteral = RegExp(
+  r'`[^`\n]+`|\[[^\]\n]*\]\([^)\s]*\)|(?:https?://|www\.)[^\s<>]+',
+  caseSensitive: false,
+);
+
+/// Участки [text], которые остаются текстом: отменённые пользователем
+/// [dismissed] и markdown из [_markdownLiteral].
+List<Span> _literal(String text, List<Span> dismissed) => [
+  ...dismissed,
+  for (final m in _markdownLiteral.allMatches(text)) Span(m.start, m.end),
+];
+
 /// Разбирает строку быстрого добавления [text].
 ///
 /// [dismissed] — участки, подсветку которых пользователь отменил кликом:
@@ -143,15 +159,22 @@ QuickAddResult parseQuickAdd(
   List<Span> dismissed = const [],
   bool smartDates = true,
 }) {
+  final userDismissed = dismissed;
+  dismissed = _literal(text, dismissed);
   final consumed = <Highlight>[];
   bool free(Span s) =>
       !dismissed.any(s.overlaps) && !consumed.any((h) => h.span.overlaps(s));
   void take(int start, int end, HighlightKind kind) =>
       consumed.add(Highlight(start, end, kind));
 
+  // Описание — после первого `//` вне кода, ссылки и адреса (`https://`);
+  // ссылки и код внутри самого описания ему не мешают.
   var description = '';
-  final d = _description.firstMatch(text);
-  if (d != null && free(Span(d.start, text.length))) {
+  final d = _description
+      .allMatches(text)
+      .where((m) => !dismissed.any((s) => s.overlaps(Span(m.start, m.end))))
+      .firstOrNull;
+  if (d != null && !userDismissed.any(Span(d.start, text.length).overlaps)) {
     description = text.substring(d.end).trim();
     take(d.start, text.length, HighlightKind.description);
   }
@@ -297,6 +320,7 @@ TitleDue? parseTitleDue(
   ParseContext ctx, {
   List<Span> dismissed = const [],
 }) {
+  dismissed = _literal(text, dismissed);
   final tokens = parseQuickAdd(text, ctx, dismissed: dismissed).highlights;
   final match = _findDue(
     text,
@@ -412,6 +436,17 @@ String? _firstName(
 /// «Meet, then»; `!14:00` — не такой знак.
 final RegExp _joinsLeft = RegExp(r'^[,.;:!?](?:\s|$)');
 
+/// Закрывающий знак markdown в начале куска: «**Report tomorrow**» без
+/// даты — «**Report**», а не «**Report **» (по CommonMark знак после пробела
+/// жирный не закрывает). Допущение О-69: help о разборе внутри разметки молчит.
+final RegExp _closingMarker = RegExp(
+  r'^(?:\*{1,3}|_{1,3}|~~)(?=\s|$|[,.;:!?)])',
+);
+
+/// Открывающий знак markdown в конце собранного: «Do **tomorrow report**» —
+/// «Do **report**».
+final RegExp _openingMarker = RegExp(r'(?:^|\s)(?:\*{1,3}|_{1,3}|~~)$');
+
 /// Название — куски строки между распознанными участками, на стыках —
 /// один пробел; внутри кусков текст не меняется.
 String _title(String text, List<Highlight> consumed) {
@@ -426,7 +461,12 @@ String _title(String text, List<Highlight> consumed) {
   for (final raw in pieces) {
     final piece = raw.trim();
     if (piece.isEmpty) continue;
-    if (out.isNotEmpty && !_joinsLeft.hasMatch(piece)) out.write(' ');
+    if (out.isNotEmpty &&
+        !_joinsLeft.hasMatch(piece) &&
+        !_closingMarker.hasMatch(piece) &&
+        !_openingMarker.hasMatch(out.toString())) {
+      out.write(' ');
+    }
     out.write(piece);
   }
   return out.toString();

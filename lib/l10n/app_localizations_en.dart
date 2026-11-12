@@ -1214,4 +1214,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fieldTime => 'Time';
+
+  @override
+  String get linkOpenFailed => 'Couldn\'t open the link';
+
+  @override
+  String get formatBold => 'Bold';
+
+  @override
+  String get formatItalic => 'Italic';
+
+  @override
+  String get formatStrikethrough => 'Strikethrough';
+
+  @override
+  String get formatCode => 'Code';
+
+  @override
+  String get formatLink => 'Link';
+
+  @override
+  String get formatQuote => 'Quote';
+
+  @override
+  String get linkAddress => 'Address';
+
+  @override
+  String get removeLink => 'Remove link';
 }
