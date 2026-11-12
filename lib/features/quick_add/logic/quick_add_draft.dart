@@ -40,6 +40,7 @@ final class ChipChoices {
     this.labelIds,
     this.deadline,
     this.place,
+    this.duration,
   });
 
   /// Срок из планировщика; `due: null` внутри — «Без срока».
@@ -51,18 +52,23 @@ final class ChipChoices {
   final ({String? date})? deadline;
   final ({String projectId, String? sectionId})? place;
 
+  /// Длительность из окна «Время» планировщика; `value: null` — убрать.
+  final ({TaskDuration? value})? duration;
+
   ChipChoices copyWith({
     ({Due? due})? due,
     int? priority,
     Set<String>? labelIds,
     ({String? date})? deadline,
     ({String projectId, String? sectionId})? place,
+    ({TaskDuration? value})? duration,
   }) => ChipChoices(
     due: due ?? this.due,
     priority: priority ?? this.priority,
     labelIds: labelIds ?? this.labelIds,
     deadline: deadline ?? this.deadline,
     place: place ?? this.place,
+    duration: duration ?? this.duration,
   );
 }
 
@@ -269,7 +275,9 @@ final class QuickAddResolver {
           : chips.deadline == null
           ? defaults.deadline
           : chips.deadline!.date,
-      duration: r.duration,
+      duration: has(HighlightKind.duration) || chips.duration == null
+          ? r.duration
+          : chips.duration!.value,
     );
   }
 

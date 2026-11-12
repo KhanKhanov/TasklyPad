@@ -15,7 +15,8 @@ final class LabelCommands {
   final Mutator _mutator;
   final Future<Workspace> Function() _read;
 
-  /// Создать метку в конце списка. Возвращает id.
+  /// Создать метку в конце списка — не больше [Limits.labels] меток (help
+  /// «Usage limits»). Возвращает id.
   Future<String> add({
     required String name,
     String color = 'charcoal',
@@ -23,6 +24,9 @@ final class LabelCommands {
   }) async {
     final ws = await _read();
     final text = _name(ws, name);
+    if (ws.labels.length >= Limits.labels) {
+      throw const CommandRejected(RejectReason.tooManyLabelsTotal);
+    }
     return _mutator.create(EntityTypes.label, {
       LabelFields.name: text,
       LabelFields.color: color,
@@ -118,6 +122,6 @@ final class LabelCommands {
     if (ws.labels.any((l) => l.id != except && l.name.toLowerCase() == lower)) {
       throw const CommandRejected(RejectReason.duplicateName);
     }
-    return text;
+    return Limits.checkLength(text, Limits.labelName);
   }
 }

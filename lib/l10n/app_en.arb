@@ -328,5 +328,18 @@
   "deleteTasksTitle": "Delete tasks?",
   "deleteTasksBody": "{n, plural, =1{1 task and its sub-tasks will be deleted.} other{{n} tasks and their sub-tasks will be deleted.}}",
   "selectAll": "Select all",
-  "dragHandleHint": "Drag to move"
+  "dragHandleHint": "Drag to move",
+  "rejectTooLong": "The text is too long",
+  "rejectTooManyLabelsTotal": "You can't have more than 500 labels",
+  "rejectTooManyTasks": "A project can't have more than 300 active tasks",
+  "rejectTooManyProjects": "You can't have more than 500 active projects",
+  "rejectBadDuration": "Duration must be between 1 minute and 24 hours",
+  "addProjectDescription": "Add a description",
+  "durationHours": "{hours} h",
+  "durationHoursMinutes": "{hours} h {minutes} min",
+  "durationCustom": "Custom duration…",
+  "durationHint": "For example, 90, 1h 30m or 1:30",
+  "removeDuration": "Remove duration",
+  "timeDialogTitle": "Time",
+  "fieldTime": "Time"
 }

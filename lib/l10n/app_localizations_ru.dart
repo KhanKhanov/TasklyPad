@@ -1158,4 +1158,49 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get dragHandleHint => 'Перетащите, чтобы переместить';
+
+  @override
+  String get rejectTooLong => 'Текст длиннее допустимого';
+
+  @override
+  String get rejectTooManyLabelsTotal => 'Меток не может быть больше 500';
+
+  @override
+  String get rejectTooManyTasks =>
+      'В проекте не может быть больше 300 активных задач';
+
+  @override
+  String get rejectTooManyProjects =>
+      'Активных проектов не может быть больше 500';
+
+  @override
+  String get rejectBadDuration => 'Длительность — от 1 минуты до 24 часов';
+
+  @override
+  String get addProjectDescription => 'Добавить описание';
+
+  @override
+  String durationHours(int hours) {
+    return '$hours ч';
+  }
+
+  @override
+  String durationHoursMinutes(int hours, int minutes) {
+    return '$hours ч $minutes мин';
+  }
+
+  @override
+  String get durationCustom => 'Своя длительность…';
+
+  @override
+  String get durationHint => 'Например, 90, 1ч 30м или 1:30';
+
+  @override
+  String get removeDuration => 'Убрать длительность';
+
+  @override
+  String get timeDialogTitle => 'Время';
+
+  @override
+  String get fieldTime => 'Время';
 }

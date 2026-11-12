@@ -29,13 +29,7 @@ final class SectionCommands {
     if (ws.project(projectId) == null) {
       throw const CommandRejected(RejectReason.notFound);
     }
-    final all = [
-      ...ws.sectionsOf(projectId),
-      ...ws.sectionsOf(projectId, archived: true),
-    ];
-    if (all.length >= Limits.sectionsPerProject) {
-      throw const CommandRejected(RejectReason.tooManySections);
-    }
+    _checkSectionRoom(ws, projectId);
     return _mutator.create(EntityTypes.section, {
       SectionFields.name: text,
       SectionFields.projectId: projectId,
@@ -95,9 +89,18 @@ final class SectionCommands {
   /// правки задач на другом устройстве не спорят с переносом.
   Future<Undo> moveToProject(String id, String projectId) async {
     final ws = await _read();
-    _alive(ws, id);
+    final section = _alive(ws, id);
     if (ws.project(projectId) == null) {
       throw const CommandRejected(RejectReason.notFound);
+    }
+    final from = section.projectId ?? ws.inbox!.id;
+    if (from != projectId) {
+      _checkSectionRoom(ws, projectId);
+      TaskCommands.checkRoom(
+        ws,
+        projectId,
+        TaskCommands.activeInTrees(ws, _roots(ws, from, id)),
+      );
     }
     final undo = await _mutator.capture([
       (
@@ -159,9 +162,15 @@ final class SectionCommands {
     final ws = await _read();
     final section = _alive(ws, id);
     final projectId = section.projectId ?? ws.inbox!.id;
+    _checkSectionRoom(ws, projectId);
+    TaskCommands.checkRoom(
+      ws,
+      projectId,
+      TaskCommands.activeInTrees(ws, _roots(ws, projectId, id)),
+    );
     return _mutator.batch(() async {
       final copy = await _mutator.create(EntityTypes.section, {
-        SectionFields.name: _name(name),
+        SectionFields.name: _name(Limits.clip(name.trim(), Limits.sectionName)),
         SectionFields.projectId: projectId,
         SectionFields.orderKey: _keyAfter(ws.sectionsOf(projectId), id),
       });
@@ -208,6 +217,32 @@ final class SectionCommands {
   static String _name(String name) {
     final text = name.trim();
     if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
-    return text;
+    return Limits.checkLength(text, Limits.sectionName);
   }
+
+  /// В проекте уже [Limits.sectionsPerProject] разделов (архивные считаются)
+  /// — [RejectReason.tooManySections].
+  static void _checkSectionRoom(Workspace ws, String projectId) {
+    final all = [
+      ...ws.sectionsOf(projectId),
+      ...ws.sectionsOf(projectId, archived: true),
+    ];
+    if (all.length >= Limits.sectionsPerProject) {
+      throw const CommandRejected(RejectReason.tooManySections);
+    }
+  }
+
+  /// Верхние задачи раздела [sectionId] проекта [projectId].
+  static List<String> _roots(
+    Workspace ws,
+    String projectId,
+    String sectionId,
+  ) => [
+    for (final t in ws.children(
+      null,
+      projectId: projectId,
+      sectionId: sectionId,
+    ))
+      t.id,
+  ];
 }

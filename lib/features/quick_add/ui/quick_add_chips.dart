@@ -45,8 +45,21 @@ class QuickAddChips extends ConsumerWidget {
           text: dueText?.text ?? l10n.fieldDue,
           color: dueText?.color,
           onTap: () async {
-            final picked = await pickDue(context, ref, due, newTask: true);
-            if (picked != null) controller.pickDue(picked.due);
+            final picked = await pickDue(
+              context,
+              ref,
+              due,
+              newTask: true,
+              duration: d?.duration,
+              withDuration: true,
+            );
+            if (picked == null) return;
+            if (picked.duration case (:final value)) {
+              controller.pickDuration(value);
+              // Срок не менялся — распознанная дата остаётся текстом.
+              if (picked.due == due) return;
+            }
+            controller.pickDue(picked.due);
           },
         ),
         PopupMenuButton<int>(

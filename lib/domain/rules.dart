@@ -1,8 +1,10 @@
-/// Ограничения Todoist (help: sub-tasks, sub-projects, sections).
+/// Ограничения Todoist (help: sub-tasks, sub-projects, sections, «Usage
+/// limits»).
 ///
-/// Уровни считаются как `INDENT` в CSV Todoist: 1 — верхний уровень. Они
-/// проверяются только при записи с этого устройства; пришедшее с другого
-/// устройства глубже (после параллельных переносов) показывается как есть.
+/// Уровни считаются как `INDENT` в CSV Todoist: 1 — верхний уровень. Все
+/// лимиты проверяются только при записи с этого устройства; пришедшее с
+/// другого устройства сверх них (после параллельных правок) показывается как
+/// есть. Длина текста — в символах Unicode ([length]; решение 14А plans/m4).
 abstract final class Limits {
   /// Задача и подзадачи: «Todoist supports four indent levels».
   static const int taskLevels = 4;
@@ -16,6 +18,52 @@ abstract final class Limits {
   /// Меток на одной задаче (help «Usage limits»; проверка при массовом
   /// добавлении — M4.8, остальные места — О-27).
   static const int labelsPerTask = 100;
+
+  /// Меток всего (help «Usage limits»: «Labels per account»).
+  static const int labels = 500;
+
+  /// Активных задач в одном проекте вместе с подзадачами и повторяющимися
+  /// (help: «doesn't increase on any plan»; решение 3А «Часть M4.11»).
+  static const int activeTasksPerProject = 300;
+
+  /// Активных (не в архиве) проектов вместе с «Входящими» и подпроектами.
+  static const int activeProjects = 500;
+
+  /// Название задачи.
+  static const int taskContent = 500;
+
+  /// Описание задачи и проекта (help «Introduction to projects»: «up to
+  /// 16,383 characters»).
+  static const int description = 16383;
+
+  /// Имя проекта.
+  static const int projectName = 120;
+
+  /// Название раздела.
+  static const int sectionName = 2048;
+
+  /// Имя метки.
+  static const int labelName = 60;
+
+  /// Текст срока («каждый пн», «завтра 9:00»).
+  static const int dueText = 150;
+
+  /// Длительность задачи в минутах: «The maximum duration … is 24 hours».
+  static const int durationMinutes = 24 * 60;
+
+  /// Длина текста в символах Unicode (кодовых точках): эмодзи из одной
+  /// кодовой точки — один символ, а не два, как в `String.length`.
+  static int length(String text) => text.runes.length;
+
+  /// [text] длиннее [max] символов — [RejectReason.tooLong].
+  static String checkLength(String text, int max) {
+    if (length(text) > max) throw const CommandRejected(RejectReason.tooLong);
+    return text;
+  }
+
+  /// [text], обрезанный до [max] символов (имя копии «Копия …»).
+  static String clip(String text, int max) =>
+      length(text) <= max ? text : String.fromCharCodes(text.runes.take(max));
 }
 
 /// Почему действие не выполнено. Интерфейс показывает текст по причине.
@@ -51,6 +99,21 @@ enum RejectReason {
 
   /// У задачи стало бы больше [Limits.labelsPerTask] меток.
   tooManyLabels,
+
+  /// Текст длиннее своего лимита [Limits] (название, описание, имя).
+  tooLong,
+
+  /// Меток стало бы больше [Limits.labels].
+  tooManyLabelsTotal,
+
+  /// В проекте стало бы больше [Limits.activeTasksPerProject] активных задач.
+  tooManyTasks,
+
+  /// Активных проектов стало бы больше [Limits.activeProjects].
+  tooManyProjects,
+
+  /// Длительность больше [Limits.durationMinutes] или не больше нуля.
+  badDuration,
 }
 
 /// Действие отклонено правилами — данные не изменены.

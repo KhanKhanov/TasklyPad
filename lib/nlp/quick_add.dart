@@ -1,4 +1,5 @@
 import '../domain/models.dart';
+import '../domain/rules.dart';
 import 'calendar.dart';
 import 'date_grammar.dart';
 import 'parse_context.dart';
@@ -76,7 +77,7 @@ final class QuickAddResult {
 }
 
 /// Наибольшая длительность — 24 ч (help «Set a task duration»).
-const int maxDurationMinutes = 24 * 60;
+const int maxDurationMinutes = Limits.durationMinutes;
 
 /// Знак-граница: токен начинается в начале строки или после пробела.
 const String _wordStart = r'(?<!\S)';

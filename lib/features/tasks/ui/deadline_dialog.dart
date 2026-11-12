@@ -9,6 +9,8 @@ import '../../../nlp/quick_add.dart';
 import '../logic/due_dates.dart';
 import 'due_ui.dart';
 import 'scheduler_layout.dart';
+import '../../common/ui/text_limit.dart';
+import '../../../domain/rules.dart';
 
 /// Выбор дедлайна: поле «Введите дедлайн», быстрые варианты, календарь и
 /// «Без дедлайна» — в той же раскладке, что планировщик срока (решение 1Б
@@ -83,6 +85,7 @@ class _DeadlineSchedulerState extends ConsumerState<_DeadlineScheduler> {
           child: TextField(
             controller: _text,
             autofocus: true,
+            inputFormatters: const [TextLimit(Limits.dueText)],
             decoration: InputDecoration(hintText: l10n.deadlineInputHint),
             onChanged: _parse,
             onSubmitted: (_) {

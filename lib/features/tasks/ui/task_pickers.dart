@@ -6,6 +6,8 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../common/ui/text_limit.dart';
+import '../../../domain/rules.dart';
 
 /// «Перенести в…»: «Входящие» и проекты с разделами.
 Future<({String projectId, String? sectionId})?> pickPlace(
@@ -128,6 +130,7 @@ class _LabelPickerState extends ConsumerState<_LabelPicker> {
             TextField(
               controller: _query,
               autofocus: true,
+              inputFormatters: const [TextLimit(Limits.labelName)],
               decoration: InputDecoration(hintText: l10n.labelSearchHint),
               onChanged: (_) => setState(() {}),
             ),

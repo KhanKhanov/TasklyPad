@@ -58,7 +58,7 @@ void main() {
       await tester.runAsync(() => app.projects.setColor(id, 'blue'));
       await settle(tester);
 
-      await tester.enterText(find.byType(TextField), 'Home');
+      await tester.enterText(find.byType(TextField).first, 'Home');
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);

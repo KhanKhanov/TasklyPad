@@ -113,7 +113,7 @@ class TaskFields extends ConsumerWidget {
                     },
                   ),
           ),
-          if (due?.time != null) DurationField(task: task, enabled: !readOnly),
+          DurationField(task: task, enabled: !readOnly),
           TaskField(
             label: l10n.fieldDeadline,
             onTap: readOnly

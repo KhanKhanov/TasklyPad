@@ -1999,6 +1999,84 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Перетащите, чтобы переместить'**
   String get dragHandleHint;
+
+  /// Отказ: название, описание или имя сверх лимита (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Текст длиннее допустимого'**
+  String get rejectTooLong;
+
+  /// Отказ: 501-я метка (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Меток не может быть больше 500'**
+  String get rejectTooManyLabelsTotal;
+
+  /// Отказ: 301-я активная задача в проекте (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'В проекте не может быть больше 300 активных задач'**
+  String get rejectTooManyTasks;
+
+  /// Отказ: 501-й активный проект (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Активных проектов не может быть больше 500'**
+  String get rejectTooManyProjects;
+
+  /// Отказ: длительность вне 1 мин – 24 ч (help «Set a task duration»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Длительность — от 1 минуты до 24 часов'**
+  String get rejectBadDuration;
+
+  /// Строка под названием проекта без описания (help «Introduction to projects»: Add a description)
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить описание'**
+  String get addProjectDescription;
+
+  /// Длительность в целых часах
+  ///
+  /// In ru, this message translates to:
+  /// **'{hours} ч'**
+  String durationHours(int hours);
+
+  /// Длительность в часах и минутах
+  ///
+  /// In ru, this message translates to:
+  /// **'{hours} ч {minutes} мин'**
+  String durationHoursMinutes(int hours, int minutes);
+
+  /// Пункт меню длительности: ввести своё значение (help «select or type a duration»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Своя длительность…'**
+  String get durationCustom;
+
+  /// Подсказка поля ввода длительности
+  ///
+  /// In ru, this message translates to:
+  /// **'Например, 90, 1ч 30м или 1:30'**
+  String get durationHint;
+
+  /// Крестик у длительности (help: click the X beside the duration)
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать длительность'**
+  String get removeDuration;
+
+  /// Окно «Время» планировщика: время и длительность (help «Set a task duration»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Время'**
+  String get timeDialogTitle;
+
+  /// Поле времени в окне «Время»
+  ///
+  /// In ru, this message translates to:
+  /// **'Время'**
+  String get fieldTime;
 }
 
 class _AppLocalizationsDelegate

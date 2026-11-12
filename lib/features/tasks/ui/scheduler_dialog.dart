@@ -13,10 +13,17 @@ import '../logic/task_commands.dart';
 import 'due_ui.dart';
 import 'scheduler_bottom_bar.dart';
 import 'scheduler_layout.dart';
+import '../../common/ui/text_limit.dart';
 
 /// Выбор в планировщике: новый срок ([due]; `null` — без срока) или
-/// «Отложить» повторяющуюся задачу ([postpone]).
-typedef DuePick = ({Due? due, bool postpone});
+/// «Отложить» повторяющуюся задачу ([postpone]); после окна «Время» — и
+/// длительность ([duration]: `null` — не менялась, `value: null` внутри —
+/// убрать).
+typedef DuePick = ({
+  Due? due,
+  bool postpone,
+  ({TaskDuration? value})? duration,
+});
 
 /// Планировщик срока, как в Todoist (help «Introduction to recurring
 /// dates»): поле «Введите срок», быстрые варианты, «Отложить» у
@@ -35,6 +42,8 @@ Future<DuePick?> pickDue(
   bool canPostpone = false,
   bool newTask = false,
   bool dateOnly = false,
+  TaskDuration? duration,
+  bool withDuration = false,
 }) => showDialog<DuePick>(
   context: context,
   builder: (_) => _Scheduler(
@@ -42,6 +51,8 @@ Future<DuePick?> pickDue(
     canPostpone: canPostpone,
     newTask: newTask,
     dateOnly: dateOnly,
+    duration: duration,
+    withDuration: withDuration,
   ),
 );
 
@@ -51,11 +62,18 @@ class _Scheduler extends ConsumerStatefulWidget {
     required this.canPostpone,
     required this.newTask,
     required this.dateOnly,
+    required this.duration,
+    required this.withDuration,
   });
 
   final Due? current;
   final bool canPostpone;
   final bool dateOnly;
+
+  /// Длительность задачи и есть ли её поле в окне «Время»
+  /// ([SchedulerBottomBar.withDuration]).
+  final TaskDuration? duration;
+  final bool withDuration;
 
   /// Срок задачи, которой ещё нет (быстрое добавление): «Время» задаёт время
   /// всей серии.
@@ -103,7 +121,8 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
     });
   }
 
-  void _done(Due? due) => Navigator.pop(context, (due: due, postpone: false));
+  void _done(Due? due) =>
+      Navigator.pop(context, (due: due, postpone: false, duration: null));
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +142,7 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
           child: TextField(
             controller: _text,
             autofocus: true,
+            inputFormatters: const [TextLimit(Limits.dueText)],
             decoration: InputDecoration(hintText: l10n.dueInputHint),
             onChanged: _parse,
             // `_typed`, а не значение прошлого кадра: Enter может прийти в
@@ -168,7 +188,11 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
             icon: Icons.update,
             label: l10n.postpone,
             day: parseIsoDate(postponed.date)!,
-            onTap: () => Navigator.pop(context, (due: current, postpone: true)),
+            onTap: () => Navigator.pop(context, (
+              due: current,
+              postpone: true,
+              duration: null,
+            )),
           ),
       ],
       calendar: SchedulerCalendar(
@@ -183,7 +207,14 @@ class _SchedulerState extends ConsumerState<_Scheduler> {
               lang: _lang,
               now: now,
               wholeSeries: widget.newTask,
+              duration: widget.duration,
+              withDuration: widget.withDuration,
               onDone: _done,
+              onTime: (due, duration) => Navigator.pop(context, (
+                due: due,
+                postpone: false,
+                duration: duration,
+              )),
             ),
     );
   }

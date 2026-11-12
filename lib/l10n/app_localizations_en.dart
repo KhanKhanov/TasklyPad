@@ -1168,4 +1168,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dragHandleHint => 'Drag to move';
+
+  @override
+  String get rejectTooLong => 'The text is too long';
+
+  @override
+  String get rejectTooManyLabelsTotal => 'You can\'t have more than 500 labels';
+
+  @override
+  String get rejectTooManyTasks =>
+      'A project can\'t have more than 300 active tasks';
+
+  @override
+  String get rejectTooManyProjects =>
+      'You can\'t have more than 500 active projects';
+
+  @override
+  String get rejectBadDuration =>
+      'Duration must be between 1 minute and 24 hours';
+
+  @override
+  String get addProjectDescription => 'Add a description';
+
+  @override
+  String durationHours(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String durationHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String get durationCustom => 'Custom duration…';
+
+  @override
+  String get durationHint => 'For example, 90, 1h 30m or 1:30';
+
+  @override
+  String get removeDuration => 'Remove duration';
+
+  @override
+  String get timeDialogTitle => 'Time';
+
+  @override
+  String get fieldTime => 'Time';
 }

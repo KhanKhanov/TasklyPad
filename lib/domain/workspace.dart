@@ -108,6 +108,11 @@ final class Workspace {
   /// Проект в архиве — сам или через предка.
   bool isProjectArchived(String id) => _isArchived(id);
 
+  /// Число активных проектов вместе с «Входящими» и подпроектами — для
+  /// лимита «Usage limits» (`Limits.activeProjects`).
+  int get activeProjectCount =>
+      _projects.keys.where((id) => !_isArchived(id)).length;
+
   /// Активные дочерние проекты [parentId] (`null` — верхний уровень).
   List<Project> childProjects(String? parentId) =>
       _activeChildProjects(parentId);

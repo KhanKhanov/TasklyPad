@@ -7,6 +7,7 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../common/ui/text_limit.dart';
 
 /// Диалог «Добавить метку» / «Изменить метку», как в Todoist (help
 /// «Introduction to labels»): название и цвет. Избранное — из меню метки.
@@ -84,7 +85,8 @@ class _LabelDialogState extends ConsumerState<_LabelDialog> {
             TextField(
               controller: _name,
               autofocus: true,
-              maxLength: 60,
+              maxLength: Limits.labelName,
+              inputFormatters: const [TextLimit(Limits.labelName)],
               decoration: InputDecoration(
                 labelText: l10n.fieldName,
                 errorText: _error,
