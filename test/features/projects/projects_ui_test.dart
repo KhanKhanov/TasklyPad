@@ -46,7 +46,7 @@ void main() {
       await tester.tap(screenMenu());
       await tester.pumpAndSettle();
       await openMenuItem(tester, 'Edit');
-      await tester.enterText(find.byType(TextField), 'Home');
+      await tester.enterText(find.byType(TextField).first, 'Home');
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);

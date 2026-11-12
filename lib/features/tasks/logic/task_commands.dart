@@ -9,6 +9,7 @@ import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import 'due_dates.dart';
+import 'duration_text.dart';
 
 /// Действия пользователя над задачами — всё через [Mutator].
 ///
@@ -52,8 +53,13 @@ final class TaskCommands {
     TaskDuration? duration,
     Set<String> labelIds = const {},
   }) async {
-    final text = content.trim();
-    if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
+    final text = _content(content);
+    Limits.checkLength(description, Limits.description);
+    checkDuration(duration);
+    _checkDueText(due);
+    if (labelIds.length > Limits.labelsPerTask) {
+      throw const CommandRejected(RejectReason.tooManyLabels);
+    }
     final ws = await _read();
     final place = _place(
       ws,
@@ -64,6 +70,7 @@ final class TaskCommands {
     if (parentId != null && ws.taskDepth(parentId) + 1 > Limits.taskLevels) {
       throw const CommandRejected(RejectReason.tooDeep);
     }
+    checkRoom(ws, place.projectId, 1);
     final siblings = ws.children(
       parentId,
       projectId: place.projectId,
@@ -92,9 +99,7 @@ final class TaskCommands {
 
   /// Изменить название.
   Future<void> rename(String id, String content) async {
-    final text = content.trim();
-    if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
-    await _update(id, {TaskFields.content: text});
+    await _update(id, {TaskFields.content: _content(content)});
   }
 
   /// Название и срок одной правкой — дата, набранная в названии
@@ -103,11 +108,11 @@ final class TaskCommands {
   /// `null` — «без срока». Повторяющийся срок, который не примет расчёт, —
   /// отказ до записи, как у [setDue].
   Future<void> renameWithDue(String id, String content, Due? due) async {
-    final text = content.trim();
-    if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
+    final text = _content(content);
     if (due != null && due.isRecurring) _next(due, _clock.nowWall());
     await _mutator.batch(() async {
       final task = await _alive(id);
+      _checkDueText(due, task);
       await _mutator.update(EntityTypes.task, id, {
         TaskFields.content: text,
         ..._dueFields(task, due),
@@ -115,8 +120,11 @@ final class TaskCommands {
     });
   }
 
-  Future<void> setDescription(String id, String description) =>
-      _update(id, {TaskFields.description: description});
+  /// Описание до [Limits.description] символов.
+  Future<void> setDescription(String id, String description) async {
+    Limits.checkLength(description, Limits.description);
+    await _update(id, {TaskFields.description: description});
+  }
 
   /// Приоритет 1 (P1, высший) … 4 (P4). [snapshot] — снимок, уже
   /// прочитанный в той же транзакции (действие над выделенными): иначе
@@ -134,6 +142,7 @@ final class TaskCommands {
     if (due != null && due.isRecurring) _next(due, _clock.nowWall());
     return _mutator.batch(() async {
       final task = await _alive(id, snapshot);
+      _checkDueText(due, task);
       final undo = await _mutator.capture([_dueTarget(task, due)]);
       await _mutator.update(EntityTypes.task, id, _dueFields(task, due));
       return undo;
@@ -254,9 +263,11 @@ final class TaskCommands {
   Future<void> setDeadline(String id, String? date, {Workspace? snapshot}) =>
       _update(id, {TaskFields.deadline: _deadlineValue(date)}, snapshot);
 
-  /// Длительность; `null` убирает.
-  Future<void> setDuration(String id, TaskDuration? duration) =>
-      _update(id, {TaskFields.duration: _durationValue(duration)});
+  /// Длительность от 1 минуты до 24 часов ([checkDuration]); `null` убирает.
+  Future<void> setDuration(String id, TaskDuration? duration) async {
+    checkDuration(duration);
+    await _update(id, {TaskFields.duration: _durationValue(duration)});
+  }
 
   /// Свернуть или развернуть подзадачи.
   Future<void> setCollapsed(String id, bool collapsed) =>
@@ -279,6 +290,12 @@ final class TaskCommands {
       for (final l in labelIds)
         if (ws.label(l) != null) l,
     };
+    // Сверх лимита только добавлять нельзя: пришедшие синхронизацией лишние
+    // метки снимать можно.
+    if (wanted.difference(current).isNotEmpty &&
+        wanted.length > Limits.labelsPerTask) {
+      throw const CommandRejected(RejectReason.tooManyLabels);
+    }
     await _mutator.batch(() async {
       for (final label in wanted.difference(current)) {
         await _link(id, label, linked: true);
@@ -473,6 +490,17 @@ final class TaskCommands {
       if (root.isCompleted) ids.add(t);
     }
     if (ids.isEmpty) return _mutator.capture(const []);
+    // Активными становятся верхняя возвращаемая задача и всё её поддерево,
+    // кроме выполненных отдельно подзадач.
+    final top = ids.last;
+    checkRoom(
+      ws,
+      ws.rootProjectOf(top),
+      {
+        for (final t in ws.taskSubtree(top))
+          if (!ws.task(t)!.isCompleted || ids.contains(t)) t,
+      }.length,
+    );
     final section = ws.section(root.sectionId ?? '');
     final reinstateSection = section != null && section.isArchived;
 
@@ -666,6 +694,14 @@ final class TaskCommands {
       sectionId: sectionId,
       parentId: parentId,
     );
+    checkRoom(
+      ws,
+      place.projectId,
+      activeInTrees(ws, [
+        for (final id in roots)
+          if (ws.rootProjectOf(id) != place.projectId) id,
+      ]),
+    );
     final moved = roots.toSet();
     final siblings = ws.children(
       parentId,
@@ -799,6 +835,12 @@ final class TaskCommands {
   Future<String> duplicate(String id) async {
     final ws = await _read();
     final task = await _alive(id, ws);
+    // Копия всегда активна, с незавершёнными подзадачами.
+    checkRoom(
+      ws,
+      ws.rootProjectOf(id),
+      activeInTrees(ws, [id]) + (task.isCompleted ? 1 : 0),
+    );
     final siblings = _siblings(ws, task);
     final index = siblings.indexWhere((t) => t.id == id);
     return _mutator.batch(
@@ -1006,6 +1048,39 @@ final class TaskCommands {
         TaskLabelFields.labelId: labelId,
         TaskLabelFields.deleted: !linked,
       });
+
+  /// В проект [projectId] приходят ещё [adding] активных задач: больше
+  /// [Limits.activeTasksPerProject] — [RejectReason.tooManyTasks] (решение 3А
+  /// «Часть M4.11» plans/m4). Проверяется только прирост: проект, уже
+  /// переполненный синхронизацией, не мешает правкам и уходу задач.
+  static void checkRoom(Workspace ws, String projectId, int adding) {
+    if (adding <= 0) return;
+    if (ws.activeTaskCount(projectId) + adding > Limits.activeTasksPerProject) {
+      throw const CommandRejected(RejectReason.tooManyTasks);
+    }
+  }
+
+  /// Активных задач в поддеревьях [roots] вместе с корнями.
+  static int activeInTrees(Workspace ws, Iterable<String> roots) => {
+    for (final root in roots)
+      for (final id in ws.taskSubtree(root))
+        if (ws.task(id) case final t? when !t.isCompleted) id,
+  }.length;
+
+  static String _content(String content) {
+    final text = content.trim();
+    if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
+    return Limits.checkLength(text, Limits.taskContent);
+  }
+
+  /// Новый текст срока — до [Limits.dueText] символов. Прежний текст
+  /// задачи [task] (пришёл с другого устройства длиннее) не проверяется:
+  /// «Время», перенос дня и «Перенести» его сохраняют.
+  static void _checkDueText(Due? due, [Task? task]) {
+    final text = due?.string;
+    if (text == null || text == task?.due?.string) return;
+    Limits.checkLength(text, Limits.dueText);
+  }
 
   Future<void> _update(
     String id,

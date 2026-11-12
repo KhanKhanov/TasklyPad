@@ -7,10 +7,12 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
 
 /// Диалог «Добавить проект» / «Редактировать проект»: название, цвет,
-/// родитель, избранное. Вид (доска, календарь) — M8.
+/// родитель, избранное; при правке — и описание (help «Introduction to
+/// projects»: «three dots → Edit → Description»). Вид (доска, календарь) — M8.
 Future<void> showProjectDialog(
   BuildContext context, {
   Project? project,
@@ -34,6 +36,9 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
   late final TextEditingController _name = TextEditingController(
     text: widget.project?.name ?? '',
   );
+  late final TextEditingController _description = TextEditingController(
+    text: widget.project?.description ?? '',
+  );
   late String _color = widget.project?.color ?? 'charcoal';
   late String? _parent = widget.project?.parentId ?? widget.parentId;
   late bool _favorite = widget.project?.isFavorite ?? false;
@@ -45,6 +50,7 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
   @override
   void dispose() {
     _name.dispose();
+    _description.dispose();
     super.dispose();
   }
 
@@ -85,6 +91,9 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
         // устройства, пока диалог был открыт.
         if (_name.text.trim() != project.name) {
           await commands.rename(project.id, _name.text);
+        }
+        if (_description.text.trim() != project.description) {
+          await commands.setDescription(project.id, _description.text);
         }
         if (_color != project.color) {
           await commands.setColor(project.id, _color);
@@ -131,7 +140,8 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
             TextField(
               controller: _name,
               autofocus: true,
-              maxLength: 120,
+              maxLength: Limits.projectName,
+              inputFormatters: const [TextLimit(Limits.projectName)],
               decoration: InputDecoration(
                 labelText: l10n.fieldName,
                 errorText: _error,
@@ -139,6 +149,18 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
               onChanged: (_) => setState(() => _error = null),
               onSubmitted: (_) => _save(),
             ),
+            // «Входящие» в диалог правки не попадают: меню у них нет.
+            if (_editing) ...[
+              TextField(
+                controller: _description,
+                minLines: 1,
+                maxLines: 4,
+                keyboardType: TextInputType.multiline,
+                inputFormatters: const [TextLimit(Limits.description)],
+                decoration: InputDecoration(labelText: l10n.fieldDescription),
+              ),
+              const SizedBox(height: 8),
+            ],
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               isExpanded: true,

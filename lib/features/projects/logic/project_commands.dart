@@ -36,6 +36,7 @@ final class ProjectCommands {
     final text = _name(name);
     final ws = await _read();
     if (parentId != null) _checkParent(ws, parentId, height: 1);
+    _checkRoom(ws, 1);
     return _mutator.create(EntityTypes.project, {
       ProjectFields.name: text,
       ProjectFields.color: color,
@@ -55,6 +56,13 @@ final class ProjectCommands {
 
   Future<void> setColor(String id, String color) =>
       _update(id, {ProjectFields.color: color}, protectInbox: true);
+
+  /// Описание (help «Introduction to projects»): до [Limits.description]
+  /// символов; у «Входящих» описания нет (допущение О-69).
+  Future<void> setDescription(String id, String description) async {
+    final text = Limits.checkLength(description.trim(), Limits.description);
+    await _update(id, {ProjectFields.description: text}, protectInbox: true);
+  }
 
   Future<void> setFavorite(String id, bool favorite) =>
       _update(id, {ProjectFields.isFavorite: favorite}, protectInbox: true);
@@ -163,6 +171,16 @@ final class ProjectCommands {
     // Не в архиве — не пишем ничего: op `is_archived=false` на поле, которого
     // ещё не было, спорила бы с параллельным архивом на другом устройстве.
     if (!project.isArchived && !ancestorArchived) return;
+    // Возвращаются проект и подпроекты, у которых до него нет своего архива
+    // (подпроект в архиве — сам и с потомками — остаётся там).
+    bool returns(String p) {
+      for (String? q = p; q != null && q != id; q = ws.projectParent(q)) {
+        if (ws.project(q)!.isArchived) return false;
+      }
+      return true;
+    }
+
+    _checkRoom(ws, ws.projectSubtree(id).where(returns).length);
     if (!ancestorArchived) {
       await _mutator.update(EntityTypes.project, id, {
         ProjectFields.isArchived: false,
@@ -184,13 +202,15 @@ final class ProjectCommands {
     await _mutator.delete(EntityTypes.project, id);
   }
 
-  /// Дубликат сразу после проекта: поля, кроме избранного, «Отображение»,
-  /// активные разделы, незавершённые задачи с подзадачами. Подпроекты не
-  /// копируются (в Todoist их дублируют по одному). [name] — имя копии из
+  /// Дубликат сразу после проекта: поля (кроме избранного) с описанием,
+  /// «Отображение», активные разделы, незавершённые задачи с подзадачами.
+  /// Подпроекты не копируются (в Todoist их дублируют по одному). [name] —
+  /// имя копии из
   /// интерфейса («Копия …»).
   Future<String> duplicate(String id, {required String name}) async {
     final ws = await _read();
     final source = _alive(ws, id, protectInbox: true);
+    _checkRoom(ws, 1);
     // Действующий родитель, а не записанный: записанный мог ещё не прийти
     // или быть отброшен разрывом цикла.
     final parentId = ws.projectParent(id);
@@ -199,13 +219,17 @@ final class ProjectCommands {
     final keys = [for (final p in siblings) p.orderKey];
     return _mutator.batch(() async {
       final copy = await _mutator.create(EntityTypes.project, {
-        ProjectFields.name: _name(name),
+        ProjectFields.name: _name(Limits.clip(name.trim(), Limits.projectName)),
         ProjectFields.color: source.color,
         ProjectFields.parentId: ?parentId,
         ProjectFields.orderKey: index < 0
             ? keyAtEnd(keys)
             : keyForInsert(keys, index + 1),
         ProjectFields.viewStyle: source.viewStyle,
+        // Описание копируется (help «Introduction to projects»: «Project
+        // description» — в списке «Included»).
+        if (source.description.isNotEmpty)
+          ProjectFields.description: source.description,
       });
       await _views.copyProject(id, copy);
       for (final task in ws.children(null, projectId: id)) {
@@ -279,6 +303,14 @@ final class ProjectCommands {
   static String _name(String name) {
     final text = name.trim();
     if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
-    return text;
+    return Limits.checkLength(text, Limits.projectName);
+  }
+
+  /// Активных проектов стало бы больше [Limits.activeProjects] —
+  /// [RejectReason.tooManyProjects] (решение 3А «Часть M4.11» plans/m4).
+  static void _checkRoom(Workspace ws, int adding) {
+    if (ws.activeProjectCount + adding > Limits.activeProjects) {
+      throw const CommandRejected(RejectReason.tooManyProjects);
+    }
   }
 }

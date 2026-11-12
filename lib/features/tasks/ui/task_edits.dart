@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../logic/duration_text.dart';
 import 'scheduler_dialog.dart';
 import 'task_actions.dart';
 import 'task_pickers.dart';
@@ -14,15 +15,31 @@ import 'task_pickers.dart';
 // (`t`, `Shift+T`, `v`, `l`, `y`; help «Use keyboard shortcuts»).
 
 /// Срок: выбрать в планировщике; смена и «Отложить» — с тостом «Отменить».
+/// Длительность из окна «Время» пишется отдельно, без тоста, как из поля
+/// панели; срок без изменений после этого окна не пишется.
 Future<void> editDue(BuildContext context, WidgetRef ref, Task task) async {
   final picked = await pickDue(
     context,
     ref,
     task.due,
     canPostpone: !task.isCompleted,
+    duration: task.duration,
+    withDuration: true,
   );
   if (picked == null || !context.mounted) return;
   final commands = ref.read(taskCommandsProvider);
+  if (picked.duration case (:final value)) {
+    // В минутах: `1 day` из Todoist окно вернёт как 1440 минут.
+    final before = task.duration;
+    final same = value == null || before == null
+        ? value == before
+        : durationInMinutes(value) == durationInMinutes(before);
+    if (!same) {
+      await runCommand(context, () => commands.setDuration(task.id, value));
+      if (!context.mounted) return;
+    }
+    if (picked.due == task.due) return;
+  }
   await runWithUndo(
     context,
     AppLocalizations.of(context).dueChanged,

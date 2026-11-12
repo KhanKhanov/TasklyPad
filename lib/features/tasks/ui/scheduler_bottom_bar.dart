@@ -9,12 +9,16 @@ import '../logic/repeat_rules.dart';
 import '../logic/task_commands.dart';
 import 'custom_repeat_dialog.dart';
 import 'due_ui.dart';
+import 'duration_input.dart';
+import 'time_dialog.dart';
 
-/// Низ планировщика: «Время», «Повторить» (готовые варианты и
-/// «Пользовательский…»), значок снятия повтора (help: «dismiss icon at the
-/// bottom of the scheduler») и «Без срока». Выбор отдаёт новый срок в
-/// [onDone]. «Убрать время» нет, когда без времени правило не посчитать
-/// (часовое): [TaskCommands.setDue] такой срок не примет.
+/// Низ планировщика: «Время» (окно времени и длительности — [showTimeDialog]),
+/// «Убрать время», «Повторить» (готовые варианты и «Пользовательский…»),
+/// значок снятия повтора (help: «dismiss icon at the bottom of the
+/// scheduler») и «Без срока». Выбор отдаёт новый срок в [onDone], окно
+/// «Время» — срок и длительность в [onTime]. «Убрать время» нет, когда без
+/// времени правило не посчитать (часовое): [TaskCommands.setDue] такой срок
+/// не примет.
 class SchedulerBottomBar extends StatelessWidget {
   const SchedulerBottomBar({
     super.key,
@@ -22,6 +26,9 @@ class SchedulerBottomBar extends StatelessWidget {
     required this.lang,
     required this.now,
     required this.onDone,
+    required this.onTime,
+    this.duration,
+    this.withDuration = false,
     this.wholeSeries = false,
   });
 
@@ -35,22 +42,40 @@ class SchedulerBottomBar extends StatelessWidget {
   final DateTime now;
   final ValueChanged<Due?> onDone;
 
+  /// Итог окна «Время»: срок с новым временем и длительность (`null` — окно
+  /// без длительности).
+  final void Function(Due due, ({TaskDuration? value})? duration) onTime;
+
+  /// Длительность задачи — значение поля в окне «Время».
+  final TaskDuration? duration;
+
+  /// В окне «Время» есть длительность (одна задача).
+  final bool withDuration;
+
   /// «Время» меняет всю серию, а не только ближайшее вхождение: у задачи из
   /// быстрого добавления вхождений ещё не было (решение А по О-65).
   final bool wholeSeries;
 
   Future<void> _time(BuildContext context, Due current) async {
-    if (current.time != null) {
-      return onDone(dueWithTime(current, null, wholeSeries: wholeSeries));
-    }
-    final time = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
+    final picked = await showTimeDialog(
+      context,
+      time: current.time,
+      duration: duration,
+      withDuration: withDuration,
     );
-    if (time == null || !context.mounted) return;
-    final hh = time.hour.toString().padLeft(2, '0');
-    final mm = time.minute.toString().padLeft(2, '0');
-    onDone(dueWithTime(current, '$hh:$mm', wholeSeries: wholeSeries));
+    if (picked == null || !context.mounted) return;
+    final due = picked.time == current.time
+        ? current
+        : dueWithTime(current, picked.time, wholeSeries: wholeSeries);
+    onTime(due, picked.duration);
+  }
+
+  /// Подпись «Время»: время и длительность, если есть.
+  String _timeLabel(AppLocalizations l10n, Due due) {
+    final time = due.time;
+    if (time == null) return l10n.addTime;
+    final d = withDuration ? duration : null;
+    return d == null ? time : '$time · ${durationLabel(l10n, d)}';
   }
 
   Future<void> _repeat(BuildContext context, Object pick) async {
@@ -88,16 +113,21 @@ class SchedulerBottomBar extends StatelessWidget {
         spacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          if (due != null &&
-              (due.time == null ||
-                  TaskCommands.acceptsDue(
-                    dueWithTime(due, null, wholeSeries: wholeSeries),
-                    now,
-                  )))
+          if (due != null)
             TextButton.icon(
               icon: const Icon(Icons.schedule, size: 18),
-              label: Text(due.time == null ? l10n.addTime : l10n.removeTime),
+              label: Text(_timeLabel(l10n, due)),
               onPressed: () => _time(context, due),
+            ),
+          if (due?.time != null &&
+              TaskCommands.acceptsDue(
+                dueWithTime(due!, null, wholeSeries: wholeSeries),
+                now,
+              ))
+            TextButton(
+              onPressed: () =>
+                  onDone(dueWithTime(due, null, wholeSeries: wholeSeries)),
+              child: Text(l10n.removeTime),
             ),
           PopupMenuButton<Object>(
             tooltip: l10n.repeat,

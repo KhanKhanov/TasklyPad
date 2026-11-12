@@ -396,6 +396,35 @@ void main() {
     });
   });
 
+  testWidgets('окно «Время» планировщика задаёт длительность новой задачи; '
+      'токен `for 1h` уходит из текста (решение 1А «Часть M4.11»)', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      await openQuickAdd(tester);
+      await type(tester, 'Call mom tomorrow 18:00 for 1h');
+      final dialog = find.byType(Dialog).first;
+      await tester.tap(
+        find.descendant(
+          of: dialog,
+          matching: find.byIcon(Icons.event_outlined),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('18:00 · 1 h'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Duration'), '45');
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(controller(tester).text.contains('for 1h'), isFalse);
+      await press(tester, LogicalKeyboardKey.enter);
+
+      final task = (await read(tester, device)).children(null).single;
+      expect(task.duration?.amount, 45);
+      expect((task.due?.date, task.due?.time), ('2026-10-24', '18:00'));
+    });
+  });
+
   testWidgets('выбор чипом без токенов в тексте — чипы показывают значение '
       'сразу, без клика в поле', (tester) async {
     await withApp(tester, (device) async {

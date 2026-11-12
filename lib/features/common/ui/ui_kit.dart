@@ -71,6 +71,11 @@ String rejectMessage(AppLocalizations l10n, RejectReason reason) =>
       RejectReason.notRecurring => l10n.rejectNotRecurring,
       RejectReason.brokenRecurrence => l10n.rejectBrokenRecurrence,
       RejectReason.tooManyLabels => l10n.rejectTooManyLabels,
+      RejectReason.tooLong => l10n.rejectTooLong,
+      RejectReason.tooManyLabelsTotal => l10n.rejectTooManyLabelsTotal,
+      RejectReason.tooManyTasks => l10n.rejectTooManyTasks,
+      RejectReason.tooManyProjects => l10n.rejectTooManyProjects,
+      RejectReason.badDuration => l10n.rejectBadDuration,
     };
 
 /// Выполнить действие; отказ правилами — короткое сообщение внизу экрана.

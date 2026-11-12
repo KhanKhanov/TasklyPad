@@ -14,6 +14,8 @@ import 'task_fields.dart';
 import 'task_subtasks.dart';
 import 'task_title_field.dart';
 import 'task_row_parts.dart';
+import '../../common/ui/text_limit.dart';
+import '../../../domain/rules.dart';
 
 /// Панель задачи, как в Todoist: слева путь «проект › раздел», название,
 /// описание и подзадачи; справа — поля ([TaskFields]); меню — Дублировать,
@@ -255,6 +257,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
                 focusNode: _descriptionFocus,
                 readOnly: readOnly,
                 maxLines: null,
+                inputFormatters: const [TextLimit(Limits.description)],
                 decoration: InputDecoration(
                   hintText: l10n.descriptionHint,
                   border: InputBorder.none,

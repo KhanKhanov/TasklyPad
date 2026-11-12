@@ -166,6 +166,12 @@ class QuickAddController extends TextEditingController {
   void pickDue(Due? due) =>
       _pick(_chips.copyWith(due: (due: due)), {HighlightKind.due});
 
+  /// Длительность из окна «Время»: участок `for 1h` уходит из текста.
+  void pickDuration(TaskDuration? duration) => _pick(
+    _chips.copyWith(duration: (value: duration)),
+    {HighlightKind.duration},
+  );
+
   void pickPriority(int priority) =>
       _pick(_chips.copyWith(priority: priority), {HighlightKind.priority});
 

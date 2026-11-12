@@ -322,7 +322,17 @@ void main() {
     ];
     final full = await app.tasks.add(
       content: 'Полная',
-      labelIds: labels.toSet(),
+      labelIds: labels.take(Limits.labelsPerTask).toSet(),
+    );
+    // 101-я метка — как пришедшая с другого устройства: команда её не даст.
+    await device.services.mutator.update(
+      EntityTypes.taskLabel,
+      taskLabelId(full, labels.last),
+      {
+        TaskLabelFields.taskId: full,
+        TaskLabelFields.labelId: labels.last,
+        TaskLabelFields.deleted: false,
+      },
     );
     final empty = await app.tasks.add(content: 'Пустая');
 

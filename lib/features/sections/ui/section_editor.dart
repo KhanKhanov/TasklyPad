@@ -5,6 +5,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/rules.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../common/ui/text_limit.dart';
 
 /// Встроенный редактор названия раздела, как в Todoist: поле и кнопки
 /// «Добавить раздел» / «Сохранить» и «Отмена»; Enter — сохранить, Esc —
@@ -84,7 +85,8 @@ class _SectionEditorState extends State<SectionEditor> {
             TextField(
               controller: _name,
               focusNode: _focus,
-              maxLength: 120,
+              maxLength: Limits.sectionName,
+              inputFormatters: const [TextLimit(Limits.sectionName)],
               decoration: InputDecoration(
                 hintText: l10n.sectionNameHint,
                 errorText: _error,

@@ -11,6 +11,7 @@ import '../../common/ui/ui_kit.dart';
 import '../../sections/ui/section_editor.dart';
 import '../../tasks/ui/select_tasks_button.dart';
 import '../../views/ui/view_options_button.dart';
+import 'project_description.dart';
 import 'project_menu.dart';
 
 /// «Пусто» под заголовком проекта без задач и разделов.
@@ -28,7 +29,7 @@ class ProjectEmpty extends StatelessWidget {
   );
 }
 
-/// Заголовок проекта: название, «Отображение» и меню проекта.
+/// Заголовок проекта: название, «Отображение», меню проекта и описание.
 class ProjectHeader extends StatelessWidget {
   const ProjectHeader({
     super.key,
@@ -44,33 +45,42 @@ class ProjectHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              projectTitle(AppLocalizations.of(context), project),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-              ),
+    final title = Row(
+      children: [
+        Expanded(
+          child: Text(
+            projectTitle(AppLocalizations.of(context), project),
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          ViewOptionsButton(viewType: ViewType.project, objectId: project.id),
-          if (!project.isInbox)
-            ProjectMenuButton(
-              project: project,
-              archived: archived,
-              size: 22,
-              selectTasks: true,
-            )
-          else if (touchLayout(context))
-            const SelectTasksMenuButton(),
-        ],
-      ),
+        ),
+        ViewOptionsButton(viewType: ViewType.project, objectId: project.id),
+        if (!project.isInbox)
+          ProjectMenuButton(
+            project: project,
+            archived: archived,
+            size: 22,
+            selectTasks: true,
+          )
+        else if (touchLayout(context))
+          const SelectTasksMenuButton(),
+      ],
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: project.isInbox
+          ? title
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                title,
+                ProjectDescription(project: project, readOnly: archived),
+              ],
+            ),
     );
   }
 }

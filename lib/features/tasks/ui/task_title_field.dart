@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../quick_add/ui/highlight_tap_region.dart';
 import '../state/title_date_controller.dart';
+import '../../common/ui/text_limit.dart';
+import '../../../domain/rules.dart';
 
 /// Название в окне задачи: одна строка, как в Todoist, — Enter сохраняет,
 /// вставленный перевод строки становится пробелом; длинное название
@@ -44,6 +46,7 @@ class TaskTitleField extends StatelessWidget {
             RegExp(r'[\r\n]+'),
             replacementString: ' ',
           ),
+          const TextLimit(Limits.taskContent),
         ],
         decoration: const InputDecoration(
           border: InputBorder.none,

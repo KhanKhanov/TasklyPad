@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import 'duration_input.dart';
 
 /// Поле правой колонки панели задачи: подпись и значение. Нажимается всё
 /// поле — и подпись, и значение, как в Todoist; при наведении подсвечивается
@@ -107,41 +108,55 @@ class PriorityField extends ConsumerWidget {
   }
 }
 
-/// Поле «Длительность» (у срока со временем): готовые варианты нажатием на
-/// всё поле.
+/// Поле «Длительность» — видно всегда, и без срока (help «Set a task
+/// duration»: «with or without a date and time»; решение 13А plans/m4):
+/// готовые варианты и «Своя длительность…» нажатием на всё поле, крестик
+/// рядом со значением убирает.
 class DurationField extends ConsumerWidget {
   const DurationField({super.key, required this.task, required this.enabled});
 
   final Task task;
   final bool enabled;
 
-  static const _minutes = [15, 30, 45, 60, 90, 120];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final current = task.duration;
-    final text = current == null
-        ? l10n.noDuration
-        : l10n.durationMinutes(
-            current.unit == 'day' ? current.amount * 1440 : current.amount,
-          );
     void set(TaskDuration? d) => runCommand(
       context,
       () => ref.read(taskCommandsProvider).setDuration(task.id, d),
     );
+    Future<void> custom() async {
+      final picked = await showDurationDialog(context, current);
+      if (picked != null && context.mounted) set(picked.value);
+    }
+
     return _FieldMenu(
       label: l10n.fieldDuration,
       enabled: enabled,
       items: [
-        (child: Text(l10n.noDuration), pick: () => set(null)),
-        for (final m in _minutes)
+        for (final m in durationPresets)
           (
-            child: Text(l10n.durationMinutes(m)),
+            child: Text(minutesLabel(l10n, m)),
             pick: () => set(TaskDuration(amount: m, unit: 'minute')),
           ),
+        (child: Text(l10n.durationCustom), pick: custom),
       ],
-      child: Text(text),
+      child: current == null
+          ? Text(l10n.noDuration)
+          : Row(
+              children: [
+                Flexible(child: Text(durationLabel(l10n, current))),
+                if (enabled)
+                  IconButton(
+                    tooltip: l10n.removeDuration,
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 16,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => set(null),
+                  ),
+              ],
+            ),
     );
   }
 }
