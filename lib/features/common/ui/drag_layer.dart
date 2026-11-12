@@ -123,6 +123,15 @@ class _DragLayerState extends ConsumerState<DragLayer>
     _session.update(payload.sources, _place()?.indicator);
   }
 
+  /// Указатель: `details.offset` — угол образа, а образ задачи сдвинут
+  /// относительно указателя ([AnchoredPayload]).
+  static Offset _pointerOf(DragTargetDetails<DragPayload> details) =>
+      details.offset +
+      switch (details.data) {
+        final AnchoredPayload p => p.anchor,
+        _ => Offset.zero,
+      };
+
   /// Указатель идёт над слоем: начало перетаскивания или его продолжение.
   void _onMove(DragTargetDetails<DragPayload> details) {
     if (!_active) {
@@ -135,7 +144,7 @@ class _DragLayerState extends ConsumerState<DragLayer>
       }
     }
     _payload = details.data;
-    _pointer = details.offset;
+    _pointer = _pointerOf(details);
     _refresh();
     _watch();
     _kick();
@@ -237,7 +246,7 @@ class _DragLayerState extends ConsumerState<DragLayer>
 
   void _onDrop(DragTargetDetails<DragPayload> details) {
     _payload = details.data;
-    _pointer = details.offset;
+    _pointer = _pointerOf(details);
     final place = _place();
     _end();
     if (place != null && mounted) unawaited(place.perform(context, ref));

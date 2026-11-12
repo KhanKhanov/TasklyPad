@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
+import '../../../domain/view_options.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/ui_kit.dart';
+import '../../views/state/view_options.dart';
 import 'task_drag.dart';
 import 'task_list.dart';
 import 'task_order.dart';
 
 /// «Подзадачи» в панели задачи: заголовок, «Показать / скрыть выполненные»
-/// и список с «Добавить подзадачу». Показ выполненных здесь — на время, пока
-/// панель открыта.
-class TaskSubtasks extends StatefulWidget {
+/// и список с «Добавить подзадачу». Показ выполненных запоминается для задачи
+/// и синхронизируется — настройка вида [ViewType.task] (решение 1Б «M4.10a»
+/// plans/m4).
+class TaskSubtasks extends ConsumerStatefulWidget {
   const TaskSubtasks({
     super.key,
     required this.task,
@@ -24,11 +30,10 @@ class TaskSubtasks extends StatefulWidget {
   final bool readOnly;
 
   @override
-  State<TaskSubtasks> createState() => _TaskSubtasksState();
+  ConsumerState<TaskSubtasks> createState() => _TaskSubtasksState();
 }
 
-class _TaskSubtasksState extends State<TaskSubtasks> {
-  bool _showCompleted = false;
+class _TaskSubtasksState extends ConsumerState<TaskSubtasks> {
   AddTaskAt _addAt = AddTaskAt.none;
 
   @override
@@ -38,6 +43,8 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
     final ws = widget.ws;
     final task = widget.task;
     final progress = ws.subtaskProgress(task.id);
+    final options = ref.watch(viewOptionsProvider(ViewType.task, task.id));
+    final showCompleted = options.showCompletedTasks;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -72,10 +79,17 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
               ],
               const Spacer(),
               TextButton(
-                onPressed: () =>
-                    setState(() => _showCompleted = !_showCompleted),
+                onPressed: () => runCommand(
+                  context,
+                  () => ref
+                      .read(viewOptionsCommandsProvider)
+                      .save(
+                        options,
+                        options.copyWith(showCompletedTasks: !showCompleted),
+                      ),
+                ),
                 child: Text(
-                  _showCompleted ? l10n.hideCompleted : l10n.showCompleted,
+                  showCompleted ? l10n.hideCompleted : l10n.showCompleted,
                 ),
               ),
             ],
@@ -85,12 +99,12 @@ class _TaskSubtasksState extends State<TaskSubtasks> {
           order: (ws) => [
             for (final item in ws.subtasksOf(
               task.id,
-              showCompleted: _showCompleted,
+              showCompleted: showCompleted,
             ))
               item.value.id,
           ],
           child: TaskList(
-            items: ws.subtasksOf(task.id, showCompleted: _showCompleted),
+            items: ws.subtasksOf(task.id, showCompleted: showCompleted),
             ws: ws,
             projectId: ws.rootProjectOf(task.id),
             parentId: task.id,

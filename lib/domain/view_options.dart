@@ -14,11 +14,16 @@ enum ViewType {
   upcoming('upcoming'),
   project('project'),
   label('label'),
-  filter('filter');
+  filter('filter'),
+
+  /// Подзадачи в панели задачи (`object_id` — id задачи): только «Выполненные
+  /// задачи» — «Показать выполненные» запоминается для задачи (решение 1Б
+  /// «M4.10a» plans/m4). Наше дополнение: в Todoist API такого вида нет.
+  task('task');
 
   const ViewType(this.apiName);
 
-  /// Значение `view_type` в Todoist API.
+  /// Значение `view_type` в Todoist API (у [task] — наше).
   final String apiName;
 }
 

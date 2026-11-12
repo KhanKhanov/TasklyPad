@@ -11,6 +11,7 @@ import '../state/today.dart';
 import 'deadline_dialog.dart';
 import 'due_ui.dart';
 import 'task_edits.dart';
+import 'task_field_menus.dart';
 
 /// Правая колонка панели задачи, как в Todoist: Проект, Срок (с длительностью
 /// при времени), Дедлайн, Приоритет, Метки.
@@ -49,7 +50,7 @@ class TaskFields extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Field(
+          TaskField(
             label: l10n.fieldProject,
             onTap: readOnly ? null : () => moveTaskTo(context, ref, task),
             child: Row(
@@ -68,7 +69,7 @@ class TaskFields extends ConsumerWidget {
               ],
             ),
           ),
-          _Field(
+          TaskField(
             label: l10n.fieldDue,
             onTap: readOnly ? null : () => editDue(context, ref, task),
             child: due == null
@@ -112,12 +113,8 @@ class TaskFields extends ConsumerWidget {
                     },
                   ),
           ),
-          if (due?.time != null)
-            _Field(
-              label: l10n.fieldDuration,
-              child: _DurationMenu(task: task, enabled: !readOnly),
-            ),
-          _Field(
+          if (due?.time != null) DurationField(task: task, enabled: !readOnly),
+          TaskField(
             label: l10n.fieldDeadline,
             onTap: readOnly
                 ? null
@@ -144,11 +141,8 @@ class TaskFields extends ConsumerWidget {
                     },
                   ),
           ),
-          _Field(
-            label: l10n.fieldPriority,
-            child: _PriorityMenu(task: task, enabled: !readOnly),
-          ),
-          _Field(
+          PriorityField(task: task, enabled: !readOnly),
+          TaskField(
             label: l10n.fieldLabels,
             onTap: readOnly ? null : () => editLabels(context, ref, task),
             child: Wrap(
@@ -167,122 +161,6 @@ class TaskFields extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.child, this.onTap});
-
-  final String label;
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    // Нажимается всё поле — и подпись, и значение, как в Todoist.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                DefaultTextStyle.merge(
-                  style: TextStyle(color: palette.textPrimary, fontSize: 14),
-                  child: child,
-                ),
-              ],
-            ),
-          ),
-        ),
-        Divider(color: palette.divider),
-      ],
-    );
-  }
-}
-
-class _PriorityMenu extends ConsumerWidget {
-  const _PriorityMenu({required this.task, required this.enabled});
-
-  final Task task;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final palette = AppPalette.of(context);
-    Widget item(int p) => Row(
-      children: [
-        Icon(Icons.flag, size: 16, color: palette.priority[p - 1]),
-        const SizedBox(width: 8),
-        Text(l10n.priorityN(p)),
-      ],
-    );
-    return PopupMenuButton<int>(
-      tooltip: l10n.fieldPriority,
-      enabled: enabled,
-      onSelected: (p) => runCommand(
-        context,
-        () => ref.read(taskCommandsProvider).setPriority(task.id, p),
-      ),
-      itemBuilder: (context) => [
-        for (var p = 1; p <= 4; p++) PopupMenuItem(value: p, child: item(p)),
-      ],
-      child: item(task.priority.clamp(1, 4)),
-    );
-  }
-}
-
-class _DurationMenu extends ConsumerWidget {
-  const _DurationMenu({required this.task, required this.enabled});
-
-  final Task task;
-  final bool enabled;
-
-  static const _minutes = [15, 30, 45, 60, 90, 120];
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final current = task.duration;
-    final text = current == null
-        ? l10n.noDuration
-        : l10n.durationMinutes(
-            current.unit == 'day' ? current.amount * 1440 : current.amount,
-          );
-    return PopupMenuButton<int>(
-      tooltip: l10n.fieldDuration,
-      enabled: enabled,
-      onSelected: (m) => runCommand(
-        context,
-        () => ref
-            .read(taskCommandsProvider)
-            .setDuration(
-              task.id,
-              m == 0 ? null : TaskDuration(amount: m, unit: 'minute'),
-            ),
-      ),
-      itemBuilder: (context) => [
-        PopupMenuItem(value: 0, child: Text(l10n.noDuration)),
-        for (final m in _minutes)
-          PopupMenuItem(value: m, child: Text(l10n.durationMinutes(m))),
-      ],
-      child: Text(text),
     );
   }
 }

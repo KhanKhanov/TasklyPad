@@ -1,6 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/nav_history.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
@@ -58,6 +60,23 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.dispose();
   }
 
+  /// Шаг по истории экранов: [step] берёт адрес у истории (назад или вперёд).
+  void _travel(String? Function(NavHistory history) step) {
+    final path = step(ref.read(navHistoryProvider));
+    if (path != null) navigate(context, path);
+  }
+
+  /// Боковые кнопки мыши «Назад» и «Вперёд» — как `Alt+←` и `Alt+→`. Над
+  /// панелью задачи и другими окнами не срабатывают: окно лежит поверх
+  /// оболочки и забирает нажатия.
+  void _onPointerDown(PointerDownEvent event) {
+    if (event.buttons & kBackMouseButton != 0) {
+      _travel((h) => h.back());
+    } else if (event.buttons & kForwardMouseButton != 0) {
+      _travel((h) => h.forward());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -67,6 +86,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.listen(syncControllerProvider, (_, _) {});
     final location = widget.location;
     final selecting = ref.watch(taskSelectionProvider.select((s) => s.active));
+    // История экранов ведётся с первого показа оболочки.
+    ref.watch(navHistoryProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideLayoutWidth;
@@ -81,6 +102,8 @@ class _AppShellState extends ConsumerState<AppShell> {
             child: ShellKeys(
               onQuickAdd: () => openQuickAdd(context, ref, location),
               onSync: () => syncFromShell(context, ref),
+              onBack: () => _travel((h) => h.back()),
+              onForward: () => _travel((h) => h.forward()),
               onToggleSidebar: () {
                 final scaffold = _scaffold.currentState;
                 if (wide) {
@@ -93,64 +116,67 @@ class _AppShellState extends ConsumerState<AppShell> {
                   scaffold.openDrawer();
                 }
               },
-              // Один приёмник перетаскивания на всё окно: списки, сайдбар.
-              child: DragLayer(
-                // На узком экране сайдбар — выдвижная панель вне тела `Scaffold`.
-                hitRoot: wide ? _bodyKey : null,
-                child: Scaffold(
-                  key: _scaffold,
-                  backgroundColor: palette.background,
-                  drawer: wide
-                      ? null
-                      : Drawer(
-                          width: _sidebarWidth,
-                          child: Sidebar(location: location),
-                        ),
-                  body: Row(
-                    key: _bodyKey,
-                    children: [
-                      if (wide && open)
-                        SizedBox(
-                          width: _sidebarWidth,
-                          child: Sidebar(location: location),
-                        ),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _TopBar(showToggle: !wide || !open),
-                            Expanded(
-                              child: SelectionKeys(
-                                toolbarFocus: _toolbarFocus,
-                                child: Stack(
-                                  children: [
-                                    // Панель выделения не закрывает конец
-                                    // списка.
-                                    Positioned.fill(
-                                      child: Padding(
-                                        padding: EdgeInsets.only(
-                                          bottom: selecting ? 72 : 0,
-                                        ),
-                                        child: widget.child,
-                                      ),
-                                    ),
-                                    Positioned(
-                                      left: 16,
-                                      right: 16,
-                                      bottom: 16,
-                                      child: Center(
-                                        child: SelectionToolbar(
-                                          focus: _toolbarFocus,
+              child: Listener(
+                onPointerDown: _onPointerDown,
+                // Один приёмник перетаскивания на всё окно: списки, сайдбар.
+                child: DragLayer(
+                  // На узком экране сайдбар — выдвижная панель вне тела `Scaffold`.
+                  hitRoot: wide ? _bodyKey : null,
+                  child: Scaffold(
+                    key: _scaffold,
+                    backgroundColor: palette.background,
+                    drawer: wide
+                        ? null
+                        : Drawer(
+                            width: _sidebarWidth,
+                            child: Sidebar(location: location),
+                          ),
+                    body: Row(
+                      key: _bodyKey,
+                      children: [
+                        if (wide && open)
+                          SizedBox(
+                            width: _sidebarWidth,
+                            child: Sidebar(location: location),
+                          ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _TopBar(showToggle: !wide || !open),
+                              Expanded(
+                                child: SelectionKeys(
+                                  toolbarFocus: _toolbarFocus,
+                                  child: Stack(
+                                    children: [
+                                      // Панель выделения не закрывает конец
+                                      // списка.
+                                      Positioned.fill(
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            bottom: selecting ? 72 : 0,
+                                          ),
+                                          child: widget.child,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      Positioned(
+                                        left: 16,
+                                        right: 16,
+                                        bottom: 16,
+                                        child: Center(
+                                          child: SelectionToolbar(
+                                            focus: _toolbarFocus,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

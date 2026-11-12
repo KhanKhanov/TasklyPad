@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_palette.dart';
+import 'sidebar_selection.dart';
 
 /// Пункт сайдбара: значок, название, число задач.
 class SidebarNavItem extends StatelessWidget {
@@ -31,9 +32,8 @@ class SidebarNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final color = selected ? palette.onSelected : palette.textPrimary;
-    return Material(
-      color: selected ? palette.selected : Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+    return SidebarSelectable(
+      selected: selected,
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: onTap,
@@ -87,9 +87,8 @@ class SidebarGroupHeader extends StatelessWidget {
     final palette = AppPalette.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: Material(
-        color: selected ? palette.selected : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+      child: SidebarSelectable(
+        selected: selected,
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: onTap,

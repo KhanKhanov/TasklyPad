@@ -4,6 +4,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../common/ui/ui_kit.dart';
 import 'label_menu.dart';
+import '../../shell/ui/sidebar_selection.dart';
 
 /// Строка метки в сайдбаре («Избранное») и на странице «Фильтры и метки»:
 /// значок метки её цвета, название и число активных задач; при наведении
@@ -37,9 +38,8 @@ class _LabelTileState extends State<LabelTile> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      child: Material(
-        color: widget.selected ? palette.selected : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+      child: SidebarSelectable(
+        selected: widget.selected,
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: () => navigate(context, '/label/${l.id}'),

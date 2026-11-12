@@ -8,11 +8,15 @@ import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../common/ui/drag_layer.dart';
+import '../../common/ui/drag_slots.dart';
 import '../../common/ui/drag_source.dart';
 import '../../common/state/drag_session.dart';
 import '../state/selection.dart';
+import 'task_drag_ghost.dart';
+import 'task_drag_payload.dart';
 import 'task_drop_calc.dart';
 
+export 'task_drag_payload.dart';
 export 'task_end_slot.dart';
 
 /// Поле слева от строки задачи под ручку перетаскивания.
@@ -107,54 +111,6 @@ final class OverdueDrop extends TaskListDrop {
   Object get endOwner => 'end-overdue';
 }
 
-/// Перетаскиваемые задачи: одна или выделенные вместе.
-final class TaskDrag implements DragPayload {
-  TaskDrag({
-    required this.task,
-    required this.depth,
-    required this.origin,
-    required this._pick,
-  });
-
-  /// Задача, за которую взялись.
-  final Task task;
-
-  /// Её уровень в списке: от него считается уровень после сдвига вбок.
-  final int depth;
-  final TaskListDrop origin;
-  final List<String> Function() _pick;
-
-  /// Выбираются при первом обращении — в начале перетаскивания, а не при
-  /// построении строки: выделение за это время могло измениться.
-  late final List<String> ids = _pick();
-
-  @override
-  Offset? startAt;
-
-  @override
-  late final Set<String> sources = ids.toSet();
-}
-
-/// Строки списка, которые в перетаскивании не участвуют: выполненные и всё
-/// поддерево выполненной (активная подзадача выполненной остаётся внутри неё:
-/// её не взять и между ней и родителем линии нет).
-Set<String> frozenIds(List<TreeItem<Task>> items) {
-  final frozen = <String>{};
-  int? under;
-  for (final item in items) {
-    if (under != null && item.depth > under) {
-      frozen.add(item.value.id);
-      continue;
-    }
-    under = null;
-    if (item.value.isCompleted) {
-      frozen.add(item.value.id);
-      under = item.depth;
-    }
-  }
-  return frozen;
-}
-
 /// Строка задачи в списке с перетаскиванием: поле под ручку слева, ручка при
 /// наведении мыши, долгое нажатие касанием, слот броска и отметка места.
 /// Без [drop] — только поле слева, чтобы строки не сдвигались.
@@ -199,12 +155,22 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
     return [_task.id];
   }
 
-  TaskDrag _payload(TaskListDrop drop, {required bool multi}) => TaskDrag(
-    task: _task,
-    depth: widget.item.depth + (drop is ProjectDrop ? drop.baseDepth : 0),
-    origin: drop,
-    pick: () => _pick(multi: multi),
-  );
+  /// Мышь тянет за ручку (она левее кружка на поле и ниже на 6), касание —
+  /// за всю строку с полем и отступом уровня. Образ — шириной со строку.
+  TaskDrag _payload(TaskListDrop drop, {required bool multi}) {
+    final indent = dragGutter + widget.item.depth * taskIndentStep;
+    return TaskDrag(
+      task: _task,
+      depth: widget.item.depth + (drop is ProjectDrop ? drop.baseDepth : 0),
+      origin: drop,
+      pick: () => _pick(multi: multi),
+      ghostOrigin: multi ? const Offset(dragGutter, -6) : Offset(indent, 0),
+      measure: () {
+        final box = context.findRenderObject();
+        return box is RenderBox && box.hasSize ? box.size.width - indent : 400;
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +190,7 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
         if (canDrag)
           TouchDraggable(
             data: touch,
-            feedback: DragGhost(title: _task.content, payload: touch!),
+            feedback: TaskDragGhost(payload: touch!),
             child: padded,
           )
         else
@@ -238,7 +204,7 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
             height: 32,
             child: MouseDraggable(
               data: mouse,
-              feedback: DragGhost(title: _task.content, payload: mouse!),
+              feedback: TaskDragGhost(payload: mouse!),
               child: const DragGrip(),
             ),
           ),

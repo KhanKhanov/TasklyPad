@@ -11,7 +11,7 @@ import '../state/view_options.dart';
 /// Кнопка «Отображение» в заголовке вида: группировка, сортировка с
 /// направлением, «Выполненные задачи», «Сбросить всё» (help «Sort or group
 /// tasks», решение 2 плана M4). Выбранные сортировка и группировка — числом
-/// на кнопке: «Отображение: 1» (скриншот Todoist для Windows, О-28).
+/// в кружке рядом с названием кнопки (решение 10Б M4.10a).
 class ViewOptionsButton extends ConsumerWidget {
   const ViewOptionsButton({super.key, required this.viewType, this.objectId});
 
@@ -110,23 +110,35 @@ class ViewOptionsButton extends ConsumerWidget {
           child: Text(l10n.viewResetAll),
         ),
       ],
-      builder: (context, controller, _) => InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: () => controller.isOpen ? controller.close() : controller.open(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.tune, size: 18, color: palette.textSecondary),
-              const SizedBox(width: 4),
-              Text(
-                options.applied == 0
-                    ? l10n.viewOptions
-                    : l10n.viewOptionsCount(options.applied),
-                style: TextStyle(color: palette.textSecondary),
-              ),
-            ],
+      builder: (context, controller, _) => Semantics(
+        button: true,
+        // Экранный чтец и тесты видят «Отображение: N», хотя на экране —
+        // «Отображение» и число в кружке.
+        label: options.applied == 0
+            ? l10n.viewOptions
+            : l10n.viewOptionsCount(options.applied),
+        excludeSemantics: true,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.tune, size: 18, color: palette.textSecondary),
+                const SizedBox(width: 4),
+                Text(
+                  l10n.viewOptions,
+                  style: TextStyle(color: palette.textSecondary),
+                ),
+                if (options.applied > 0) ...[
+                  const SizedBox(width: 6),
+                  _CountBadge(count: options.applied),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -134,10 +146,42 @@ class ViewOptionsButton extends ConsumerWidget {
   }
 }
 
+/// Число изменённых настроек в круге цвета акцента (решение 10Б M4.10a; в
+/// Todoist — оранжевая точка).
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Container(
+      key: const ValueKey('viewOptionsBadge'),
+      width: 18,
+      height: 18,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: palette.accent, shape: BoxShape.circle),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          color:
+              ThemeData.estimateBrightnessForColor(palette.accent) ==
+                  Brightness.dark
+              ? Colors.white
+              : Colors.black,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 /// Группировки вида: у «Предстоящего» их нет, «Проект» — вне проекта
-/// (решение 2 плана M4); фильтр — M5.
+/// (решение 2 плана M4); фильтр — M5. У подзадач панели «Отображения» нет.
 List<Grouping> _groupings(ViewType type) => switch (type) {
-  ViewType.upcoming => const [Grouping.none],
+  ViewType.upcoming || ViewType.task => const [Grouping.none],
   ViewType.project => [
     for (final g in Grouping.values)
       if (g != Grouping.project) g,
@@ -174,7 +218,7 @@ String _sortingText(AppLocalizations l10n, ViewType type, Sorting s) =>
     switch (s) {
       Sorting.byDefault => switch (type) {
         ViewType.label || ViewType.filter => l10n.sortingDefault,
-        ViewType.project => l10n.sortingManual,
+        ViewType.project || ViewType.task => l10n.sortingManual,
         ViewType.today || ViewType.upcoming => l10n.sortingSmart,
       },
       Sorting.manual => l10n.sortingManual,

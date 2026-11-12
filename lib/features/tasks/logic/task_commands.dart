@@ -452,11 +452,14 @@ final class TaskCommands {
     }
   }
 
-  /// Вернуть задачу в работу — как `item_uncomplete` в Todoist API: вместе с
-  /// ней возвращаются завершённые предки и архивный раздел корневой задачи,
-  /// а возвращённые встают в конец незавершённых соседей (раздел — в конец
-  /// разделов проекта). «Отменить» в тосте после завершения сюда не ведёт:
-  /// он восстанавливает прежние значения полей, в том числе место.
+  /// Вернуть задачу в работу: вместе с ней возвращаются завершённые предки и
+  /// архивный раздел корневой задачи, как `item_uncomplete` в Todoist API.
+  /// Возвращённые встают на прежнее место — ключ порядка при выполнении не
+  /// меняется (отступление от API, где они встают в конец: решение 4А
+  /// «M4.10a» plans/m4). Новый ключ — только если прежний совпал с ключом
+  /// активного соседа (два устройства вставили элемент в одно место): на том
+  /// же месте, сразу после равных. «Отменить» в тосте после завершения сюда не
+  /// ведёт: он восстанавливает прежние значения полей.
   ///
   /// Удалённые метки возвращённых задач возвращаются, как в Todoist
   /// ([_reviveLabels]); снимок имён меток снимается. [Undo] (в интерфейсе его
@@ -476,24 +479,35 @@ final class TaskCommands {
     // Ключи считаются до записи: соседи — незавершённые и не возвращаемые.
     final keys = <String, String>{
       for (final t in ids)
-        t: keyAtEnd([
+        t: ?_returnKey(t, ws.task(t)!.orderKey, [
           for (final s in _siblings(ws, ws.task(t)!))
-            if (!s.isCompleted && !ids.contains(s.id)) s.orderKey,
+            if (!s.isCompleted && !ids.contains(s.id)) (s.id, s.orderKey),
         ]),
     };
+    final sectionKey = reinstateSection
+        ? _returnKey(section.id, section.orderKey, [
+            for (final s in ws.sectionsOf(
+              section.projectId ?? ws.inbox?.id ?? inboxProjectId,
+            ))
+              (s.id, s.orderKey),
+          ])
+        : null;
     final undo = await _mutator.capture([
       for (final t in ids)
         _target(t, {
           TaskFields.isCompleted,
           TaskFields.completedAt,
           TaskFields.completedLabelNames,
-          TaskFields.orderKey,
+          if (keys.containsKey(t)) TaskFields.orderKey,
         }),
       if (reinstateSection)
         (
           entityType: EntityTypes.section,
           entityId: section.id,
-          fields: {SectionFields.isArchived, SectionFields.orderKey},
+          fields: {
+            SectionFields.isArchived,
+            if (sectionKey != null) SectionFields.orderKey,
+          },
         ),
     ]);
     await _mutator.batch(() async {
@@ -502,21 +516,48 @@ final class TaskCommands {
           TaskFields.isCompleted: false,
           TaskFields.completedAt: null,
           TaskFields.completedLabelNames: null,
-          TaskFields.orderKey: keys[t],
+          TaskFields.orderKey: ?keys[t],
         });
       }
       if (reinstateSection) {
-        final projectId = section.projectId ?? ws.inbox?.id ?? inboxProjectId;
         await _mutator.update(EntityTypes.section, section.id, {
           SectionFields.isArchived: false,
-          SectionFields.orderKey: keyAtEnd([
-            for (final s in ws.sectionsOf(projectId)) s.orderKey,
-          ]),
+          SectionFields.orderKey: ?sectionKey,
         });
       }
       await _reviveLabels(ws, ids);
     });
     return undo;
+  }
+
+  /// Новый ключ порядка для элемента [id] с ключом [key], который
+  /// возвращается к активным соседям [others] (id и ключ): `null` — прежний
+  /// ключ свободен и место сохраняется. Ключ совпал с соседским или пуст и
+  /// неверен — ключ на том же месте списка, сразу после равных (как при
+  /// вставке, [keyForInsert]); без верного ключа — в конец.
+  static String? _returnKey(
+    String id,
+    String key,
+    List<(String, String)> others,
+  ) {
+    final valid = key.isNotEmpty && !key.endsWith('0');
+    if (valid && others.every((o) => o.$2 != key)) return null;
+    final sorted = [...others]
+      ..sort((a, b) {
+        final byKey = a.$2.compareTo(b.$2);
+        return byKey != 0 ? byKey : a.$1.compareTo(b.$1);
+      });
+    final keys = [for (final o in sorted) o.$2];
+    if (!valid) return keyAtEnd(keys);
+    // Место — как у сортировки [Workspace]: ключ, затем id.
+    final index = sorted
+        .where(
+          (o) =>
+              o.$2.compareTo(key) < 0 ||
+              (o.$2 == key && o.$1.compareTo(id) < 0),
+        )
+        .length;
+    return keyForInsert(keys, index);
   }
 
   /// Удалённые метки задач [ids], которые возвращаются в работу, — как в

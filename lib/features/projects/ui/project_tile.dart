@@ -6,6 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../common/ui/ui_kit.dart';
 import 'project_menu.dart';
+import '../../shell/ui/sidebar_selection.dart';
 
 /// Строка проекта в сайдбаре и на экране «Мои проекты»: отступ по уровню,
 /// стрелка свернуть / развернуть подпроекты, `#` цвета проекта, название и
@@ -45,9 +46,8 @@ class _ProjectTileState extends ConsumerState<ProjectTile> {
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
-      child: Material(
-        color: widget.selected ? palette.selected : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+      child: SidebarSelectable(
+        selected: widget.selected,
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: () => navigate(context, '/project/${p.id}'),

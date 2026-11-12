@@ -61,8 +61,8 @@ void main() {
     expect(state().live(await app.read()), [ids[2], ids[3]]);
 
     await app.tasks.uncomplete(ids[0]);
-    // Возвращённая задача встаёт в конец списка — и в выделении тоже.
-    expect(state().live(await app.read()), [ids[2], ids[3], ids[0]]);
+    // Возвращённая задача встаёт на прежнее место — и в выделении тоже.
+    expect(state().live(await app.read()), [ids[0], ids[2], ids[3]]);
   });
 
   test(

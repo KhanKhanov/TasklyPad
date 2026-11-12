@@ -163,4 +163,45 @@ void main() {
     );
     await expectStableAndSame();
   });
+
+  test('«Показать выполненные» подзадач задачи на ПК — телефон видит после '
+      'синхронизации и пересборки (решение 1Б «M4.10a»)', () async {
+    final task = await onPc.tasks.add(content: 'Ремонт');
+    await syncBoth();
+    final view = ViewOptions(viewType: ViewType.task, objectId: task);
+    await onPc.views.save(view, view.copyWith(showCompletedTasks: true));
+    await syncBoth();
+
+    expect(
+      await onPhone.viewsRepo.load(ViewType.task, objectId: task),
+      view.copyWith(showCompletedTasks: true),
+    );
+    await expectNoCards();
+    await expectStableAndSame();
+  });
+
+  test('«Показать выполненные» одной задачи включили на ПК и выключили на '
+      'телефоне позже офлайн — одна сущность, победила поздняя правка, без '
+      'карточки', () async {
+    final task = await onPc.tasks.add(content: 'Ремонт');
+    final view = ViewOptions(viewType: ViewType.task, objectId: task);
+    await onPc.views.save(view, view.copyWith(showCompletedTasks: true));
+    await syncBoth();
+
+    final shown = view.copyWith(showCompletedTasks: true);
+    await onPc.views.save(shown, view);
+    await onPc.views.save(view, shown);
+    phone.advance(const Duration(seconds: 5));
+    await onPhone.views.save(shown, view);
+    await syncBoth();
+
+    for (final dev in [onPc, onPhone]) {
+      expect(await dev.viewsRepo.load(ViewType.task, objectId: task), view);
+    }
+    for (final dev in [pc, phone]) {
+      expect(await dev.db.select(dev.db.viewOptions).get(), hasLength(1));
+    }
+    await expectNoCards();
+    await expectStableAndSame();
+  });
 }

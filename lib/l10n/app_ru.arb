@@ -165,6 +165,10 @@
   "@addSection": {
     "description": "Кнопка, как в Todoist"
   },
+  "newSection": "Новый раздел",
+  "@newSection": {
+    "description": "Строка в конце проекта, открывает редактор раздела (решение 9Б M4.10a)"
+  },
   "sectionNameHint": "Название раздела",
   "@sectionNameHint": {
     "description": "Подсказка в поле раздела"

@@ -233,27 +233,38 @@ class _GroupHeader extends ConsumerWidget {
         border: Border(bottom: BorderSide(color: palette.divider)),
       ),
       height: 40,
+      // Название с числом занимают всё место до кнопки, а кнопка — у правого
+      // края (`Flexible` и `Spacer` делили бы место пополам).
       child: Row(
         children: [
-          Flexible(
-            child: Text(
-              title,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: group.key is OverdueGroup
-                    ? palette.danger
-                    : palette.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: group.key is OverdueGroup
+                          ? palette.danger
+                          : palette.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (count > 0)
+                  Text(
+                    '$count',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          if (count > 0)
-            Text(
-              '$count',
-              style: TextStyle(color: palette.textSecondary, fontSize: 12),
-            ),
-          if (action case final action?) ...[const Spacer(), action],
+          ?action,
         ],
       ),
     );

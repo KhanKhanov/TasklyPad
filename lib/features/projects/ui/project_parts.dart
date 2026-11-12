@@ -75,7 +75,7 @@ class ProjectHeader extends StatelessWidget {
   }
 }
 
-/// «Добавить раздел» в конце проекта: по нажатию (или `S`) — встроенный
+/// «Новый раздел» в конце проекта: по нажатию (или `S`) — встроенный
 /// редактор.
 class AddSectionButton extends ConsumerWidget {
   const AddSectionButton({
@@ -105,14 +105,70 @@ class AddSectionButton extends ConsumerWidget {
     }
     return Padding(
       padding: const EdgeInsets.only(top: 16),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton.icon(
-          onPressed: () => onOpen(true),
-          icon: Icon(Icons.add, color: palette.accent, size: 18),
-          label: Text(
-            l10n.addSection,
-            style: TextStyle(color: palette.textSecondary),
+      child: _NewSectionLine(
+        label: l10n.newSection,
+        color: palette.accent,
+        onTap: () => onOpen(true),
+      ),
+    );
+  }
+}
+
+/// Строка «+ Новый раздел ———»: видна всегда, цветом акцента, при наведении
+/// фон, текст и линия становятся заметно сильнее (решение 9Б M4.10a).
+class _NewSectionLine extends StatefulWidget {
+  const _NewSectionLine({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  State<_NewSectionLine> createState() => _NewSectionLineState();
+}
+
+class _NewSectionLineState extends State<_NewSectionLine> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: _hover ? color.withValues(alpha: 0.12) : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: widget.onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.add, color: color, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: _hover ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    height: _hover ? 2 : 1,
+                    color: color.withValues(alpha: _hover ? 1 : 0.45),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -11,6 +11,7 @@ import 'package:planner/features/common/ui/drag_source.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/tasks/ui/selection_toolbar.dart';
 import 'package:planner/features/tasks/ui/task_drag.dart';
+import 'package:planner/features/tasks/ui/task_drag_ghost.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 
 import '../../app/support/pump_app.dart';
@@ -127,7 +128,18 @@ void main() {
         'Alpha',
         belowHalf(tester, 'Beta'),
       );
-      expect(find.byType(DragGhost), findsOneWidget);
+      // Образ — вся строка: с названием и шириной почти со строку
+      // (решение 5А «M4.10a»).
+      final ghost = find.byType(TaskDragGhost);
+      expect(ghost, findsOneWidget);
+      expect(
+        find.descendant(of: ghost, matching: find.text('Alpha')),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSize(ghost).width,
+        greaterThan(tester.getSize(find.byType(TaskDragRow).first).width - 80),
+      );
       final state = session(tester)!;
       expect(state.sources.length, 1);
       expect(state.indicator?.mark, DropMark.below);
@@ -153,7 +165,8 @@ void main() {
       final drag = await startMouseDrag(
         tester,
         'Gamma',
-        belowHalf(tester, 'Beta', dx: 30),
+        // Уровень меняется после 1¼ шага (35 px) — гистерезис M4.10a.
+        belowHalf(tester, 'Beta', dx: 40),
       );
       // Линия показывает то же, что запишется: под «Beta», на её уровень
       // глубже (поле под ручку + шаг уровня).
@@ -172,7 +185,7 @@ void main() {
         belowHalf(
           tester,
           'Gamma',
-          // Ручка подзадачи стоит на уровень правее.
+          // Ручка подзадачи стоит на уровень правее; влево — шаг уровня.
           x: gripX(tester, 'Gamma') + 28,
           dx: -30,
         ),
@@ -180,6 +193,17 @@ void main() {
       await settle(tester);
       expect((await load(tester, app, ids[2])).parentId, isNull);
       expect(await inboxOrder(tester, app), ['Alpha', 'Beta', 'Gamma']);
+    });
+  });
+
+  testWidgets('сдвиг на шаг уровня (30 px) — ещё не подзадача: случайный '
+      'сдвиг мыши уровень не меняет (уточнение 12.11.2026)', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final ids = await addAll(tester, app, ['Alpha', 'Beta', 'Gamma']);
+      await mouseDrag(tester, 'Gamma', belowHalf(tester, 'Beta', dx: 30));
+      await settle(tester);
+      expect((await load(tester, app, ids[2])).parentId, isNull);
     });
   });
 

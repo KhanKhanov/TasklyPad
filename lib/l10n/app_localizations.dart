@@ -296,6 +296,12 @@ abstract class AppLocalizations {
   /// **'Добавить раздел'**
   String get addSection;
 
+  /// Строка в конце проекта, открывает редактор раздела (решение 9Б M4.10a)
+  ///
+  /// In ru, this message translates to:
+  /// **'Новый раздел'**
+  String get newSection;
+
   /// Подсказка в поле раздела
   ///
   /// In ru, this message translates to:

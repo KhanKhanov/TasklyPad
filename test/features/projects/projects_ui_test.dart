@@ -113,6 +113,25 @@ void main() {
     });
   });
 
+  testWidgets('кнопка нового раздела — текст «New section» → открывается '
+      'редактор раздела', (tester) async {
+    await withApp(tester, (device) async {
+      await tester.runAsync(
+        () => AppCommands(device).projects.add(name: 'Work'),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Work'));
+      await settle(tester);
+
+      expect(find.text('New section'), findsOneWidget);
+      expect(find.text('Add section'), findsNothing);
+      await tester.tap(find.text('New section'));
+      await tester.pumpAndSettle();
+      expect(find.text('New section'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Add section'), findsOneWidget);
+    });
+  });
+
   testWidgets('раздел: добавить, переименовать, удалить с подтверждением', (
     tester,
   ) async {
@@ -124,7 +143,7 @@ void main() {
       await tester.tap(find.text('Work'));
       await settle(tester);
 
-      await tester.tap(find.text('Add section'));
+      await tester.tap(find.text('New section'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Week');
       await tester.testTextInput.receiveAction(TextInputAction.done);

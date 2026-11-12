@@ -7,9 +7,11 @@ import 'package:planner/features/labels/ui/label_screen.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/tasks/ui/add_task_editor.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
+import 'package:planner/features/views/ui/view_options_button.dart';
 
 import '../../app/support/pump_app.dart';
 import '../support/app_commands.dart';
+import '../support/view_options_finders.dart';
 
 // «Отображение» на экранах проекта и метки (план M4.5): меню, группы,
 // «Добавить задачу» в группе, «Сбросить всё», клавиши сортировки. Локаль — en,
@@ -62,7 +64,7 @@ void main() {
       await settle(tester);
 
       await pick(tester, 'Grouping', 'Priority');
-      expect(find.text('Display: 1'), findsOneWidget);
+      expect(badge('1'), findsOneWidget);
       expect(find.text('Priority 1'), findsOneWidget);
       expect(find.text('Priority 4'), findsOneWidget);
       expect(rowsInOrder(tester, ['Someday', 'Urgent']), ['Urgent', 'Someday']);
@@ -167,7 +169,7 @@ void main() {
       await settle(tester);
 
       await pick(tester, 'Grouping', 'Label');
-      await tester.tap(find.text('Display: 1'));
+      await tester.tap(find.byType(ViewOptionsButton));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(CheckboxMenuButton));
       await settle(tester);
@@ -195,7 +197,7 @@ void main() {
       // своя кнопка «Deadline».
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Display: 1'));
+      await tester.tap(find.byType(ViewOptionsButton));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Grouping'));
       await tester.pumpAndSettle();
@@ -221,6 +223,32 @@ void main() {
     });
   });
 
+  testWidgets('«Отображение» — кружок с числом: одна настройка → 1; '
+      'сброс → кружка нет, семантика «Display: N»', (tester) async {
+    await withApp(tester, (device) async {
+      final semantics = tester.ensureSemantics();
+      final app = AppCommands(device);
+      await tester.runAsync(() => app.tasks.add(content: 'One', priority: 2));
+      await settle(tester);
+      expect(anyBadge(), findsNothing);
+
+      await pick(tester, 'Grouping', 'Priority');
+      expect(badge('1'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byType(ViewOptionsButton)).label,
+        contains('Display: 1'),
+      );
+
+      await tester.tap(find.byType(ViewOptionsButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reset all'));
+      await settle(tester);
+      expect(anyBadge(), findsNothing);
+      expect(find.text('Display'), findsOneWidget);
+      semantics.dispose();
+    });
+  });
+
   testWidgets('«Reset all» убирает группировку и сортировку, «Completed tasks» '
       'остаётся', (tester) async {
     await withApp(tester, (device) async {
@@ -229,13 +257,13 @@ void main() {
       await settle(tester);
       await pick(tester, 'Grouping', 'Priority');
       await pick(tester, 'Sorting', 'Name');
-      expect(find.text('Display: 2'), findsOneWidget);
-      await tester.tap(find.text('Display: 2'));
+      expect(badge('2'), findsOneWidget);
+      await tester.tap(find.byType(ViewOptionsButton));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(CheckboxMenuButton));
       await settle(tester);
 
-      await tester.tap(find.text('Display: 2'));
+      await tester.tap(find.byType(ViewOptionsButton));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Reset all'));
       await settle(tester);
