@@ -4,16 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/markdown_text.dart';
 import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/markdown_block.dart';
+import '../../common/ui/markdown_inline.dart';
+import '../../common/ui/markdown_keys.dart';
 import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
 
 /// Описание под названием проекта (help «Introduction to projects»): одна
 /// строка; при наведении — целиком на месте, нажатие — редактор на месте с
 /// «Сохранить» и «Отмена» (решение 2А «Часть M4.11» plans/m4). Без описания —
-/// «Добавить описание». У проекта в архиве — только текст.
+/// «Добавить описание». У проекта в архиве — только текст. Markdown вне
+/// редактора отрисован, в редакторе — исходный текст (решение 7А плана M4).
 class ProjectDescription extends ConsumerStatefulWidget {
   const ProjectDescription({
     super.key,
@@ -30,6 +35,9 @@ class ProjectDescription extends ConsumerStatefulWidget {
 
 class _ProjectDescriptionState extends ConsumerState<ProjectDescription> {
   TextEditingController? _editor;
+
+  /// Фокус редактора — для панели форматирования.
+  final FocusNode _editorFocus = FocusNode();
   bool _hover = false;
 
   /// Описание на момент открытия редактора: с ним сравнивается сохраняемое.
@@ -38,6 +46,7 @@ class _ProjectDescriptionState extends ConsumerState<ProjectDescription> {
   @override
   void dispose() {
     _editor?.dispose();
+    _editorFocus.dispose();
     super.dispose();
   }
 
@@ -95,10 +104,14 @@ class _ProjectDescriptionState extends ConsumerState<ProjectDescription> {
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: text.isEmpty
                 ? Text(l10n.addProjectDescription, style: style)
-                : Text(
-                    text,
-                    maxLines: _hover ? null : 1,
-                    overflow: _hover ? null : TextOverflow.ellipsis,
+                // Markdown отрисован (help «Introduction to projects»:
+                // описание форматируется); одной строкой — без знаков блоков.
+                : _hover
+                ? MarkdownBlock(text, style: style)
+                : MarkdownInline(
+                    descriptionLines(text).join('\n'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: style,
                   ),
           ),
@@ -114,14 +127,21 @@ class _ProjectDescriptionState extends ConsumerState<ProjectDescription> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          TextField(
+          MarkdownKeys(
             controller: editor,
-            autofocus: true,
-            minLines: 2,
-            maxLines: 8,
-            keyboardType: TextInputType.multiline,
-            inputFormatters: const [TextLimit(Limits.description)],
-            decoration: InputDecoration(hintText: l10n.fieldDescription),
+            focusNode: _editorFocus,
+            blocks: true,
+            max: Limits.description,
+            child: TextField(
+              controller: editor,
+              focusNode: _editorFocus,
+              autofocus: true,
+              minLines: 2,
+              maxLines: 8,
+              keyboardType: TextInputType.multiline,
+              inputFormatters: const [TextLimit(Limits.description)],
+              decoration: InputDecoration(hintText: l10n.fieldDescription),
+            ),
           ),
           const SizedBox(height: 8),
           Row(

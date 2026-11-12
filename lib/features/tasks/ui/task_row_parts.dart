@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/markdown_text.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/markdown_inline.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/today.dart';
 import 'due_ui.dart';
@@ -161,7 +163,7 @@ class TaskText extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          MarkdownInline(
             task.content,
             style: TextStyle(
               fontSize: 14,
@@ -171,9 +173,11 @@ class TaskText extends ConsumerWidget {
               decoration: task.isCompleted ? TextDecoration.lineThrough : null,
             ),
           ),
-          if (task.description.isNotEmpty)
-            Text(
-              task.description.split('\n').first,
+          // Первая строка описания без знаков блоков (`# `, `- `); строчная
+          // разметка отрисована.
+          if (descriptionLines(task.description) case [final first, ...])
+            MarkdownInline(
+              first,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: small,

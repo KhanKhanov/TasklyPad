@@ -2077,6 +2077,60 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Время'**
   String get fieldTime;
+
+  /// Тост: ссылку из названия или описания открыть нельзя (схема не http/https/mailto или нет приложения)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть ссылку'**
+  String get linkOpenFailed;
+
+  /// Панель форматирования при выделении (help «Format text in a Todoist task»); русские подписи — О-68
+  ///
+  /// In ru, this message translates to:
+  /// **'Жирный'**
+  String get formatBold;
+
+  /// No description provided for @formatItalic.
+  ///
+  /// In ru, this message translates to:
+  /// **'Курсив'**
+  String get formatItalic;
+
+  /// No description provided for @formatStrikethrough.
+  ///
+  /// In ru, this message translates to:
+  /// **'Зачёркнутый'**
+  String get formatStrikethrough;
+
+  /// No description provided for @formatCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код'**
+  String get formatCode;
+
+  /// Кнопка панели форматирования и заголовок окна адреса ссылки
+  ///
+  /// In ru, this message translates to:
+  /// **'Ссылка'**
+  String get formatLink;
+
+  /// No description provided for @formatQuote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цитата'**
+  String get formatQuote;
+
+  /// Поле адреса в окне «Ссылка»
+  ///
+  /// In ru, this message translates to:
+  /// **'Адрес'**
+  String get linkAddress;
+
+  /// Корзина в окне «Ссылка»: ссылка убирается, текст остаётся
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать ссылку'**
+  String get removeLink;
 }
 
 class _AppLocalizationsDelegate

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/markdown_text.dart';
 import 'task_drag.dart';
 import 'task_row_parts.dart';
 
@@ -40,7 +41,7 @@ class TaskDragGhost extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ws == null
-                        ? Text(task.content)
+                        ? Text(plainText(task.content))
                         : TaskText(task: task, ws: ws),
                   ),
                   if (count > 1)

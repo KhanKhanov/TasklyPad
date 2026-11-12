@@ -7,6 +7,7 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/markdown_keys.dart';
 import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
 
@@ -39,6 +40,9 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
   late final TextEditingController _description = TextEditingController(
     text: widget.project?.description ?? '',
   );
+
+  /// Фокус поля описания — для панели форматирования.
+  final FocusNode _descriptionFocus = FocusNode();
   late String _color = widget.project?.color ?? 'charcoal';
   late String? _parent = widget.project?.parentId ?? widget.parentId;
   late bool _favorite = widget.project?.isFavorite ?? false;
@@ -51,6 +55,7 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
   void dispose() {
     _name.dispose();
     _description.dispose();
+    _descriptionFocus.dispose();
     super.dispose();
   }
 
@@ -151,13 +156,20 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
             ),
             // «Входящие» в диалог правки не попадают: меню у них нет.
             if (_editing) ...[
-              TextField(
+              MarkdownKeys(
                 controller: _description,
-                minLines: 1,
-                maxLines: 4,
-                keyboardType: TextInputType.multiline,
-                inputFormatters: const [TextLimit(Limits.description)],
-                decoration: InputDecoration(labelText: l10n.fieldDescription),
+                focusNode: _descriptionFocus,
+                blocks: true,
+                max: Limits.description,
+                child: TextField(
+                  controller: _description,
+                  focusNode: _descriptionFocus,
+                  minLines: 1,
+                  maxLines: 4,
+                  keyboardType: TextInputType.multiline,
+                  inputFormatters: const [TextLimit(Limits.description)],
+                  decoration: InputDecoration(labelText: l10n.fieldDescription),
+                ),
               ),
               const SizedBox(height: 8),
             ],

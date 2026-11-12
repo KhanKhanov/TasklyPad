@@ -1,3 +1,4 @@
+import 'markdown_text.dart';
 import 'models.dart';
 import 'tree.dart';
 import 'view_options.dart';
@@ -221,9 +222,13 @@ final class Workspace {
     fallback: fallback,
     sorting: sorting,
     sortOrder: sortOrder,
-    nameOf: nameOf ?? (t) => t.content,
+    nameOf: nameOf ?? (t) => _plainNames[t.content] ??= plainText(t.content),
     projectRank: (t) => _projectRanks[t.id] ?? _projectRanks.length,
   );
+
+  /// Видимый текст названий для сортировки по имени: разбор markdown — один
+  /// раз на название в снимке, а не на каждое сравнение.
+  final Map<String, String> _plainNames = {};
 
   /// Место каждой задачи в порядке сайдбара: «Входящие», затем проекты
   /// деревом, затем архив деревом (его можно открыть — ручной порядок в

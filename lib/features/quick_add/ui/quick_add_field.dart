@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../nlp/quick_add.dart';
+import '../../common/ui/markdown_keys.dart';
 import '../logic/suggestions.dart';
 import '../state/quick_add_controller.dart';
 import 'highlight_tap_region.dart';
@@ -177,30 +178,34 @@ class _QuickAddFieldState extends State<QuickAddField> {
               canRequestFocus: false,
               skipTraversal: true,
               onKeyEvent: _onKey,
-              child: HighlightTapRegion(
-                spans: () => [
-                  for (final h in widget.controller.highlights) h.span,
-                ],
-                onTap: (span) => widget.controller.dismissAt(span.start),
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: widget.focusNode,
-                  // Многострочное поле: вставка отдаёт строки целиком, а не
-                  // склеенными (однострочное вырезает переносы до разбора).
-                  maxLines: null,
-                  keyboardType: TextInputType.text,
-                  textInputAction: TextInputAction.done,
-                  inputFormatters: [_paste],
-                  decoration: InputDecoration(
-                    hintText: l10n.taskNameHint,
-                    border: InputBorder.none,
-                    errorText: widget.errorText,
+              child: MarkdownKeys(
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                child: HighlightTapRegion(
+                  spans: () => [
+                    for (final h in widget.controller.highlights) h.span,
+                  ],
+                  onTap: (span) => widget.controller.dismissAt(span.start),
+                  child: TextField(
+                    controller: widget.controller,
+                    focusNode: widget.focusNode,
+                    // Многострочное поле: вставка отдаёт строки целиком, а не
+                    // склеенными (однострочное вырезает переносы до разбора).
+                    maxLines: null,
+                    keyboardType: TextInputType.text,
+                    textInputAction: TextInputAction.done,
+                    inputFormatters: [_paste],
+                    decoration: InputDecoration(
+                      hintText: l10n.taskNameHint,
+                      border: InputBorder.none,
+                      errorText: widget.errorText,
+                    ),
+                    style: TextStyle(
+                      color: palette.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onSubmitted: (_) => widget.onSubmit(),
                   ),
-                  style: TextStyle(
-                    color: palette.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  onSubmitted: (_) => widget.onSubmit(),
                 ),
               ),
             ),

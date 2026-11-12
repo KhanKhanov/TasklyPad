@@ -1203,4 +1203,31 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get fieldTime => 'Время';
+
+  @override
+  String get linkOpenFailed => 'Не удалось открыть ссылку';
+
+  @override
+  String get formatBold => 'Жирный';
+
+  @override
+  String get formatItalic => 'Курсив';
+
+  @override
+  String get formatStrikethrough => 'Зачёркнутый';
+
+  @override
+  String get formatCode => 'Код';
+
+  @override
+  String get formatLink => 'Ссылка';
+
+  @override
+  String get formatQuote => 'Цитата';
+
+  @override
+  String get linkAddress => 'Адрес';
+
+  @override
+  String get removeLink => 'Убрать ссылку';
 }
