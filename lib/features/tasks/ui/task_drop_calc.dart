@@ -6,6 +6,7 @@ import '../../../domain/tree.dart';
 import '../../../domain/view_options.dart';
 import '../../common/state/drag_session.dart';
 import '../../common/ui/drag_layer.dart';
+import '../../common/ui/drag_rows.dart';
 import '../logic/due_dates.dart';
 import 'task_drag.dart';
 import 'task_drop_places.dart';
@@ -41,28 +42,6 @@ DropPlace? taskDropPlace(
     DayDrop() => _dayPlace(drop, payload, items, rowId, upper, atStart),
     OverdueDrop() => null,
   };
-}
-
-/// Владелец и сторона линии для места «перед [index]-й» из [shown]: под
-/// предыдущей строкой, а у первой — над ней; [endOwner] — список пуст.
-DropIndicator _line(
-  List<String> shown,
-  int index,
-  Object endOwner,
-  double indent,
-) {
-  if (index > 0) {
-    return DropIndicator(
-      owner: shown[index - 1],
-      mark: DropMark.below,
-      indent: indent,
-    );
-  }
-  return DropIndicator(
-    owner: shown.isEmpty ? endOwner : shown.first,
-    mark: DropMark.above,
-    indent: indent,
-  );
 }
 
 /// Проект, раздел, подзадачи окна: линия между строками и уровень по сдвигу
@@ -126,11 +105,11 @@ DropPlace? _projectPlace(
     parentId: at.parentId ?? drop.parentId,
     afterId: at.afterId,
     atTop: true,
-    indicator: _line(
+    indicator: lineBefore(
       [for (final item in shown) item.value.id],
       index,
-      drop.endOwner,
-      dragGutter + (at.depth - drop.baseDepth) * taskIndentStep,
+      endOwner: drop.endOwner,
+      indent: dragGutter + (at.depth - drop.baseDepth) * taskIndentStep,
     ),
   );
 }
@@ -181,10 +160,7 @@ DropPlace? _dayPlace(
   } else {
     final at = active.indexWhere((t) => t.id == rowId);
     if (at < 0) return null;
-    index = active
-        .take(at + (upper ? 0 : 1))
-        .where((t) => t.id != task.id)
-        .length;
+    index = dropIndex(active, at, upper: upper, keeps: (t) => t.id != task.id);
   }
   final sameDay = task.due?.date == drop.date;
   final moved = task.copyWith(due: dueOnDate(task.due, drop.date));
@@ -202,11 +178,11 @@ DropPlace? _dayPlace(
     return MoveToDayPlace(
       id: task.id,
       date: drop.date,
-      indicator: _line(
+      indicator: lineBefore(
         [for (final t in others) t.id],
         others.where((t) => drop.order.compare(t, moved) < 0).length,
-        drop.endOwner,
-        dragGutter,
+        endOwner: drop.endOwner,
+        indent: dragGutter,
       ),
     );
   }
@@ -222,14 +198,14 @@ DropPlace? _dayPlace(
     date: drop.date,
     // Строка над местом как есть: команда сама ставит задачу первой или
     // последней в её группе.
-    afterId: line == 0 ? null : others[line - 1].id,
+    afterId: afterIdAt([for (final t in others) t.id], line),
     sorting: drop.sorting,
     changesDate: !sameDay,
-    indicator: _line(
+    indicator: lineBefore(
       [for (final t in others) t.id],
       line,
-      drop.endOwner,
-      dragGutter,
+      endOwner: drop.endOwner,
+      indent: dragGutter,
     ),
   );
 }

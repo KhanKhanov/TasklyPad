@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../l10n/app_localizations.dart';
-import '../logic/duration_text.dart';
+import '../../../nlp/duration_text.dart';
 
 /// Готовые варианты длительности, минуты.
 const List<int> durationPresets = [15, 30, 45, 60, 90, 120];
@@ -25,7 +25,7 @@ String minutesLabel(AppLocalizations l10n, int minutes) {
 ({TaskDuration? value})? readDuration(String text) {
   if (text.trim().isEmpty) return (value: null);
   final minutes = parseDurationMinutes(text);
-  if (minutes == null || minutes < 1 || minutes > Limits.durationMinutes) {
+  if (minutes == null || !Limits.durationInRange(minutes)) {
     return null;
   }
   return (value: TaskDuration(amount: minutes, unit: 'minute'));

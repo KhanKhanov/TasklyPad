@@ -6,6 +6,7 @@ import '../../../domain/workspace.dart';
 import 'add_task_editor.dart';
 import 'task_drag.dart';
 import 'task_row.dart';
+import '../../common/ui/drag_rows.dart';
 
 /// Где открыт редактор «Добавить задачу» в списке.
 enum AddTaskAt { none, top, bottom }

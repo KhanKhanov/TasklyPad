@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
-import '../../common/ui/drag_layer.dart';
-import '../../common/ui/drag_source.dart';
+import '../../common/ui/drag_rows.dart';
 import 'task_drag.dart';
 import 'task_drop_calc.dart';
 
@@ -31,14 +30,12 @@ class TaskEndSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final drop = this.drop;
-    return DropMarker(
+    return DropArea(
       owner: drop?.endOwner ?? 'end:none',
-      child: DropSlotRegion(
-        resolve: (query, box) => drop == null || drop is OverdueDrop
-            ? null
-            : taskDropPlace(drop, query, box, items: items, atStart: atStart),
-        child: child,
-      ),
+      resolve: (query, box) => drop == null || drop is OverdueDrop
+          ? null
+          : taskDropPlace(drop, query, box, items: items, atStart: atStart),
+      child: child,
     );
   }
 }

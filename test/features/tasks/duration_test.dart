@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/domain/models.dart';
 import 'package:planner/domain/rules.dart';
-import 'package:planner/features/tasks/logic/duration_text.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 
 import '../../app/support/pump_app.dart';
@@ -17,37 +16,7 @@ Matcher _rejected(RejectReason reason) =>
 const _minutes = TaskDuration(amount: 0, unit: 'minute');
 
 void main() {
-  group('разбор своего значения', () {
-    const cases = <String, int?>{
-      '90': 90,
-      '5': 5,
-      '1:30': 90,
-      '0:45': 45,
-      '1h30m': 90,
-      '1h 30m': 90,
-      '2h': 120,
-      '3 h': 180,
-      '45m': 45,
-      '45 min': 45,
-      '1 h 30 min': 90,
-      '1ч 30м': 90,
-      '1ч30мин': 90,
-      '2 ч': 120,
-      '45 мин': 45,
-      '1 ч 30 мин': 90,
-      '': null,
-      'час': null,
-      '1:75': null,
-      'abc': null,
-      '1.5h': null,
-    };
-    for (final MapEntry(key: text, value: minutes) in cases.entries) {
-      test('«$text» → $minutes', () {
-        expect(parseDurationMinutes(text), minutes);
-      });
-    }
-  });
-
+  // Разбор своего значения — табличный тест test/nlp/durations_test.dart.
   group('команды', () {
     late TestDevice device;
     late AppCommands app;

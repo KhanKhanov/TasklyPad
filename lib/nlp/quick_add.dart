@@ -76,9 +76,6 @@ final class QuickAddResult {
   final List<Highlight> highlights;
 }
 
-/// Наибольшая длительность — 24 ч (help «Set a task duration»).
-const int maxDurationMinutes = Limits.durationMinutes;
-
 /// Знак-граница: токен начинается в начале строки или после пробела.
 const String _wordStart = r'(?<!\S)';
 
@@ -198,7 +195,7 @@ QuickAddResult parseQuickAdd(
     final minutes = m[3] != null
         ? int.parse(m[3]!)
         : int.parse(m[1]!) * 60 + int.parse(m[2] ?? '0');
-    if (minutes < 1 || minutes > maxDurationMinutes) continue;
+    if (!Limits.durationInRange(minutes)) continue;
     duration = TaskDuration(amount: minutes, unit: 'minute');
     take(m.start, m.end, HighlightKind.duration);
     break;

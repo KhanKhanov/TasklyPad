@@ -1,3 +1,5 @@
+import 'models.dart';
+
 /// Ограничения Todoist (help: sub-tasks, sub-projects, sections, «Usage
 /// limits»).
 ///
@@ -71,7 +73,24 @@ abstract final class Limits {
   /// [text], обрезанный до [max] символов (имя копии «Копия …»).
   static String clip(String text, int max) =>
       length(text) <= max ? text : String.fromCharCodes(text.runes.take(max));
+
+  /// Длительность от 1 минуты до [durationMinutes] — одна проверка для
+  /// быстрого добавления, поля длительности и команд (О-83).
+  static bool durationInRange(int minutes) =>
+      minutes >= 1 && minutes <= durationMinutes;
+
+  /// Длительность вне [durationInRange] — [RejectReason.badDuration].
+  static void checkDuration(TaskDuration? d) {
+    if (d == null) return;
+    if (!durationInRange(durationInMinutes(d))) {
+      throw const CommandRejected(RejectReason.badDuration);
+    }
+  }
 }
+
+/// Длительность в минутах; у `day` — сутки на единицу (поле API Todoist).
+int durationInMinutes(TaskDuration d) =>
+    d.unit == 'day' ? d.amount * 24 * 60 : d.amount;
 
 /// Почему действие не выполнено. Интерфейс показывает текст по причине.
 enum RejectReason {

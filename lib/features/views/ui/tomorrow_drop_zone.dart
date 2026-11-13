@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../common/ui/drag_layer.dart';
-import '../../common/ui/drag_source.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../tasks/ui/task_drop_calc.dart';
 
 /// Зона «на завтра» в «Сегодня» (решение 2А «Ход M4.9»): пустое место под
@@ -15,12 +14,10 @@ class TomorrowDropZone extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => DropMarker(
+  Widget build(BuildContext context) => DropArea(
     owner: 'tomorrow',
-    child: DropSlotRegion(
-      resolve: (query, _) =>
-          tomorrowPlace(query.payload, date, owner: 'tomorrow', label: label),
-      child: const SizedBox(width: double.infinity, height: 72),
-    ),
+    resolve: (query, _) =>
+        tomorrowPlace(query.payload, date, owner: 'tomorrow', label: label),
+    child: const SizedBox(width: double.infinity, height: 72),
   );
 }
