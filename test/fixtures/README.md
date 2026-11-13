@@ -54,6 +54,13 @@ filters.json       "today & p1 | overdue"                          → AST / с�
 - `durations.json` — строка поля длительности (lib/nlp/duration_text.dart); `lang` и `now` не нужны.
   `expect`: `minutes` или `none: true`; `in_range` — результат `Limits.durationInRange` (диапазон общий с
   быстрым добавлением и командами).
+- `filters.json` — запрос фильтра (lib/nlp/filter_parser.dart) в момент `now` снимка
+  `filter_workspace.json`; `lang` не нужен — ключевые слова обоих языков работают всегда. `expect`: `ast` — запись
+  узлов каждой части через `,` (`toString` узлов lib/domain/filter_query.dart), `titles` — заголовки списков,
+  `tasks` — видимые названия задач каждого списка по порядку (lib/domain/filter_engine.dart), `error` —
+  `{kind, start, end}` (`FilterErrorKind`, участок запроса).
+- `filter_workspace.json` — снимок для `filters.json`: проекты, разделы, метки и задачи с полями по умолчанию
+  (порядок `a0`, P4, без срока); выполненная задача и задача архивного проекта не должны попадать ни в один список.
 - Каждое правило из `recurrence.json` проходит `nextOccurrence` (lib/domain/recurrence.dart), а текст
   правила, разобранный обратно, даёт то же правило.
 

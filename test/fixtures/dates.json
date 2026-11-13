@@ -152,5 +152,8 @@
   {"input": "канун нового года", "lang": "ru", "now": "2026-10-26T10:00:00+03:00", "source": "help ru «Introduction to recurring dates»: праздники", "expect": {"date": "2026-12-31"}},
   {"input": "1300", "lang": "ru", "now": "2026-10-26T10:00:00+03:00", "source": "help ru «Introduction to dates and time»: 1300 не распознаётся", "expect": {"none": true}},
   {"input": "в", "lang": "ru", "now": "2026-10-26T10:00:00+03:00", "source": "допущение О-57: предлог без даты — текст", "expect": {"none": true}},
-  {"input": "in 9999 years", "lang": "en", "now": "2026-10-26T10:00:00+03:00", "source": "допущение О-57: год больше 9999 — не дата", "expect": {"none": true}}
+  {"input": "in 9999 years", "lang": "en", "now": "2026-10-26T10:00:00+03:00", "source": "допущение О-57: год больше 9999 — не дата", "expect": {"none": true}},
+  {"input": "-3 days", "lang": "en", "now": "2026-11-13T10:00:00+03:00", "source": "форма только фильтра (TODOIST_SYNTAX §4): в быстром добавлении не дата", "expect": {"none": true}},
+  {"input": "first day", "lang": "en", "now": "2026-11-13T10:00:00+03:00", "source": "форма только фильтра (TODOIST_SYNTAX §4): в быстром добавлении не дата", "expect": {"none": true}},
+  {"input": "первый день", "lang": "ru", "now": "2026-11-13T10:00:00+03:00", "source": "форма только фильтра (TODOIST_SYNTAX §4): в быстром добавлении не дата", "expect": {"none": true}}
 ]

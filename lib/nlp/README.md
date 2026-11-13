@@ -9,4 +9,5 @@
 - `rule_text.dart` — текст правила повторения ru/en.
 - `scanner.dart`, `calendar.dart`, `parse_context.dart` — токены, календарь, «сейчас» и язык.
 
-Язык фильтров (§4) — M5.
+- `filter_lexer.dart`, `filter_parser.dart` — язык фильтров (§4): операторы и условия, даты — грамматикой дат в
+  режиме фильтра (`FilterDateMode`); узлы запроса — lib/domain/filter_query.dart.

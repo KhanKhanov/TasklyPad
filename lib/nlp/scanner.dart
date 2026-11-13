@@ -1,3 +1,5 @@
+import '../domain/text_fold.dart';
+
 /// Слово, число или знак строки с позицией в исходном тексте — единица, с
 /// которой работает грамматика дат.
 final class Token {
@@ -65,5 +67,4 @@ List<Token> scan(String text) {
 }
 
 /// Нижний регистр, «ё» → «е», типографский апостроф → обычный.
-String normalize(String word) =>
-    word.toLowerCase().replaceAll('ё', 'е').replaceAll('’', "'");
+String normalize(String word) => foldText(word).replaceAll('’', "'");
