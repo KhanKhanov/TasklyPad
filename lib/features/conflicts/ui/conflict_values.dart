@@ -26,6 +26,7 @@ String conflictEntityTitle(AppLocalizations l10n, ConflictCard card) {
     ConflictEntity.project => l10n.conflictEntityProject(title),
     ConflictEntity.section => l10n.conflictEntitySection(title),
     ConflictEntity.label => l10n.conflictEntityLabel(title),
+    ConflictEntity.filter => l10n.conflictEntityFilter(title),
     ConflictEntity.taskLabel => l10n.conflictEntityTaskLabel(
       title,
       _nonEmpty(card.ownerTitle) ?? l10n.conflictUntitled,
@@ -57,6 +58,7 @@ String conflictFieldTitle(
   ConflictField.favorite => l10n.fieldInFavorites,
   ConflictField.archived => l10n.fieldArchived,
   ConflictField.viewStyle => l10n.fieldViewStyle,
+  ConflictField.query => l10n.fieldQuery,
   ConflictField.theme => l10n.themeSection,
   ConflictField.appearance => l10n.themeAppearance,
   ConflictField.smartDateRecognition => l10n.smartDateRecognition,
@@ -81,7 +83,7 @@ String conflictValueText(
           : (deleted ? l10n.valueDeleted : l10n.valueRestored),
     (ConflictField.name || ConflictField.content, final String s) =>
       _nonEmpty(s) ?? l10n.valueEmpty,
-    (ConflictField.description, final String s) =>
+    (ConflictField.description || ConflictField.query, final String s) =>
       _nonEmpty(s) ?? l10n.valueEmpty,
     (ConflictField.project, null) => l10n.inbox,
     (ConflictField.section, null) => l10n.noSection,

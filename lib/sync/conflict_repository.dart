@@ -531,7 +531,8 @@ final class ConflictRepository {
     );
   }
 
-  /// Название задачи или имя проекта, раздела, метки — и удалённых тоже.
+  /// Название задачи или имя проекта, раздела, метки, фильтра — и удалённых
+  /// тоже.
   Future<String?> _title(String type, String id) async {
     final value = await _store.fieldValue(
       type,
@@ -625,6 +626,7 @@ final class ConflictRepository {
     EntityTypes.project => ConflictEntity.project,
     EntityTypes.section => ConflictEntity.section,
     EntityTypes.label => ConflictEntity.label,
+    EntityTypes.filter => ConflictEntity.filter,
     EntityTypes.taskLabel => ConflictEntity.taskLabel,
     EntityTypes.settings => ConflictEntity.settings,
     _ => ConflictEntity.other,
@@ -636,7 +638,10 @@ final class ConflictRepository {
   )) {
     (_, Op.deletedField) => ConflictField.deleted,
     (EntityTypes.task, TaskFields.content) => ConflictField.content,
-    (EntityTypes.task || EntityTypes.project, TaskFields.description) =>
+    (
+      EntityTypes.task || EntityTypes.project || EntityTypes.filter,
+      TaskFields.description,
+    ) =>
       ConflictField.description,
     (EntityTypes.task, TaskFields.projectId) ||
     (EntityTypes.section, SectionFields.projectId) => ConflictField.project,
@@ -650,14 +655,24 @@ final class ConflictRepository {
     (EntityTypes.task, TaskFields.duration) => ConflictField.duration,
     (EntityTypes.task, TaskFields.isCompleted) => ConflictField.completed,
     (
-      EntityTypes.project || EntityTypes.section || EntityTypes.label,
+      EntityTypes.project ||
+          EntityTypes.section ||
+          EntityTypes.label ||
+          EntityTypes.filter,
       ProjectFields.name,
     ) =>
       ConflictField.name,
-    (EntityTypes.project || EntityTypes.label, ProjectFields.color) =>
+    (
+      EntityTypes.project || EntityTypes.label || EntityTypes.filter,
+      ProjectFields.color,
+    ) =>
       ConflictField.color,
-    (EntityTypes.project || EntityTypes.label, ProjectFields.isFavorite) =>
+    (
+      EntityTypes.project || EntityTypes.label || EntityTypes.filter,
+      ProjectFields.isFavorite,
+    ) =>
       ConflictField.favorite,
+    (EntityTypes.filter, FilterFields.query) => ConflictField.query,
     (EntityTypes.project || EntityTypes.section, ProjectFields.isArchived) =>
       ConflictField.archived,
     (EntityTypes.project, ProjectFields.viewStyle) => ConflictField.viewStyle,

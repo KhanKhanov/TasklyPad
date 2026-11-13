@@ -101,7 +101,7 @@ void main() {
       final nodes = [await _node('a'), await _node('b'), await _node('c')];
       final ids = [
         ...['t0', 't1', 't2', 't3', 'p0', 'p1', 's0', 'l0', 'x0', 'g0'],
-        ...['c0', 'c1', 'v0'],
+        ...['c0', 'c1', 'v0', 'f0'],
       ];
 
       T pick<T>(List<T> list) => list[random.nextInt(list.length)];
@@ -217,6 +217,25 @@ void main() {
             ViewOptionsFields.sortedBy: pick(['due_date', 'manual', null]),
           },
           {ViewOptionsFields.showCompletedTasks: random.nextBool()},
+          {
+            ViewOptionsFields.filteredBy: pick(['p1', 'today', null]),
+          },
+        ]),
+        // Сохранённый фильтр: спор об имени, запросе, цвете — карточка,
+        // порядок — молча.
+        'f' => pick<Map<String, Object?>>([
+          {
+            FilterFields.name: pick(['Срочное', 'Дом']),
+            FilterFields.query: pick(['p1', 'today | overdue']),
+          },
+          {
+            FilterFields.color: pick(['red', 'blue']),
+          },
+          {
+            FilterFields.orderKey: pick(['a0', 'a1']),
+          },
+          {FilterFields.isFavorite: random.nextBool()},
+          {Op.deletedField: random.nextBool()},
         ]),
         _ => {
           SectionFields.name: pick(['Покупки', 'Работа']),
@@ -237,6 +256,7 @@ void main() {
             'g' => EntityTypes.settings,
             'c' => EntityTypes.completion,
             'v' => EntityTypes.viewOptions,
+            'f' => EntityTypes.filter,
             _ => EntityTypes.section,
           };
           await node.engine.mutate(type, id, randomFields(id));

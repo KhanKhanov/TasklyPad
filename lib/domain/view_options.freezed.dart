@@ -17,7 +17,9 @@ mixin _$ViewOptions {
 
  ViewType get viewType;/// Id проекта, метки или фильтра; у «Сегодня» и «Предстоящего» — `null`.
  String? get objectId; Grouping get grouping; Sorting get sorting; SortOrder get sortOrder;/// «Выполненные задачи» в списке вида.
- bool get showCompletedTasks;
+ bool get showCompletedTasks;/// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
+/// без фильтра. Применение и выбор — M5.3.
+ String? get filteredBy;
 /// Create a copy of ViewOptions
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,20 +31,20 @@ $ViewOptionsCopyWith<ViewOptions> get copyWith => _$ViewOptionsCopyWithImpl<View
 @override
 bool operator ==(Object other) {
   final _this = this as ViewOptions;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ViewOptions&&(identical(other.viewType, _this.viewType) || other.viewType == _this.viewType)&&(identical(other.objectId, _this.objectId) || other.objectId == _this.objectId)&&(identical(other.grouping, _this.grouping) || other.grouping == _this.grouping)&&(identical(other.sorting, _this.sorting) || other.sorting == _this.sorting)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.showCompletedTasks, _this.showCompletedTasks) || other.showCompletedTasks == _this.showCompletedTasks));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ViewOptions&&(identical(other.viewType, _this.viewType) || other.viewType == _this.viewType)&&(identical(other.objectId, _this.objectId) || other.objectId == _this.objectId)&&(identical(other.grouping, _this.grouping) || other.grouping == _this.grouping)&&(identical(other.sorting, _this.sorting) || other.sorting == _this.sorting)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.showCompletedTasks, _this.showCompletedTasks) || other.showCompletedTasks == _this.showCompletedTasks)&&(identical(other.filteredBy, _this.filteredBy) || other.filteredBy == _this.filteredBy));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ViewOptions;
-  return Object.hash(runtimeType,_this.viewType,_this.objectId,_this.grouping,_this.sorting,_this.sortOrder,_this.showCompletedTasks);
+  return Object.hash(runtimeType,_this.viewType,_this.objectId,_this.grouping,_this.sorting,_this.sortOrder,_this.showCompletedTasks,_this.filteredBy);
 }
 
 @override
 String toString() {
   final _this = this as ViewOptions;
-  return 'ViewOptions(viewType: ${_this.viewType}, objectId: ${_this.objectId}, grouping: ${_this.grouping}, sorting: ${_this.sorting}, sortOrder: ${_this.sortOrder}, showCompletedTasks: ${_this.showCompletedTasks})';
+  return 'ViewOptions(viewType: ${_this.viewType}, objectId: ${_this.objectId}, grouping: ${_this.grouping}, sorting: ${_this.sorting}, sortOrder: ${_this.sortOrder}, showCompletedTasks: ${_this.showCompletedTasks}, filteredBy: ${_this.filteredBy})';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $ViewOptionsCopyWith<$Res>  {
   factory $ViewOptionsCopyWith(ViewOptions value, $Res Function(ViewOptions) _then) = _$ViewOptionsCopyWithImpl;
 @useResult
 $Res call({
- ViewType viewType, String? objectId, Grouping grouping, Sorting sorting, SortOrder sortOrder, bool showCompletedTasks
+ ViewType viewType, String? objectId, Grouping grouping, Sorting sorting, SortOrder sortOrder, bool showCompletedTasks, String? filteredBy
 });
 
 
@@ -70,7 +72,7 @@ class _$ViewOptionsCopyWithImpl<$Res>
 
 /// Create a copy of ViewOptions
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? viewType = null,Object? objectId = freezed,Object? grouping = null,Object? sorting = null,Object? sortOrder = null,Object? showCompletedTasks = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? viewType = null,Object? objectId = freezed,Object? grouping = null,Object? sorting = null,Object? sortOrder = null,Object? showCompletedTasks = null,Object? filteredBy = freezed,}) {
   return _then(ViewOptions(
 viewType: null == viewType ? _self.viewType : viewType // ignore: cast_nullable_to_non_nullable
 as ViewType,objectId: freezed == objectId ? _self.objectId : objectId // ignore: cast_nullable_to_non_nullable
@@ -78,7 +80,8 @@ as String?,grouping: null == grouping ? _self.grouping : grouping // ignore: cas
 as Grouping,sorting: null == sorting ? _self.sorting : sorting // ignore: cast_nullable_to_non_nullable
 as Sorting,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as SortOrder,showCompletedTasks: null == showCompletedTasks ? _self.showCompletedTasks : showCompletedTasks // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,filteredBy: freezed == filteredBy ? _self.filteredBy : filteredBy // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -163,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks,  String? filteredBy)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ViewOptions() when $default != null:
-return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks);case _:
+return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks,_that.filteredBy);case _:
   return orElse();
 
 }
@@ -184,10 +187,10 @@ return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks,  String? filteredBy)  $default,) {final _that = this;
 switch (_that) {
 case _ViewOptions():
-return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks);case _:
+return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks,_that.filteredBy);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +207,10 @@ return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewType viewType,  String? objectId,  Grouping grouping,  Sorting sorting,  SortOrder sortOrder,  bool showCompletedTasks,  String? filteredBy)?  $default,) {final _that = this;
 switch (_that) {
 case _ViewOptions() when $default != null:
-return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks);case _:
+return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that.sortOrder,_that.showCompletedTasks,_that.filteredBy);case _:
   return null;
 
 }
@@ -219,7 +222,7 @@ return $default(_that.viewType,_that.objectId,_that.grouping,_that.sorting,_that
 
 
 class _ViewOptions extends ViewOptions {
-  const _ViewOptions({required this.viewType, this.objectId, this.grouping = Grouping.none, this.sorting = Sorting.byDefault, this.sortOrder = SortOrder.asc, this.showCompletedTasks = false}): super._();
+  const _ViewOptions({required this.viewType, this.objectId, this.grouping = Grouping.none, this.sorting = Sorting.byDefault, this.sortOrder = SortOrder.asc, this.showCompletedTasks = false, this.filteredBy}): super._();
   
 
 @override final  ViewType viewType;
@@ -230,6 +233,9 @@ class _ViewOptions extends ViewOptions {
 @override@JsonKey() final  SortOrder sortOrder;
 /// «Выполненные задачи» в списке вида.
 @override@JsonKey() final  bool showCompletedTasks;
+/// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
+/// без фильтра. Применение и выбор — M5.3.
+@override final  String? filteredBy;
 
 /// Create a copy of ViewOptions
 /// with the given fields replaced by the non-null parameter values.
@@ -241,18 +247,18 @@ _$ViewOptionsCopyWith<_ViewOptions> get copyWith => __$ViewOptionsCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ViewOptions&&(identical(other.viewType, viewType) || other.viewType == viewType)&&(identical(other.objectId, objectId) || other.objectId == objectId)&&(identical(other.grouping, grouping) || other.grouping == grouping)&&(identical(other.sorting, sorting) || other.sorting == sorting)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.showCompletedTasks, showCompletedTasks) || other.showCompletedTasks == showCompletedTasks));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ViewOptions&&(identical(other.viewType, viewType) || other.viewType == viewType)&&(identical(other.objectId, objectId) || other.objectId == objectId)&&(identical(other.grouping, grouping) || other.grouping == grouping)&&(identical(other.sorting, sorting) || other.sorting == sorting)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.showCompletedTasks, showCompletedTasks) || other.showCompletedTasks == showCompletedTasks)&&(identical(other.filteredBy, filteredBy) || other.filteredBy == filteredBy));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,viewType,objectId,grouping,sorting,sortOrder,showCompletedTasks);
+    return Object.hash(runtimeType,viewType,objectId,grouping,sorting,sortOrder,showCompletedTasks,filteredBy);
 }
 
 @override
 String toString() {
-    return 'ViewOptions(viewType: $viewType, objectId: $objectId, grouping: $grouping, sorting: $sorting, sortOrder: $sortOrder, showCompletedTasks: $showCompletedTasks)';
+    return 'ViewOptions(viewType: $viewType, objectId: $objectId, grouping: $grouping, sorting: $sorting, sortOrder: $sortOrder, showCompletedTasks: $showCompletedTasks, filteredBy: $filteredBy)';
 }
 
 
@@ -263,7 +269,7 @@ abstract mixin class _$ViewOptionsCopyWith<$Res> implements $ViewOptionsCopyWith
   factory _$ViewOptionsCopyWith(_ViewOptions value, $Res Function(_ViewOptions) _then) = __$ViewOptionsCopyWithImpl;
 @override @useResult
 $Res call({
- ViewType viewType, String? objectId, Grouping grouping, Sorting sorting, SortOrder sortOrder, bool showCompletedTasks
+ ViewType viewType, String? objectId, Grouping grouping, Sorting sorting, SortOrder sortOrder, bool showCompletedTasks, String? filteredBy
 });
 
 
@@ -280,7 +286,7 @@ class __$ViewOptionsCopyWithImpl<$Res>
 
 /// Create a copy of ViewOptions
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? viewType = null,Object? objectId = freezed,Object? grouping = null,Object? sorting = null,Object? sortOrder = null,Object? showCompletedTasks = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? viewType = null,Object? objectId = freezed,Object? grouping = null,Object? sorting = null,Object? sortOrder = null,Object? showCompletedTasks = null,Object? filteredBy = freezed,}) {
   return _then(_ViewOptions(
 viewType: null == viewType ? _self.viewType : viewType // ignore: cast_nullable_to_non_nullable
 as ViewType,objectId: freezed == objectId ? _self.objectId : objectId // ignore: cast_nullable_to_non_nullable
@@ -288,7 +294,8 @@ as String?,grouping: null == grouping ? _self.grouping : grouping // ignore: cas
 as Grouping,sorting: null == sorting ? _self.sorting : sorting // ignore: cast_nullable_to_non_nullable
 as Sorting,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as SortOrder,showCompletedTasks: null == showCompletedTasks ? _self.showCompletedTasks : showCompletedTasks // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,filteredBy: freezed == filteredBy ? _self.filteredBy : filteredBy // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -55,6 +55,17 @@ void main() {
     );
   });
 
+  test('фильтр «Отображения» пишется и снимается своим полем '
+      '(применение и «Сбросить всё» — M5.3)', () async {
+    final filtered = view.copyWith(filteredBy: 'p1');
+    await app.views.save(view, filtered);
+    expect(await load(), filtered);
+    expect((await stored())![ViewOptionsFields.filteredBy], 'p1');
+
+    await app.views.save(filtered, view);
+    expect(await load(), view);
+  });
+
   test('«Вручную» и порядок вида — направление «по возрастанию»: меню '
       'направления скрыто', () async {
     final desc = view.copyWith(

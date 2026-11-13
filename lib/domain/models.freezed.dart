@@ -868,6 +868,292 @@ as bool,
 }
 
 /// @nodoc
+mixin _$SavedFilter {
+
+ String get id; String get name;/// Запрос текстом (TODOIST_SYNTAX §4): хранит имена проектов и меток, а
+/// не id — переименование проекта ломает фильтр, как в Todoist.
+ String get query; String get description; String get color; String get orderKey; bool get isFavorite;
+/// Create a copy of SavedFilter
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SavedFilterCopyWith<SavedFilter> get copyWith => _$SavedFilterCopyWithImpl<SavedFilter>(this as SavedFilter, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as SavedFilter;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SavedFilter&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.query, _this.query) || other.query == _this.query)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.color, _this.color) || other.color == _this.color)&&(identical(other.orderKey, _this.orderKey) || other.orderKey == _this.orderKey)&&(identical(other.isFavorite, _this.isFavorite) || other.isFavorite == _this.isFavorite));
+}
+
+
+@override
+int get hashCode {
+  final _this = this as SavedFilter;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.query,_this.description,_this.color,_this.orderKey,_this.isFavorite);
+}
+
+@override
+String toString() {
+  final _this = this as SavedFilter;
+  return 'SavedFilter(id: ${_this.id}, name: ${_this.name}, query: ${_this.query}, description: ${_this.description}, color: ${_this.color}, orderKey: ${_this.orderKey}, isFavorite: ${_this.isFavorite})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SavedFilterCopyWith<$Res>  {
+  factory $SavedFilterCopyWith(SavedFilter value, $Res Function(SavedFilter) _then) = _$SavedFilterCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, String query, String description, String color, String orderKey, bool isFavorite
+});
+
+
+
+
+}
+/// @nodoc
+class _$SavedFilterCopyWithImpl<$Res>
+    implements $SavedFilterCopyWith<$Res> {
+  _$SavedFilterCopyWithImpl(this._self, this._then);
+
+  final SavedFilter _self;
+  final $Res Function(SavedFilter) _then;
+
+/// Create a copy of SavedFilter
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? query = null,Object? description = null,Object? color = null,Object? orderKey = null,Object? isFavorite = null,}) {
+  return _then(SavedFilter(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
+as String,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
+as String,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [SavedFilter].
+extension SavedFilterPatterns on SavedFilter {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SavedFilter value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SavedFilter() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SavedFilter value)  $default,){
+final _that = this;
+switch (_that) {
+case _SavedFilter():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SavedFilter value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SavedFilter() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String query,  String description,  String color,  String orderKey,  bool isFavorite)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SavedFilter() when $default != null:
+return $default(_that.id,_that.name,_that.query,_that.description,_that.color,_that.orderKey,_that.isFavorite);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String query,  String description,  String color,  String orderKey,  bool isFavorite)  $default,) {final _that = this;
+switch (_that) {
+case _SavedFilter():
+return $default(_that.id,_that.name,_that.query,_that.description,_that.color,_that.orderKey,_that.isFavorite);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String query,  String description,  String color,  String orderKey,  bool isFavorite)?  $default,) {final _that = this;
+switch (_that) {
+case _SavedFilter() when $default != null:
+return $default(_that.id,_that.name,_that.query,_that.description,_that.color,_that.orderKey,_that.isFavorite);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _SavedFilter implements SavedFilter {
+  const _SavedFilter({required this.id, required this.name, required this.query, required this.description, required this.color, required this.orderKey, required this.isFavorite});
+  
+
+@override final  String id;
+@override final  String name;
+/// Запрос текстом (TODOIST_SYNTAX §4): хранит имена проектов и меток, а
+/// не id — переименование проекта ломает фильтр, как в Todoist.
+@override final  String query;
+@override final  String description;
+@override final  String color;
+@override final  String orderKey;
+@override final  bool isFavorite;
+
+/// Create a copy of SavedFilter
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SavedFilterCopyWith<_SavedFilter> get copyWith => __$SavedFilterCopyWithImpl<_SavedFilter>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SavedFilter&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.query, query) || other.query == query)&&(identical(other.description, description) || other.description == description)&&(identical(other.color, color) || other.color == color)&&(identical(other.orderKey, orderKey) || other.orderKey == orderKey)&&(identical(other.isFavorite, isFavorite) || other.isFavorite == isFavorite));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,name,query,description,color,orderKey,isFavorite);
+}
+
+@override
+String toString() {
+    return 'SavedFilter(id: $id, name: $name, query: $query, description: $description, color: $color, orderKey: $orderKey, isFavorite: $isFavorite)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SavedFilterCopyWith<$Res> implements $SavedFilterCopyWith<$Res> {
+  factory _$SavedFilterCopyWith(_SavedFilter value, $Res Function(_SavedFilter) _then) = __$SavedFilterCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, String query, String description, String color, String orderKey, bool isFavorite
+});
+
+
+
+
+}
+/// @nodoc
+class __$SavedFilterCopyWithImpl<$Res>
+    implements _$SavedFilterCopyWith<$Res> {
+  __$SavedFilterCopyWithImpl(this._self, this._then);
+
+  final _SavedFilter _self;
+  final $Res Function(_SavedFilter) _then;
+
+/// Create a copy of SavedFilter
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? query = null,Object? description = null,Object? color = null,Object? orderKey = null,Object? isFavorite = null,}) {
+  return _then(_SavedFilter(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
+as String,orderKey: null == orderKey ? _self.orderKey : orderKey // ignore: cast_nullable_to_non_nullable
+as String,isFavorite: null == isFavorite ? _self.isFavorite : isFavorite // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+/// @nodoc
 mixin _$Due {
 
 /// `YYYY-MM-DD`.

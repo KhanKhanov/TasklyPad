@@ -37,6 +37,8 @@ final class ViewOptionsCommands {
       if (order != from.sortOrder) ViewOptionsFields.sortOrder: order.apiName,
       if (next.showCompletedTasks != from.showCompletedTasks)
         ViewOptionsFields.showCompletedTasks: next.showCompletedTasks,
+      if (next.filteredBy != from.filteredBy)
+        ViewOptionsFields.filteredBy: next.filteredBy,
     };
     // Пустая правка — без `Mutator.update`: он будит синхронизацию.
     if (fields.isEmpty) return;

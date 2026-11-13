@@ -696,6 +696,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String conflictEntityFilter(String title) {
+    return 'Фильтр «$title»';
+  }
+
+  @override
   String conflictEntityTaskLabel(String label, String task) {
     return 'Метка «$label» у задачи «$task»';
   }
@@ -770,6 +775,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get fieldViewStyle => 'Раскладка';
+
+  @override
+  String get fieldQuery => 'Запрос';
 
   @override
   String get valueCompleted => 'Выполнена';

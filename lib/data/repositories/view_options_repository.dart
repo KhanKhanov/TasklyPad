@@ -72,5 +72,6 @@ final class ViewOptionsRepository {
           sorting: Sorting.fromApi(row.sortedBy),
           sortOrder: SortOrder.fromApi(row.sortOrder),
           showCompletedTasks: row.showCompletedTasks,
+          filteredBy: row.filteredBy,
         );
 }

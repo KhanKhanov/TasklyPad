@@ -161,7 +161,7 @@ INTERVAL 1), BYMONTHDAY (месяц и год с BYMONTH; не вместе с B
   (решение 3 plans/m3).
 - Вложения комментариев: файл кладётся в `sync/blobs/<sha256>`; op хранит хеш и имя.
 - Настройки вида («Отображение») — сущность `view_options` {view_type, object_id, grouped_by, sorted_by,
-  sort_order, show_completed_tasks} (имена и значения — как в Todoist API) с id `viewOptionsId` =
+  sort_order, show_completed_tasks, filtered_by} (имена и значения — как в Todoist API) с id `viewOptionsId` =
   `uuidV8("view_options", view_type, object_id ?? "")`: настройки одного вида с двух устройств — одна
   сущность, разные поля сохраняются, одно поле сводит LWW. Тип молчащий (`silentEntityTypes`) — спор о виде
   списка карточки не стоит. Правка пишет `view_type` и `object_id` вместе с изменёнными полями (у новой для

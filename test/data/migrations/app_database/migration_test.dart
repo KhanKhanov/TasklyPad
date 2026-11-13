@@ -12,6 +12,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
+import 'generated/schema_v6.dart' as v6;
 
 // Снимки схем — drift_schemas/, классы generated/ — из
 // `dart run drift_dev make-migrations`. При новой версии схемы: снимок,
@@ -193,6 +194,7 @@ void main() {
         from2To3: (m, s) async {},
         from3To4: (m, s) async {},
         from4To5: (m, s) async {},
+        from5To6: (m, s) async {},
       ),
     );
     await expectLater(
@@ -354,6 +356,7 @@ void main() {
         },
         from3To4: (m, s) async {},
         from4To5: (m, s) async {},
+        from5To6: (m, s) async {},
       ),
     );
     await expectLater(
@@ -481,6 +484,7 @@ void main() {
           throw StateError('сбой посреди миграции');
         },
         from4To5: (m, s) async {},
+        from5To6: (m, s) async {},
       ),
     );
     await expectLater(
@@ -694,6 +698,7 @@ void main() {
           await m.createTable(s.viewOptions);
           throw StateError('сбой посреди миграции');
         },
+        from5To6: (m, s) async {},
       ),
     );
     await expectLater(
@@ -717,6 +722,164 @@ void main() {
 
     final db = AppDatabase(schema.newConnection());
     await verifier.migrateAndValidate(db, 5);
+    await db.close();
+  });
+
+  test('v5 → v6 — строки v5 целы, фильтра «Отображения» нет, фильтров нет', () {
+    const label = v5.LabelsData(
+      id: 'l1',
+      name: 'дом',
+      color: 'blue',
+      orderKey: 'a0',
+      isFavorite: 1,
+      deleted: 0,
+    );
+    const view = v5.ViewOptionsData(
+      id: 'v1',
+      viewType: 'label',
+      objectId: 'l1',
+      groupedBy: 'priority',
+      sortedBy: 'due_date',
+      sortOrder: 'desc',
+      showCompletedTasks: 1,
+      deleted: 0,
+    );
+    return verifier.testWithDataIntegrity(
+      oldVersion: 5,
+      newVersion: 6,
+      createOld: v5.DatabaseAtV5.new,
+      createNew: v6.DatabaseAtV6.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insert(oldDb.labels, label);
+        batch.insert(oldDb.viewOptions, view);
+      },
+      validateItems: (newDb) async {
+        expect(await newDb.select(newDb.labels).get(), [
+          const v6.LabelsData(
+            id: 'l1',
+            name: 'дом',
+            color: 'blue',
+            orderKey: 'a0',
+            isFavorite: 1,
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.viewOptions).get(), [
+          const v6.ViewOptionsData(
+            id: 'v1',
+            viewType: 'label',
+            objectId: 'l1',
+            groupedBy: 'priority',
+            sortedBy: 'due_date',
+            sortOrder: 'desc',
+            showCompletedTasks: 1,
+            deleted: 0,
+          ),
+        ]);
+        expect(await newDb.select(newDb.filters).get(), isEmpty);
+      },
+    );
+  });
+
+  test('v5 → v6 — фильтр и фильтр «Отображения», пришедшие до обновления, '
+      'после reproject в новой таблице и колонке', () async {
+    // Сборка M4 уже приняла ops сборки M5: фильтр и поле лежат в
+    // field_versions, таблицы и колонки для них ещё не было.
+    final hlc = const Hlc(wallMs: 1763000000000, counter: 0, nodeId: 'b');
+    final schema = await verifier.schemaAt(5);
+    final old = v5.DatabaseAtV5(schema.newConnection());
+    v5.FieldVersionsData version(
+      String type,
+      String id,
+      String field,
+      String json,
+    ) => v5.FieldVersionsData(
+      entityType: type,
+      entityId: id,
+      field: field,
+      hlc: '$hlc',
+      valueJson: json,
+    );
+    await old.batch((batch) {
+      batch.insertAll(old.fieldVersions, [
+        version('filter', 'f1', 'name', '"Срочное"'),
+        version('filter', 'f1', 'query', '"p1 & today"'),
+        version('filter', 'f1', 'description', '"на сегодня"'),
+        version('filter', 'f1', 'color', '"red"'),
+        version('filter', 'f1', 'order_key', '"a0"'),
+        version('filter', 'f1', 'is_favorite', 'true'),
+        version('view_options', 'v1', 'view_type', '"today"'),
+        version('view_options', 'v1', 'filtered_by', '"p1"'),
+      ]);
+      batch.insert(
+        old.localMeta,
+        const v5.LocalMetaData(key: 'projector_version', value: '5'),
+      );
+    });
+    await old.close();
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    final store = DriftOpStore(db);
+    expect(await store.needsReproject(), isTrue);
+    await store.reproject();
+
+    final filter = await db.select(db.filters).getSingle();
+    expect(
+      (
+        filter.id,
+        filter.name,
+        filter.query,
+        filter.description,
+        filter.color,
+        filter.orderKey,
+        filter.isFavorite,
+        filter.deleted,
+      ),
+      ('f1', 'Срочное', 'p1 & today', 'на сегодня', 'red', 'a0', true, false),
+    );
+    final view = await db.select(db.viewOptions).getSingle();
+    expect((view.viewType, view.filteredBy), ('today', 'p1'));
+  });
+
+  test('v5 → v6 — сбой посередине откатывает миграцию целиком, повтор '
+      'проходит', () async {
+    final schema = await verifier.schemaAt(5);
+    final failing = AppDatabase(
+      schema.newConnection(),
+      migrationSteps: migrationSteps(
+        from1To2: (m, s) async {},
+        from2To3: (m, s) async {},
+        from3To4: (m, s) async {},
+        from4To5: (m, s) async {},
+        from5To6: (m, s) async {
+          await m.createTable(s.filters);
+          throw StateError('сбой посреди миграции');
+        },
+      ),
+    );
+    await expectLater(
+      failing.customSelect('SELECT 1').get(),
+      throwsA(isA<StateError>()),
+    );
+    await failing.close();
+
+    final raw = schema.rawDatabase;
+    expect(raw.select('PRAGMA user_version').single.values.single, 5);
+    final tables = raw
+        .select("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .map((row) => row['name'])
+        .toList();
+    expect(tables, isNot(contains('filters')));
+    final columns = raw
+        .select('PRAGMA table_info(view_options)')
+        .map((row) => row['name'])
+        .toList();
+    expect(columns, isNot(contains('filtered_by')));
+
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 6);
     await db.close();
   });
 }

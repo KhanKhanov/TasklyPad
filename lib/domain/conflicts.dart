@@ -14,6 +14,9 @@ enum ConflictEntity {
   project,
   section,
   label,
+
+  /// Сохранённый фильтр.
+  filter,
   taskLabel,
   settings,
   other,
@@ -37,6 +40,9 @@ enum ConflictField {
   favorite,
   archived,
   viewStyle,
+
+  /// Запрос фильтра.
+  query,
 
   /// Тема настроек — id (`taskly`) — и внешний вид (`light`, `dark`,
   /// `system`).

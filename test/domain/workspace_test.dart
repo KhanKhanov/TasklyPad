@@ -70,6 +70,17 @@ Label _label(String id, {String order = 'a'}) => Label(
   isFavorite: false,
 );
 
+SavedFilter _filter(String id, {String order = 'a', bool favorite = false}) =>
+    SavedFilter(
+      id: id,
+      name: id,
+      query: 'p1',
+      description: '',
+      color: 'charcoal',
+      orderKey: order,
+      isFavorite: favorite,
+    );
+
 List<String> _plain(Iterable<Task> tasks) => [for (final t in tasks) t.id];
 
 List<String> _ids(Iterable<TreeItem<Task>> items) => [
@@ -486,6 +497,25 @@ void main() {
           .id,
       't',
     );
+  });
+
+  test('фильтры — по ключу порядка, при равенстве по id; избранные — в том '
+      'же порядке', () {
+    final ws = Workspace(
+      projects: [inbox],
+      sections: const [],
+      labels: const [],
+      tasks: const [],
+      filters: [
+        _filter('f3', order: 'b', favorite: true),
+        _filter('f2', order: 'a'),
+        _filter('f1', order: 'a', favorite: true),
+      ],
+    );
+    expect([for (final f in ws.filters) f.id], ['f1', 'f2', 'f3']);
+    expect([for (final f in ws.favoriteFilters) f.id], ['f1', 'f3']);
+    expect(ws.filter('f2')!.query, 'p1');
+    expect(ws.filter('нет'), isNull);
   });
 
   test('labelTaskCount — столько же задач, сколько в labelTasks', () {

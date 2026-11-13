@@ -434,6 +434,66 @@ void main() {
     expect(warnings, isEmpty);
   });
 
+  test('фильтр — каждое поле ложится в свою колонку; фильтр «Отображения» '
+      '— в колонку вида, null снимает', () async {
+    const fields = {
+      FilterFields.name: 'Срочное',
+      FilterFields.query: 'p1 & today',
+      FilterFields.description: 'на сегодня',
+      FilterFields.color: 'red',
+      FilterFields.orderKey: 'a0',
+      FilterFields.isFavorite: true,
+      FilterFields.deleted: true,
+    };
+    for (final entry in fields.entries) {
+      await put(EntityTypes.filter, 'f1', entry.key, entry.value);
+    }
+    final row = await db.select(db.filters).getSingle();
+    expect(
+      (
+        row.id,
+        row.name,
+        row.query,
+        row.description,
+        row.color,
+        row.orderKey,
+        row.isFavorite,
+        row.deleted,
+      ),
+      ('f1', 'Срочное', 'p1 & today', 'на сегодня', 'red', 'a0', true, true),
+    );
+
+    await put(
+      EntityTypes.viewOptions,
+      'v1',
+      ViewOptionsFields.filteredBy,
+      'p1',
+    );
+    expect((await db.select(db.viewOptions).getSingle()).filteredBy, 'p1');
+    await put(
+      EntityTypes.viewOptions,
+      'v1',
+      ViewOptionsFields.filteredBy,
+      null,
+    );
+    expect((await db.select(db.viewOptions).getSingle()).filteredBy, isNull);
+    expect(warnings, isEmpty);
+  });
+
+  test('фильтр без полей кроме запроса и поля не того типа — значения по '
+      'умолчанию', () async {
+    await put(EntityTypes.filter, 'f1', FilterFields.query, 42);
+    await put(EntityTypes.filter, 'f1', FilterFields.color, false);
+    await put(EntityTypes.viewOptions, 'v1', ViewOptionsFields.filteredBy, 7);
+    final row = await db.select(db.filters).getSingle();
+    expect(
+      (row.name, row.query, row.description, row.color, row.isFavorite),
+      ('', '', '', 'charcoal', false),
+    );
+    expect((await db.select(db.viewOptions).getSingle()).filteredBy, isNull);
+    expect(warnings, hasLength(3));
+  });
+
   test('снимок имён меток — не объект или имя не строка: колонка пустая, '
       'предупреждение; null снимает', () async {
     await put(EntityTypes.task, 't1', TaskFields.completedLabelNames, {

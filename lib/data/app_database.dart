@@ -23,6 +23,7 @@ part 'app_database.g.dart';
     Tasks,
     Sections,
     Labels,
+    Filters,
     TaskLabels,
     Completions,
     ViewOptions,
@@ -40,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// Версия схемы. При изменении таблиц: увеличить, выполнить
   /// `dart run drift_dev make-migrations` и описать шаг в [migration].
-  static const int currentSchemaVersion = 5;
+  static const int currentSchemaVersion = 6;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -109,6 +110,13 @@ class AppDatabase extends _$AppDatabase {
       await m.addColumn(schema.tasks, schema.tasks.dayOrderKey);
       await m.addColumn(schema.tasks, schema.tasks.completedLabelNames);
       await m.createTable(schema.viewOptions);
+    },
+    // M5: сохранённые фильтры и фильтр «Отображения». Фильтры и поле,
+    // уже пришедшие от другого устройства, разложит `reproject` (версия
+    // реестра 6).
+    from5To6: (m, schema) async {
+      await m.createTable(schema.filters);
+      await m.addColumn(schema.viewOptions, schema.viewOptions.filteredBy);
     },
   );
 }

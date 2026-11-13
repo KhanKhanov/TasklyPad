@@ -11,6 +11,9 @@ abstract final class EntityTypes {
   static const String section = 'section';
   static const String label = 'label';
 
+  /// Сохранённый фильтр.
+  static const String filter = 'filter';
+
   /// Метка задачи: связь многие ко многим с id [taskLabelId].
   static const String taskLabel = 'task_label';
 
@@ -253,6 +256,21 @@ abstract final class LabelFields {
   static const String deleted = Op.deletedField;
 }
 
+/// Поля сохранённого фильтра — имена как у фильтра в Todoist API (импорт
+/// M11). Описание — как `description` проекта: в API фильтра его нет, а в
+/// Todoist оно есть (help «Introduction to filters»).
+abstract final class FilterFields {
+  static const String name = 'name';
+
+  /// Запрос текстом (TODOIST_SYNTAX §4).
+  static const String query = 'query';
+  static const String description = TaskFields.description;
+  static const String color = 'color';
+  static const String orderKey = 'order_key';
+  static const String isFavorite = 'is_favorite';
+  static const String deleted = Op.deletedField;
+}
+
 /// Поля настроек.
 abstract final class SettingsFields {
   /// Id темы (`taskly`) — строкой, а не числом `user.theme_id` Todoist API:
@@ -285,6 +303,9 @@ abstract final class ViewOptionsFields {
   static const String sortedBy = 'sorted_by';
   static const String sortOrder = 'sort_order';
   static const String showCompletedTasks = 'show_completed_tasks';
+
+  /// Запрос фильтра «Отображения» — как `filtered_by` в Todoist API.
+  static const String filteredBy = 'filtered_by';
   static const String deleted = Op.deletedField;
 }
 

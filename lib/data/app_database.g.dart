@@ -4812,6 +4812,515 @@ class LabelsCompanion extends UpdateCompanion<LabelRow> {
   }
 }
 
+class $FiltersTable extends Filters with TableInfo<$FiltersTable, FilterRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FiltersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _queryMeta = const VerificationMeta('query');
+  @override
+  late final GeneratedColumn<String> query = GeneratedColumn<String>(
+    'query',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _colorMeta = const VerificationMeta('color');
+  @override
+  late final GeneratedColumn<String> color = GeneratedColumn<String>(
+    'color',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('charcoal'),
+  );
+  static const VerificationMeta _orderKeyMeta = const VerificationMeta(
+    'orderKey',
+  );
+  @override
+  late final GeneratedColumn<String> orderKey = GeneratedColumn<String>(
+    'order_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
+    'isFavorite',
+  );
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+    'is_favorite',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_favorite" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    query,
+    description,
+    color,
+    orderKey,
+    isFavorite,
+    deleted,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'filters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FilterRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('query')) {
+      context.handle(
+        _queryMeta,
+        query.isAcceptableOrUnknown(data['query']!, _queryMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color')) {
+      context.handle(
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
+    }
+    if (data.containsKey('order_key')) {
+      context.handle(
+        _orderKeyMeta,
+        orderKey.isAcceptableOrUnknown(data['order_key']!, _orderKeyMeta),
+      );
+    }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+        _isFavoriteMeta,
+        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FilterRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FilterRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      query: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}query'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      )!,
+      orderKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}order_key'],
+      )!,
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+    );
+  }
+
+  @override
+  $FiltersTable createAlias(String alias) {
+    return $FiltersTable(attachedDatabase, alias);
+  }
+}
+
+class FilterRow extends DataClass implements Insertable<FilterRow> {
+  final String id;
+  final String name;
+
+  /// Запрос на языке фильтров (TODOIST_SYNTAX §4) — текстом, как ввёл
+  /// пользователь.
+  final String query;
+  final String description;
+
+  /// Имя цвета палитры Todoist.
+  final String color;
+  final String orderKey;
+  final bool isFavorite;
+  final bool deleted;
+  const FilterRow({
+    required this.id,
+    required this.name,
+    required this.query,
+    required this.description,
+    required this.color,
+    required this.orderKey,
+    required this.isFavorite,
+    required this.deleted,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['query'] = Variable<String>(query);
+    map['description'] = Variable<String>(description);
+    map['color'] = Variable<String>(color);
+    map['order_key'] = Variable<String>(orderKey);
+    map['is_favorite'] = Variable<bool>(isFavorite);
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  FiltersCompanion toCompanion(bool nullToAbsent) {
+    return FiltersCompanion(
+      id: Value(id),
+      name: Value(name),
+      query: Value(query),
+      description: Value(description),
+      color: Value(color),
+      orderKey: Value(orderKey),
+      isFavorite: Value(isFavorite),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory FilterRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FilterRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      query: serializer.fromJson<String>(json['query']),
+      description: serializer.fromJson<String>(json['description']),
+      color: serializer.fromJson<String>(json['color']),
+      orderKey: serializer.fromJson<String>(json['orderKey']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'query': serializer.toJson<String>(query),
+      'description': serializer.toJson<String>(description),
+      'color': serializer.toJson<String>(color),
+      'orderKey': serializer.toJson<String>(orderKey),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  FilterRow copyWith({
+    String? id,
+    String? name,
+    String? query,
+    String? description,
+    String? color,
+    String? orderKey,
+    bool? isFavorite,
+    bool? deleted,
+  }) => FilterRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    query: query ?? this.query,
+    description: description ?? this.description,
+    color: color ?? this.color,
+    orderKey: orderKey ?? this.orderKey,
+    isFavorite: isFavorite ?? this.isFavorite,
+    deleted: deleted ?? this.deleted,
+  );
+  FilterRow copyWithCompanion(FiltersCompanion data) {
+    return FilterRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      query: data.query.present ? data.query.value : this.query,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      color: data.color.present ? data.color.value : this.color,
+      orderKey: data.orderKey.present ? data.orderKey.value : this.orderKey,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FilterRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('query: $query, ')
+          ..write('description: $description, ')
+          ..write('color: $color, ')
+          ..write('orderKey: $orderKey, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    query,
+    description,
+    color,
+    orderKey,
+    isFavorite,
+    deleted,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FilterRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.query == this.query &&
+          other.description == this.description &&
+          other.color == this.color &&
+          other.orderKey == this.orderKey &&
+          other.isFavorite == this.isFavorite &&
+          other.deleted == this.deleted);
+}
+
+class FiltersCompanion extends UpdateCompanion<FilterRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> query;
+  final Value<String> description;
+  final Value<String> color;
+  final Value<String> orderKey;
+  final Value<bool> isFavorite;
+  final Value<bool> deleted;
+  final Value<int> rowid;
+  const FiltersCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.query = const Value.absent(),
+    this.description = const Value.absent(),
+    this.color = const Value.absent(),
+    this.orderKey = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FiltersCompanion.insert({
+    required String id,
+    this.name = const Value.absent(),
+    this.query = const Value.absent(),
+    this.description = const Value.absent(),
+    this.color = const Value.absent(),
+    this.orderKey = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id);
+  static Insertable<FilterRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? query,
+    Expression<String>? description,
+    Expression<String>? color,
+    Expression<String>? orderKey,
+    Expression<bool>? isFavorite,
+    Expression<bool>? deleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (query != null) 'query': query,
+      if (description != null) 'description': description,
+      if (color != null) 'color': color,
+      if (orderKey != null) 'order_key': orderKey,
+      if (isFavorite != null) 'is_favorite': isFavorite,
+      if (deleted != null) 'deleted': deleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FiltersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? query,
+    Value<String>? description,
+    Value<String>? color,
+    Value<String>? orderKey,
+    Value<bool>? isFavorite,
+    Value<bool>? deleted,
+    Value<int>? rowid,
+  }) {
+    return FiltersCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      query: query ?? this.query,
+      description: description ?? this.description,
+      color: color ?? this.color,
+      orderKey: orderKey ?? this.orderKey,
+      isFavorite: isFavorite ?? this.isFavorite,
+      deleted: deleted ?? this.deleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (query.present) {
+      map['query'] = Variable<String>(query.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (color.present) {
+      map['color'] = Variable<String>(color.value);
+    }
+    if (orderKey.present) {
+      map['order_key'] = Variable<String>(orderKey.value);
+    }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FiltersCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('query: $query, ')
+          ..write('description: $description, ')
+          ..write('color: $color, ')
+          ..write('orderKey: $orderKey, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('deleted: $deleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $TaskLabelsTable extends TaskLabels
     with TableInfo<$TaskLabelsTable, TaskLabelRow> {
   @override
@@ -5578,6 +6087,17 @@ class $ViewOptionsTable extends ViewOptions
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _filteredByMeta = const VerificationMeta(
+    'filteredBy',
+  );
+  @override
+  late final GeneratedColumn<String> filteredBy = GeneratedColumn<String>(
+    'filtered_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _deletedMeta = const VerificationMeta(
     'deleted',
   );
@@ -5602,6 +6122,7 @@ class $ViewOptionsTable extends ViewOptions
     sortedBy,
     sortOrder,
     showCompletedTasks,
+    filteredBy,
     deleted,
   ];
   @override
@@ -5660,6 +6181,12 @@ class $ViewOptionsTable extends ViewOptions
         ),
       );
     }
+    if (data.containsKey('filtered_by')) {
+      context.handle(
+        _filteredByMeta,
+        filteredBy.isAcceptableOrUnknown(data['filtered_by']!, _filteredByMeta),
+      );
+    }
     if (data.containsKey('deleted')) {
       context.handle(
         _deletedMeta,
@@ -5703,6 +6230,10 @@ class $ViewOptionsTable extends ViewOptions
         DriftSqlType.bool,
         data['${effectivePrefix}show_completed_tasks'],
       )!,
+      filteredBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}filtered_by'],
+      ),
       deleted: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}deleted'],
@@ -5735,6 +6266,9 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
   /// `asc` или `desc`; `null` — по возрастанию.
   final String? sortOrder;
   final bool showCompletedTasks;
+
+  /// Запрос фильтра «Отображения»; `null` — без фильтра.
+  final String? filteredBy;
   final bool deleted;
   const ViewOptionsRow({
     required this.id,
@@ -5744,6 +6278,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
     this.sortedBy,
     this.sortOrder,
     required this.showCompletedTasks,
+    this.filteredBy,
     required this.deleted,
   });
   @override
@@ -5766,6 +6301,9 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
       map['sort_order'] = Variable<String>(sortOrder);
     }
     map['show_completed_tasks'] = Variable<bool>(showCompletedTasks);
+    if (!nullToAbsent || filteredBy != null) {
+      map['filtered_by'] = Variable<String>(filteredBy);
+    }
     map['deleted'] = Variable<bool>(deleted);
     return map;
   }
@@ -5789,6 +6327,9 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
           ? const Value.absent()
           : Value(sortOrder),
       showCompletedTasks: Value(showCompletedTasks),
+      filteredBy: filteredBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filteredBy),
       deleted: Value(deleted),
     );
   }
@@ -5806,6 +6347,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
       sortedBy: serializer.fromJson<String?>(json['sortedBy']),
       sortOrder: serializer.fromJson<String?>(json['sortOrder']),
       showCompletedTasks: serializer.fromJson<bool>(json['showCompletedTasks']),
+      filteredBy: serializer.fromJson<String?>(json['filteredBy']),
       deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
@@ -5820,6 +6362,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
       'sortedBy': serializer.toJson<String?>(sortedBy),
       'sortOrder': serializer.toJson<String?>(sortOrder),
       'showCompletedTasks': serializer.toJson<bool>(showCompletedTasks),
+      'filteredBy': serializer.toJson<String?>(filteredBy),
       'deleted': serializer.toJson<bool>(deleted),
     };
   }
@@ -5832,6 +6375,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
     Value<String?> sortedBy = const Value.absent(),
     Value<String?> sortOrder = const Value.absent(),
     bool? showCompletedTasks,
+    Value<String?> filteredBy = const Value.absent(),
     bool? deleted,
   }) => ViewOptionsRow(
     id: id ?? this.id,
@@ -5841,6 +6385,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
     sortedBy: sortedBy.present ? sortedBy.value : this.sortedBy,
     sortOrder: sortOrder.present ? sortOrder.value : this.sortOrder,
     showCompletedTasks: showCompletedTasks ?? this.showCompletedTasks,
+    filteredBy: filteredBy.present ? filteredBy.value : this.filteredBy,
     deleted: deleted ?? this.deleted,
   );
   ViewOptionsRow copyWithCompanion(ViewOptionsCompanion data) {
@@ -5854,6 +6399,9 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
       showCompletedTasks: data.showCompletedTasks.present
           ? data.showCompletedTasks.value
           : this.showCompletedTasks,
+      filteredBy: data.filteredBy.present
+          ? data.filteredBy.value
+          : this.filteredBy,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
@@ -5868,6 +6416,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
           ..write('sortedBy: $sortedBy, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('showCompletedTasks: $showCompletedTasks, ')
+          ..write('filteredBy: $filteredBy, ')
           ..write('deleted: $deleted')
           ..write(')'))
         .toString();
@@ -5882,6 +6431,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
     sortedBy,
     sortOrder,
     showCompletedTasks,
+    filteredBy,
     deleted,
   );
   @override
@@ -5895,6 +6445,7 @@ class ViewOptionsRow extends DataClass implements Insertable<ViewOptionsRow> {
           other.sortedBy == this.sortedBy &&
           other.sortOrder == this.sortOrder &&
           other.showCompletedTasks == this.showCompletedTasks &&
+          other.filteredBy == this.filteredBy &&
           other.deleted == this.deleted);
 }
 
@@ -5906,6 +6457,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
   final Value<String?> sortedBy;
   final Value<String?> sortOrder;
   final Value<bool> showCompletedTasks;
+  final Value<String?> filteredBy;
   final Value<bool> deleted;
   final Value<int> rowid;
   const ViewOptionsCompanion({
@@ -5916,6 +6468,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
     this.sortedBy = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.showCompletedTasks = const Value.absent(),
+    this.filteredBy = const Value.absent(),
     this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -5927,6 +6480,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
     this.sortedBy = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.showCompletedTasks = const Value.absent(),
+    this.filteredBy = const Value.absent(),
     this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
@@ -5938,6 +6492,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
     Expression<String>? sortedBy,
     Expression<String>? sortOrder,
     Expression<bool>? showCompletedTasks,
+    Expression<String>? filteredBy,
     Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
@@ -5950,6 +6505,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
       if (sortOrder != null) 'sort_order': sortOrder,
       if (showCompletedTasks != null)
         'show_completed_tasks': showCompletedTasks,
+      if (filteredBy != null) 'filtered_by': filteredBy,
       if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
@@ -5963,6 +6519,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
     Value<String?>? sortedBy,
     Value<String?>? sortOrder,
     Value<bool>? showCompletedTasks,
+    Value<String?>? filteredBy,
     Value<bool>? deleted,
     Value<int>? rowid,
   }) {
@@ -5974,6 +6531,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
       sortedBy: sortedBy ?? this.sortedBy,
       sortOrder: sortOrder ?? this.sortOrder,
       showCompletedTasks: showCompletedTasks ?? this.showCompletedTasks,
+      filteredBy: filteredBy ?? this.filteredBy,
       deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
@@ -6003,6 +6561,9 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
     if (showCompletedTasks.present) {
       map['show_completed_tasks'] = Variable<bool>(showCompletedTasks.value);
     }
+    if (filteredBy.present) {
+      map['filtered_by'] = Variable<String>(filteredBy.value);
+    }
     if (deleted.present) {
       map['deleted'] = Variable<bool>(deleted.value);
     }
@@ -6022,6 +6583,7 @@ class ViewOptionsCompanion extends UpdateCompanion<ViewOptionsRow> {
           ..write('sortedBy: $sortedBy, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('showCompletedTasks: $showCompletedTasks, ')
+          ..write('filteredBy: $filteredBy, ')
           ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -6041,6 +6603,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TasksTable tasks = $TasksTable(this);
   late final $SectionsTable sections = $SectionsTable(this);
   late final $LabelsTable labels = $LabelsTable(this);
+  late final $FiltersTable filters = $FiltersTable(this);
   late final $TaskLabelsTable taskLabels = $TaskLabelsTable(this);
   late final $CompletionsTable completions = $CompletionsTable(this);
   late final $ViewOptionsTable viewOptions = $ViewOptionsTable(this);
@@ -6094,6 +6657,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tasks,
     sections,
     labels,
+    filters,
     taskLabels,
     completions,
     viewOptions,
@@ -8535,6 +9099,268 @@ typedef $$LabelsTableProcessedTableManager =
       LabelRow,
       PrefetchHooks Function()
     >;
+typedef $$FiltersTableCreateCompanionBuilder = FiltersCompanion Function({
+  required String id,
+  Value<String> name,
+  Value<String> query,
+  Value<String> description,
+  Value<String> color,
+  Value<String> orderKey,
+  Value<bool> isFavorite,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+typedef $$FiltersTableUpdateCompanionBuilder = FiltersCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> query,
+  Value<String> description,
+  Value<String> color,
+  Value<String> orderKey,
+  Value<bool> isFavorite,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+
+class $$FiltersTableFilterComposer
+    extends Composer<_$AppDatabase, $FiltersTable> {
+  $$FiltersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get orderKey => $composableBuilder(
+    column: $table.orderKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FiltersTableOrderingComposer
+    extends Composer<_$AppDatabase, $FiltersTable> {
+  $$FiltersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get color => $composableBuilder(
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get orderKey => $composableBuilder(
+    column: $table.orderKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FiltersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FiltersTable> {
+  $$FiltersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get query =>
+      $composableBuilder(column: $table.query, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get color =>
+      $composableBuilder(column: $table.color, builder: (column) => column);
+
+  GeneratedColumn<String> get orderKey =>
+      $composableBuilder(column: $table.orderKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$FiltersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FiltersTable,
+          FilterRow,
+          $$FiltersTableFilterComposer,
+          $$FiltersTableOrderingComposer,
+          $$FiltersTableAnnotationComposer,
+          $$FiltersTableCreateCompanionBuilder,
+          $$FiltersTableUpdateCompanionBuilder,
+          (FilterRow, BaseReferences<_$AppDatabase, $FiltersTable, FilterRow>),
+          FilterRow,
+          PrefetchHooks Function()
+        > {
+  $$FiltersTableTableManager(_$AppDatabase db, $FiltersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FiltersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FiltersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FiltersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> query = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> color = const Value.absent(),
+                Value<String> orderKey = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FiltersCompanion(
+                id: id,
+                name: name,
+                query: query,
+                description: description,
+                color: color,
+                orderKey: orderKey,
+                isFavorite: isFavorite,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> name = const Value.absent(),
+                Value<String> query = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> color = const Value.absent(),
+                Value<String> orderKey = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FiltersCompanion.insert(
+                id: id,
+                name: name,
+                query: query,
+                description: description,
+                color: color,
+                orderKey: orderKey,
+                isFavorite: isFavorite,
+                deleted: deleted,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$FiltersTable, FilterRow>(table),
+                  BaseReferences<_$AppDatabase, $FiltersTable, FilterRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FiltersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FiltersTable,
+      FilterRow,
+      $$FiltersTableFilterComposer,
+      $$FiltersTableOrderingComposer,
+      $$FiltersTableAnnotationComposer,
+      $$FiltersTableCreateCompanionBuilder,
+      $$FiltersTableUpdateCompanionBuilder,
+      (FilterRow, BaseReferences<_$AppDatabase, $FiltersTable, FilterRow>),
+      FilterRow,
+      PrefetchHooks Function()
+    >;
 typedef $$TaskLabelsTableCreateCompanionBuilder = TaskLabelsCompanion Function({
   required String id,
   Value<String?> taskId,
@@ -8943,6 +9769,7 @@ typedef $$ViewOptionsTableCreateCompanionBuilder =
       Value<String?> sortedBy,
       Value<String?> sortOrder,
       Value<bool> showCompletedTasks,
+      Value<String?> filteredBy,
       Value<bool> deleted,
       Value<int> rowid,
     });
@@ -8955,6 +9782,7 @@ typedef $$ViewOptionsTableUpdateCompanionBuilder =
       Value<String?> sortedBy,
       Value<String?> sortOrder,
       Value<bool> showCompletedTasks,
+      Value<String?> filteredBy,
       Value<bool> deleted,
       Value<int> rowid,
     });
@@ -9000,6 +9828,11 @@ class $$ViewOptionsTableFilterComposer
 
   ColumnFilters<bool> get showCompletedTasks => $composableBuilder(
     column: $table.showCompletedTasks,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filteredBy => $composableBuilder(
+    column: $table.filteredBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9053,6 +9886,11 @@ class $$ViewOptionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get filteredBy => $composableBuilder(
+    column: $table.filteredBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get deleted => $composableBuilder(
     column: $table.deleted,
     builder: (column) => ColumnOrderings(column),
@@ -9088,6 +9926,11 @@ class $$ViewOptionsTableAnnotationComposer
 
   GeneratedColumn<bool> get showCompletedTasks => $composableBuilder(
     column: $table.showCompletedTasks,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get filteredBy => $composableBuilder(
+    column: $table.filteredBy,
     builder: (column) => column,
   );
 
@@ -9133,6 +9976,7 @@ class $$ViewOptionsTableTableManager
                 Value<String?> sortedBy = const Value.absent(),
                 Value<String?> sortOrder = const Value.absent(),
                 Value<bool> showCompletedTasks = const Value.absent(),
+                Value<String?> filteredBy = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ViewOptionsCompanion(
@@ -9143,6 +9987,7 @@ class $$ViewOptionsTableTableManager
                 sortedBy: sortedBy,
                 sortOrder: sortOrder,
                 showCompletedTasks: showCompletedTasks,
+                filteredBy: filteredBy,
                 deleted: deleted,
                 rowid: rowid,
               ),
@@ -9155,6 +10000,7 @@ class $$ViewOptionsTableTableManager
                 Value<String?> sortedBy = const Value.absent(),
                 Value<String?> sortOrder = const Value.absent(),
                 Value<bool> showCompletedTasks = const Value.absent(),
+                Value<String?> filteredBy = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ViewOptionsCompanion.insert(
@@ -9165,6 +10011,7 @@ class $$ViewOptionsTableTableManager
                 sortedBy: sortedBy,
                 sortOrder: sortOrder,
                 showCompletedTasks: showCompletedTasks,
+                filteredBy: filteredBy,
                 deleted: deleted,
                 rowid: rowid,
               ),
@@ -9223,6 +10070,8 @@ class $AppDatabaseManager {
       $$SectionsTableTableManager(_db, _db.sections);
   $$LabelsTableTableManager get labels =>
       $$LabelsTableTableManager(_db, _db.labels);
+  $$FiltersTableTableManager get filters =>
+      $$FiltersTableTableManager(_db, _db.filters);
   $$TaskLabelsTableTableManager get taskLabels =>
       $$TaskLabelsTableTableManager(_db, _db.taskLabels);
   $$CompletionsTableTableManager get completions =>

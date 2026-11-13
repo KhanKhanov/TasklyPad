@@ -55,6 +55,24 @@ abstract class Label with _$Label {
   }) = _Label;
 }
 
+/// Сохранённый фильтр («Мои фильтры», help «Introduction to filters»). Имя
+/// `Filter` оставлено узлам запроса (lib/domain/filter_query.dart).
+@freezed
+abstract class SavedFilter with _$SavedFilter {
+  const factory SavedFilter({
+    required String id,
+    required String name,
+
+    /// Запрос текстом (TODOIST_SYNTAX §4): хранит имена проектов и меток, а
+    /// не id — переименование проекта ломает фильтр, как в Todoist.
+    required String query,
+    required String description,
+    required String color,
+    required String orderKey,
+    required bool isFavorite,
+  }) = _SavedFilter;
+}
+
 /// Срок задачи: дата и, если задано, время. [tz] — IANA-таймзона; `null` —
 /// «плавающее» время по часам устройства.
 @freezed

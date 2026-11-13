@@ -1304,6 +1304,12 @@ abstract class AppLocalizations {
   /// **'Метка «{title}»'**
   String conflictEntityLabel(String title);
 
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтр «{title}»'**
+  String conflictEntityFilter(String title);
+
   /// Заголовок карточки метки задачи
   ///
   /// In ru, this message translates to:
@@ -1405,6 +1411,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Раскладка'**
   String get fieldViewStyle;
+
+  /// Подпись поля: запрос фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрос'**
+  String get fieldQuery;
 
   /// Значение поля
   ///

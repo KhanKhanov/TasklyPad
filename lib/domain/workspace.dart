@@ -32,6 +32,7 @@ final class Workspace {
     required Iterable<Label> labels,
     required Iterable<Task> tasks,
     Iterable<Label> deletedLabels = const [],
+    Iterable<SavedFilter> filters = const [],
     this._completionVersions = const {},
     this._labelDeletionVersions = const {},
     Set<String> deletedProjectIds = const {},
@@ -46,6 +47,9 @@ final class Workspace {
     for (final label in deletedLabels) {
       _deletedLabels[label.id] = label;
     }
+    for (final filter in [...filters]..sort(_byOrder(_filterKey))) {
+      _filters[filter.id] = filter;
+    }
     _initTasks(tasks, deletedProjectIds, deletedSectionIds, deletedTaskIds);
   }
 
@@ -57,6 +61,7 @@ final class Workspace {
   final Map<String, Section> _sections = {};
   final Map<String, Label> _labels = {};
   final Map<String, Label> _deletedLabels = {};
+  final Map<String, SavedFilter> _filters = {};
   final Map<String, String> _completionVersions;
   final Map<String, String> _labelDeletionVersions;
 
@@ -174,6 +179,21 @@ final class Workspace {
   }
 
   Label? _anyLabel(String id) => _labels[id] ?? _deletedLabels[id];
+
+  // --- Фильтры ---
+
+  /// Живые фильтры в порядке «Моих фильтров».
+  List<SavedFilter> get filters => _filters.values.toList();
+
+  /// Живой фильтр или `null`.
+  SavedFilter? filter(String id) => _filters[id];
+
+  /// Избранные фильтры в порядке «Моих фильтров» (help «Add a project,
+  /// label, or filter to favorites»).
+  List<SavedFilter> get favoriteFilters => [
+    for (final f in _filters.values)
+      if (f.isFavorite) f,
+  ];
 
   /// Активные задачи с меткой (с подзадачами, без архивных проектов) в
   /// порядке [order]; по умолчанию — порядок метки help «Default sorting
@@ -716,6 +736,7 @@ final class Workspace {
   static String _projectKey(Project p) => p.orderKey;
   static String _sectionKey(Section s) => s.orderKey;
   static String _labelKey(Label l) => l.orderKey;
+  static String _filterKey(SavedFilter f) => f.orderKey;
 
   /// Задачу [t] завершили раньше, чем удалили метку [labelId]: удалённая
   /// метка на ней остаётся. Задача, активная в момент удаления, метку
@@ -739,6 +760,7 @@ final class Workspace {
 
   static String _id(Object? item) => switch (item) {
     Project(:final id) || Section(:final id) || Label(:final id) => id,
+    SavedFilter(:final id) => id,
     Task(:final id) => id,
     _ => '',
   };
