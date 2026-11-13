@@ -42,4 +42,5 @@ test/          зеркалит lib/; test/sync — двухузловые сц�
   уведомления flutter_local_notifications (Windows: нет periodicallyShow — планируем сами);
   Android-виджеты home_widget; трей tray_manager; окно window_manager; хоткей hotkey_manager;
   SAF-папка — актуальный пакет с persistable URI permission; mDNS — bonsoir; RRULE — rrule;
-  markdown — flutter_markdown_plus или markdown_widget (flutter_markdown закрыт); графики fl_chart.
+  markdown — разбор `markdown`, отрисовка блоков `flutter_markdown_plus` (flutter_markdown закрыт; решение 6А
+  plans/m4), ссылки — `url_launcher` за интерфейсом `LinkOpener` (lib/platform); графики fl_chart.

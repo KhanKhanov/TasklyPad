@@ -20,7 +20,7 @@
 ## Стек (менять только через Decision Gate)
 Flutter stable + Dart 3 · drift (SQLite) · Riverpod 3 (codegen) · go_router ·
 freezed + json_serializable · rrule · flutter_local_notifications · home_widget ·
-window_manager + tray_manager + hotkey_manager. Назначение и слои: .claude/rules/architecture.md.
+window_manager + tray_manager + hotkey_manager · markdown + flutter_markdown_plus + url_launcher (решение 6А plans/m4). Назначение и слои: .claude/rules/architecture.md.
 Версии, официальные источники и частота проверки актуальности — docs/VERSIONS.md (`/freshness`).
 
 ## Команды
