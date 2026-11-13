@@ -1,3 +1,4 @@
 - [Разобранные страницы help](help_pages_parsed.md) — какие страницы Todoist help прочитаны и какие факты help не подтверждает
 - [Help: перетаскивание](help_drag_and_drop.md) — факты и пробелы help по drag-and-drop задач, проектов, разделов, меток (M4.9–M4.10)
 - [Help: ручная проверка 11.11](help_manual_review_nov11.md) — redo, назад/вперёд, Add section, оранжевая точка Display, виджеты, show completed sub-tasks
+- [Help: конец M4 12.11](help_m4_stage_end.md) — хоткеи Upcoming (Home, Shift+стрелки), ответы help на допущения О-69

@@ -1,0 +1,3 @@
+- [Ловушки flutter test на Windows](test_pitfalls_windows.md) — занятый sqlite3.dll при параллельном прогоне; UUIDv7 из package:clock; мутационная проверка
+- [Снимок массовых действий _Steps](bulk_steps_snapshot.md) — M4.13: зависимости шага (tree/section/labels), учёт поверх снимка, замер 5 с → 0,5–0,8 с
+- [«Отменить» скрывает удалённую метку](undo_hides_deleted_label.md) — новый HLC is_completed после Undo прячет метку; правило — Decision Gate
