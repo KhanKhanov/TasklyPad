@@ -131,6 +131,9 @@ class ViewOptions extends Table {
   TextColumn get sortOrder => text().nullable()();
   BoolColumn get showCompletedTasks =>
       boolean().withDefault(const Constant(false))();
+
+  /// Запрос фильтра «Отображения»; `null` — без фильтра.
+  TextColumn get filteredBy => text().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
@@ -158,6 +161,27 @@ class Sections extends Table {
 class Labels extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().withDefault(const Constant(''))();
+
+  /// Имя цвета палитры Todoist.
+  TextColumn get color => text().withDefault(const Constant('charcoal'))();
+  TextColumn get orderKey => text().withDefault(const Constant(''))();
+  BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// Сохранённые фильтры («Мои фильтры»). Имя модели — `SavedFilter`.
+@DataClassName('FilterRow')
+class Filters extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
+
+  /// Запрос на языке фильтров (TODOIST_SYNTAX §4) — текстом, как ввёл
+  /// пользователь.
+  TextColumn get query => text().withDefault(const Constant(''))();
+  TextColumn get description => text().withDefault(const Constant(''))();
 
   /// Имя цвета палитры Todoist.
   TextColumn get color => text().withDefault(const Constant('charcoal'))();

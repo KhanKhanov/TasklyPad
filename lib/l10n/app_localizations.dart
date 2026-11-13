@@ -1304,6 +1304,12 @@ abstract class AppLocalizations {
   /// **'Метка «{title}»'**
   String conflictEntityLabel(String title);
 
+  /// Заголовок карточки
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтр «{title}»'**
+  String conflictEntityFilter(String title);
+
   /// Заголовок карточки метки задачи
   ///
   /// In ru, this message translates to:
@@ -1405,6 +1411,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Раскладка'**
   String get fieldViewStyle;
+
+  /// Подпись поля: запрос фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрос'**
+  String get fieldQuery;
 
   /// Значение поля
   ///
@@ -2029,6 +2041,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Меток не может быть больше 500'**
   String get rejectTooManyLabelsTotal;
+
+  /// Отказ: 151-й фильтр (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтров не может быть больше 150'**
+  String get rejectTooManyFilters;
+
+  /// Отказ: пустой запрос фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите запрос'**
+  String get rejectEmptyQuery;
 
   /// Отказ: 301-я активная задача в проекте (help «Usage limits»)
   ///

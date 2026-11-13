@@ -9,6 +9,7 @@ import '../domain/conflicts.dart';
 import '../domain/theme_settings.dart';
 import '../domain/workspace.dart';
 import '../features/conflicts/logic/conflict_commands.dart';
+import '../features/filters/logic/filter_commands.dart';
 import '../features/labels/logic/label_commands.dart';
 import '../features/projects/logic/project_commands.dart';
 import '../features/quick_add/logic/quick_add_commands.dart';
@@ -118,6 +119,13 @@ SectionCommands sectionCommands(Ref ref) => SectionCommands(
 LabelCommands labelCommands(Ref ref) => LabelCommands(
   mutator: ref.watch(mutatorProvider),
   read: ref.watch(workspaceRepositoryProvider).load,
+);
+
+@Riverpod(keepAlive: true)
+FilterCommands filterCommands(Ref ref) => FilterCommands(
+  mutator: ref.watch(mutatorProvider),
+  read: ref.watch(workspaceRepositoryProvider).load,
+  views: ref.watch(viewOptionsCommandsProvider),
 );
 
 @Riverpod(keepAlive: true)

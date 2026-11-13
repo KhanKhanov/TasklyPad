@@ -37,6 +37,16 @@ DateTime? nextDayMonth(DateTime today, int month, int day) {
   return null;
 }
 
+/// Ближайшее [day] [month] не позже [today] — дата без года в `created:`
+/// фильтра (допущение, TODOIST_SYNTAX §4).
+DateTime? lastDayMonth(DateTime today, int month, int day) {
+  for (var year = today.year; year >= today.year - 8; year--) {
+    final date = calendarDate(year, month, day);
+    if (date != null && !date.isAfter(today)) return date;
+  }
+  return null;
+}
+
 /// Ближайший день недели [weekday] строго после [today].
 DateTime nextWeekday(DateTime today, int weekday) {
   final ahead = (weekday - today.weekday + 7) % 7;

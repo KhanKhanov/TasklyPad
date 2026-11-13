@@ -104,6 +104,8 @@ void main() {
       (text(ConflictField.favorite, true), 'В избранном'),
       (text(ConflictField.archived, false), 'Не в архиве'),
       (text(ConflictField.viewStyle, 'board'), 'Доска'),
+      (text(ConflictField.query, 'p1 & today'), 'p1 & today'),
+      (text(ConflictField.query, ''), '(пусто)'),
       (text(ConflictField.deleted, true), 'Удалено'),
       (text(ConflictField.deleted, false), 'Восстановлено'),
       (
@@ -180,6 +182,18 @@ void main() {
     expect(
       conflictEntityTitle(l10n, card(ConflictEntity.settings)),
       'Настройки',
+    );
+    expect(
+      conflictEntityTitle(l10n, card(ConflictEntity.filter, title: 'Срочное')),
+      'Фильтр «Срочное»',
+    );
+    expect(
+      conflictFieldTitle(
+        l10n,
+        const ConflictValue(field: ConflictField.query, key: 'query'),
+        mobile: false,
+      ),
+      'Запрос',
     );
     expect(
       conflictFieldTitle(

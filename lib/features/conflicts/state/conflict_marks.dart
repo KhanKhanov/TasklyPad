@@ -11,7 +11,8 @@ part 'conflict_marks.g.dart';
 ///
 /// Задачу помечает любая её карточка (любое поле, место, «выполнена»,
 /// удаление) и карточка метки задачи (`ownerId`). Проект, раздел и метку —
-/// только спор об имени или цвете (решение 1А): описание, избранное, архив,
+/// только спор об имени или цвете (решение 1А), фильтр — ещё и о запросе
+/// (решение 4А docs/plans/m5-filters-search.md): описание, избранное, архив,
 /// место и удаление против правки видны на экране «Конфликты» (удаление было в
 /// отклонённом варианте Б). Настройки и прочее не помечаются нигде;
 /// «Входящие» — тоже (имя и цвет у них не меняются). Окно «Выбрать»
@@ -47,13 +48,15 @@ final class ConflictMarks {
   List<ConflictCard> cardsFor(ConflictEntity entity, String id) =>
       has(entity, id) ? _cards[(entity, id)] ?? const [] : const [];
 
-  /// Чья карточка: задача, проект, раздел или метка; `null` — ничья из них.
+  /// Чья карточка: задача, проект, раздел, метка или фильтр; `null` — ничья
+  /// из них.
   static (ConflictEntity, String)? _ownerKey(ConflictCard card) {
     switch (card.entity) {
       case ConflictEntity.task:
       case ConflictEntity.project:
       case ConflictEntity.section:
       case ConflictEntity.label:
+      case ConflictEntity.filter:
         return card.isInbox ? null : (card.entity, card.entityId);
       case ConflictEntity.taskLabel:
         final owner = card.ownerId;
@@ -64,17 +67,24 @@ final class ConflictMarks {
     }
   }
 
-  /// Карточка даёт пометку своей сущности (решение 1А для проекта, раздела и
-  /// метки).
+  /// Карточка даёт пометку своей сущности (решение 1А plans/m4 для проекта,
+  /// раздела и метки, 4А plans/m5 для фильтра).
   static bool _marks(ConflictCard card) => switch (card.entity) {
     ConflictEntity.task || ConflictEntity.taskLabel => true,
-    _ => !card.isDelete && _touchesNameOrColor(card),
+    _ => !card.isDelete && _touchesMarkedField(card),
   };
 
-  static bool _touchesNameOrColor(ConflictCard card) => [
+  /// Поля, спор о которых видно в строке: имя, цвет и запрос фильтра.
+  static const Set<ConflictField> _markedFields = {
+    ConflictField.name,
+    ConflictField.color,
+    ConflictField.query,
+  };
+
+  static bool _touchesMarkedField(ConflictCard card) => [
     ...card.older.values,
     ...card.newer.values,
-  ].any((v) => v.field == ConflictField.name || v.field == ConflictField.color);
+  ].any((v) => _markedFields.contains(v.field));
 }
 
 /// Пометки спорных сущностей; строки берут свой `bool` через `select`.

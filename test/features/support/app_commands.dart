@@ -3,6 +3,7 @@ import 'package:planner/data/repositories/theme_settings_repository.dart';
 import 'package:planner/data/repositories/view_options_repository.dart';
 import 'package:planner/data/repositories/workspace_repository.dart';
 import 'package:planner/domain/workspace.dart';
+import 'package:planner/features/filters/logic/filter_commands.dart';
 import 'package:planner/features/labels/logic/label_commands.dart';
 import 'package:planner/features/projects/logic/project_commands.dart';
 import 'package:planner/features/quick_add/logic/quick_add_commands.dart';
@@ -37,6 +38,7 @@ final class AppCommands {
     );
     sections = SectionCommands(mutator: mutator, read: repo.load, tasks: tasks);
     labels = LabelCommands(mutator: mutator, read: repo.load);
+    filters = FilterCommands(mutator: mutator, read: repo.load, views: views);
     quickAdd = QuickAddCommands(
       mutator: mutator,
       read: repo.load,
@@ -64,6 +66,7 @@ final class AppCommands {
   late final ProjectCommands projects;
   late final SectionCommands sections;
   late final LabelCommands labels;
+  late final FilterCommands filters;
   late final QuickAddCommands quickAdd;
   late final SettingsRepository settings;
   late final GeneralSettingsCommands general;

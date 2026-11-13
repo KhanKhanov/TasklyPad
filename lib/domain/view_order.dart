@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'markdown_text.dart';
 import 'models.dart';
+import 'text_fold.dart';
 import 'view_options.dart';
 
 part 'view_order.freezed.dart';
@@ -26,9 +27,15 @@ enum DefaultOrder {
   /// вручную не сортируются (help).
   overdue,
 
-  /// Метка: приоритет → дата и время → дедлайн → порядок проектов →
-  /// порядок задач.
+  /// Метка и фильтр без условий на дату: приоритет → дата и время → дедлайн
+  /// → порядок проектов → порядок задач.
   label,
+
+  /// Фильтр с условием на дату (О-85): дата и время, а без даты — дедлайн →
+  /// приоритет → дедлайн → ручной порядок дня → время создания. «С датами» —
+  /// в запросе есть условие на дату или дедлайн (толкование — допущение,
+  /// О-69).
+  filterDated,
 }
 
 /// Сравнение задач вида: выбранная сортировка ([sorting], [sortOrder]),
@@ -91,7 +98,9 @@ final class TaskOrder {
         _orNull(a.dayOrderKey),
         _orNull(b.dayOrderKey),
       ),
-      DefaultOrder.overdue || DefaultOrder.label => 0,
+      DefaultOrder.overdue ||
+      DefaultOrder.label ||
+      DefaultOrder.filterDated => 0,
     },
     Sorting.alphabetically => _byName(a, b),
     Sorting.dueDate => _byDue(a, b),
@@ -125,6 +134,13 @@ final class TaskOrder {
         () => _nullsLast(a.deadline, b.deadline),
         () => _tree(a, b),
       ]),
+      DefaultOrder.filterDated => first([
+        () => _nullsLast(_dueOrDeadlineKey(a), _dueOrDeadlineKey(b)),
+        () => _byPriority(a, b),
+        () => _nullsLast(a.deadline, b.deadline),
+        () => _nullsLast(_orNull(a.dayOrderKey), _orNull(b.dayOrderKey)),
+        () => _nullsLast(a.addedAt, b.addedAt),
+      ]),
     };
   }
 
@@ -144,12 +160,19 @@ final class TaskOrder {
     Due(:final date, :final time) => '$date ${time ?? ''}',
   };
 
+  /// Дата и время, а без даты — дедлайн как дата без времени (О-85).
+  static String? _dueOrDeadlineKey(Task t) =>
+      _dueKey(t) ??
+      switch (t.deadline) {
+        null => null,
+        final deadline => '$deadline ',
+      };
+
   /// Без учёта регистра и «ё» как «е», при равенстве — как написано
   /// (допущение, О-69): код «ё» больше кода «я», и «Ёлка» ушла бы в конец.
   int _byName(Task a, Task b) {
     final (x, y) = (nameOf(a), nameOf(b));
-    String fold(String s) => s.toLowerCase().replaceAll('ё', 'е');
-    final folded = fold(x).compareTo(fold(y));
+    final folded = foldText(x).compareTo(foldText(y));
     return folded != 0 ? folded : x.compareTo(y);
   }
 

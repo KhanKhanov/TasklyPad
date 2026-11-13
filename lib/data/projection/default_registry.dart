@@ -10,7 +10,7 @@ import 'projector.dart';
 
 /// Версия набора полей [defaultRegistry]. Увеличивать при каждом изменении
 /// полей или колонок проекторов: база переложит `field_versions` заново.
-const int projectorVersion = 5;
+const int projectorVersion = 6;
 
 final Logger _logger = Logger();
 
@@ -23,6 +23,7 @@ ProjectorRegistry defaultRegistry(
   projectProjector(db, warn: warn),
   sectionProjector(db, warn: warn),
   labelProjector(db, warn: warn),
+  filterProjector(db, warn: warn),
   taskLabelProjector(db, warn: warn),
   completionProjector(db, warn: warn),
   viewOptionsProjector(db, warn: warn),
@@ -276,6 +277,33 @@ TableProjector<$LabelsTable, LabelRow> labelProjector(
   },
 );
 
+/// Сохранённые фильтры: поле op → колонки `filters`.
+TableProjector<$FiltersTable, FilterRow> filterProjector(
+  AppDatabase db, {
+  void Function(String message)? warn,
+}) => TableProjector(
+  db: db,
+  entityType: EntityTypes.filter,
+  table: db.filters,
+  warn: warn,
+  writers: {
+    FilterFields.name: (id, v) =>
+        FiltersCompanion(id: Value(id), name: Value(textOr(v, ''))),
+    FilterFields.query: (id, v) =>
+        FiltersCompanion(id: Value(id), query: Value(textOr(v, ''))),
+    FilterFields.description: (id, v) =>
+        FiltersCompanion(id: Value(id), description: Value(textOr(v, ''))),
+    FilterFields.color: (id, v) =>
+        FiltersCompanion(id: Value(id), color: Value(textOr(v, 'charcoal'))),
+    FilterFields.orderKey: (id, v) =>
+        FiltersCompanion(id: Value(id), orderKey: Value(textOr(v, ''))),
+    FilterFields.isFavorite: (id, v) =>
+        FiltersCompanion(id: Value(id), isFavorite: Value(boolOr(v, false))),
+    FilterFields.deleted: (id, v) =>
+        FiltersCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
+  },
+);
+
 /// Метки задач: поле op → колонки `task_labels`.
 TableProjector<$TaskLabelsTable, TaskLabelRow> taskLabelProjector(
   AppDatabase db, {
@@ -342,6 +370,8 @@ TableProjector<$ViewOptionsTable, ViewOptionsRow> viewOptionsProjector(
       id: Value(id),
       showCompletedTasks: Value(boolOr(v, false)),
     ),
+    ViewOptionsFields.filteredBy: (id, v) =>
+        ViewOptionsCompanion(id: Value(id), filteredBy: Value(textOrNull(v))),
     ViewOptionsFields.deleted: (id, v) =>
         ViewOptionsCompanion(id: Value(id), deleted: Value(boolOr(v, false))),
   },

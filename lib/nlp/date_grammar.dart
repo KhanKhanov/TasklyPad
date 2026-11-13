@@ -31,6 +31,20 @@ final class DueMatch {
   final bool noDate;
 }
 
+/// Значение даты в фильтре (TODOIST_SYNTAX §4): кроме форм §2 — `-3 days`
+/// («-365 дней») и `first day` («первый день» — первый день следующего
+/// месяца). Быстрое добавление и поле срока их не знают.
+enum FilterDateMode {
+  /// Не фильтр: быстрое добавление и поле срока.
+  off,
+
+  /// Дата без года — ближайшая будущая, как в §2.
+  future,
+
+  /// Дата без года — ближайшая прошедшая: `created:` (допущение).
+  past,
+}
+
 /// Дата длиннее — не дата (help «Introduction to dates and time»).
 const int maxDateLength = 150;
 
@@ -153,8 +167,13 @@ final class _Number {
 
 /// Грамматика дат над токенами строки (scanner.dart).
 final class DateGrammar {
-  DateGrammar(List<Token> tokens, this.ctx, {this.field = false, this.timeHint})
-    : _lexicon = Lexicon.of(ctx.lang) {
+  DateGrammar(
+    List<Token> tokens,
+    this.ctx, {
+    this.field = false,
+    this.timeHint,
+    this.filterMode = FilterDateMode.off,
+  }) : _lexicon = Lexicon.of(ctx.lang) {
     for (final token in tokens) {
       final parts = _lexicon.expansions[token.text] ?? [token.text];
       for (final part in parts) {
@@ -171,6 +190,9 @@ final class DateGrammar {
   /// Время повторения без своего времени — из отрезка `9:30-10:00` в той же
   /// строке: первое вхождение считается уже с ним.
   final int? timeHint;
+
+  /// Значение даты в фильтре — свои формы и дата без года.
+  final FilterDateMode filterMode;
 
   /// Конец фразы после `every` с токена [i]: слова словаря, числа, даты,
   /// время, запятые; `null` — с [i] не `every`. Если повторение не
@@ -389,6 +411,7 @@ final class DateGrammar {
       _holidayDay(i),
       _endOrMid(i),
       _absolute(i),
+      _firstDay(i),
       _nthWeekdayOfMonth(i),
       _weekdayDay(i),
       _bareMonthDay(i),
@@ -460,16 +483,39 @@ final class DateGrammar {
     return null;
   }
 
-  /// `in 5 days`, `+5 days`, «через 2 часа».
+  /// `in 5 days`, `+5 days`, «через 2 часа»; в фильтре — и `-3 days`.
   _Day? _relative(int i) {
     var k = i;
-    if (_key(k) == Key.within) k++;
+    var sign = 1;
+    if (filterMode != FilterDateMode.off && _text(k) == '-') {
+      sign = -1;
+      k++;
+    } else if (_key(k) == Key.within) {
+      k++;
+    }
     final n = _number(k);
     if (n == null || n.suffix.isNotEmpty || (k == i && !n.plus)) return null;
+    if (sign < 0 && (n.plus || !_items[k].token.glued)) return null;
     final unit = _unit(k + 1);
     if (unit == null) return null;
-    return _shift(k + 2, unit, n.value);
+    return _shift(k + 2, unit, sign * n.value);
   }
+
+  /// `first day`, «первый день» в фильтре — первый день следующего месяца
+  /// (help «Introduction to filters»: `date before: first day` — этот месяц).
+  _Day? _firstDay(int i) {
+    if (filterMode == FilterDateMode.off) return null;
+    if (_lex(i) case OrdinalLex(n: 1) when _unit(i + 1) == Unit.day) {
+      final today = ctx.today;
+      return _Day(i + 2, DateTime.utc(today.year, today.month + 1));
+    }
+    return null;
+  }
+
+  /// Дата без года: ближайшая будущая, в `created:` фильтра — прошедшая.
+  DateTime? _undated(int month, int day) => filterMode == FilterDateMode.past
+      ? lastDayMonth(ctx.today, month, day)
+      : nextDayMonth(ctx.today, month, day);
 
   /// День (и время у часов и минут) через [n] единиц от сейчас. Часы — по
   /// стенным часам: в ночь перевода `in 2 hours` на час расходится с
@@ -591,7 +637,7 @@ final class DateGrammar {
     if (m[2] == '/' && day <= 12 && month > 12) (day, month) = (month, day);
     final yearText = m[4];
     if (yearText == null) {
-      final date = nextDayMonth(ctx.today, month, day);
+      final date = _undated(month, day);
       return date == null ? null : _Day(i + 1, date);
     }
     var year = int.parse(yearText);
@@ -601,14 +647,14 @@ final class DateGrammar {
   }
 
   /// День [day] месяца [month]: с годом после него — тот год, иначе
-  /// ближайшая будущая дата.
+  /// ближайшая будущая дата (в `created:` фильтра — прошедшая).
   _Day? _dayMonth(int end, int month, int day) {
     final year = _year(end);
     if (year != null) {
       final date = calendarDate(year, month, day);
       return date == null ? null : _Day(end + 1, date);
     }
-    final date = nextDayMonth(ctx.today, month, day);
+    final date = _undated(month, day);
     return date == null ? null : _Day(end, date);
   }
 
@@ -652,11 +698,18 @@ final class DateGrammar {
     return n.value;
   }
 
+  /// День недели — ближайший после сегодня; в `created:` фильтра — ближайший
+  /// не позже сегодня (допущение, TODOIST_SYNTAX §4).
   _Day? _weekdayDay(int i) {
     final weekday = _weekday(i);
-    return weekday == null
-        ? null
-        : _Day(i + 1, nextWeekday(ctx.today, weekday));
+    if (weekday == null) return null;
+    final today = ctx.today;
+    return _Day(
+      i + 1,
+      filterMode == FilterDateMode.past
+          ? addDays(today, -((today.weekday - weekday + 7) % 7))
+          : nextWeekday(today, weekday),
+    );
   }
 
   /// Число без слова — день месяца, только в поле срока: в названии «Купить

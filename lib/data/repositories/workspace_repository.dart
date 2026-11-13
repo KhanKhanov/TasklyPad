@@ -29,6 +29,7 @@ final class WorkspaceRepository {
           _db.projects,
           _db.sections,
           _db.labels,
+          _db.filters,
           _db.tasks,
           _db.taskLabels,
         },
@@ -41,6 +42,9 @@ final class WorkspaceRepository {
     final projects = await _db.select(_db.projects).get();
     final sections = await _db.select(_db.sections).get();
     final labels = await _db.select(_db.labels).get();
+    final filters = await (_db.select(
+      _db.filters,
+    )..where((f) => f.deleted.equals(false))).get();
     final tasks = await _db.select(_db.tasks).get();
     final links = await (_db.select(
       _db.taskLabels,
@@ -90,6 +94,7 @@ final class WorkspaceRepository {
         for (final l in labels)
           if (l.deleted) _label(l),
       ],
+      filters: [for (final f in filters) _filter(f)],
       completionVersions: completedAt,
       labelDeletionVersions: labelDeletedAt,
       tasks: [
@@ -155,6 +160,16 @@ final class WorkspaceRepository {
   static Label _label(LabelRow r) => Label(
     id: r.id,
     name: r.name,
+    color: r.color,
+    orderKey: r.orderKey,
+    isFavorite: r.isFavorite,
+  );
+
+  static SavedFilter _filter(FilterRow r) => SavedFilter(
+    id: r.id,
+    name: r.name,
+    query: r.query,
+    description: r.description,
     color: r.color,
     orderKey: r.orderKey,
     isFavorite: r.isFavorite,

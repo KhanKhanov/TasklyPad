@@ -157,6 +157,39 @@ void main() {
             marked: false,
           ),
           (
+            name: 'фильтр — запрос (4А plans/m5)',
+            card: _card(ConflictEntity.filter, 'f', [ConflictField.query]),
+            on: ConflictEntity.filter,
+            id: 'f',
+            marked: true,
+          ),
+          (
+            name: 'фильтр — имя',
+            card: _card(ConflictEntity.filter, 'f', [ConflictField.name]),
+            on: ConflictEntity.filter,
+            id: 'f',
+            marked: true,
+          ),
+          (
+            name: 'фильтр — описание и избранное без пометки',
+            card: _card(ConflictEntity.filter, 'f', [
+              ConflictField.description,
+              ConflictField.favorite,
+            ]),
+            on: ConflictEntity.filter,
+            id: 'f',
+            marked: false,
+          ),
+          (
+            name: 'фильтр — удаление против правки запроса',
+            card: _card(ConflictEntity.filter, 'f', [
+              ConflictField.query,
+            ], isDelete: true),
+            on: ConflictEntity.filter,
+            id: 'f',
+            marked: false,
+          ),
+          (
             name: 'настройки — нигде',
             card: _card(ConflictEntity.settings, 'st', [ConflictField.name]),
             on: ConflictEntity.settings,

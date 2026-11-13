@@ -108,6 +108,10 @@ abstract class ViewOptions with _$ViewOptions {
 
     /// «Выполненные задачи» в списке вида.
     @Default(false) bool showCompletedTasks,
+
+    /// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
+    /// без фильтра. Применение и выбор — M5.3.
+    String? filteredBy,
   }) = _ViewOptions;
 
   const ViewOptions._();

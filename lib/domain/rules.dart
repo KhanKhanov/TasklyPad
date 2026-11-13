@@ -54,6 +54,16 @@ abstract final class Limits {
   /// Имя метки.
   static const int labelName = 60;
 
+  /// Имя фильтра (help «Usage limits»: «Filter name length»).
+  static const int filterName = 60;
+
+  /// Запрос фильтра (help «Usage limits»: «Filter query length»).
+  static const int filterQuery = 1024;
+
+  /// Фильтров всего (help «Usage limits»: «Filters per account»; тарифное
+  /// «3» — вне scope, TODOIST_PARITY §11).
+  static const int filters = 150;
+
   /// Текст срока («каждый пн», «завтра 9:00»).
   static const int dueText = 150;
 
@@ -140,6 +150,12 @@ enum RejectReason {
 
   /// Длительность больше [Limits.durationMinutes] или не больше нуля.
   badDuration,
+
+  /// Пустой запрос фильтра.
+  emptyQuery,
+
+  /// Фильтров стало бы больше [Limits.filters].
+  tooManyFilters,
 }
 
 /// Действие отклонено правилами — данные не изменены.

@@ -681,6 +681,47 @@ final class LabelCommandsProvider
 
 String _$labelCommandsHash() => r'2727eaa555f0f54059cbdc8de0e0ad3f5610282f';
 
+@ProviderFor(filterCommands)
+final filterCommandsProvider = FilterCommandsProvider._();
+
+final class FilterCommandsProvider
+    extends $FunctionalProvider<FilterCommands, FilterCommands, FilterCommands>
+    with $Provider<FilterCommands> {
+  FilterCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'filterCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$filterCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<FilterCommands> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FilterCommands create(Ref ref) {
+    return filterCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FilterCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FilterCommands>(value),
+    );
+  }
+}
+
+String _$filterCommandsHash() => r'828a0deebd6fdca5aa9875f87688492f6e672c4d';
+
 @ProviderFor(conflictRepository)
 final conflictRepositoryProvider = ConflictRepositoryProvider._();
 
