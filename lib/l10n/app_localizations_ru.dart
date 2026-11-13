@@ -641,6 +641,15 @@ class AppLocalizationsRu extends AppLocalizations {
       'Одно и то же изменили на двух устройствах. Пока вы не выбрали, действует более поздняя правка.';
 
   @override
+  String get conflictMark => 'Конфликт';
+
+  @override
+  String get conflictMarkTooltip => 'Изменено на двух устройствах';
+
+  @override
+  String get conflictChoose => 'Выбрать';
+
+  @override
   String get conflictsEmpty => 'Конфликтов нет';
 
   @override

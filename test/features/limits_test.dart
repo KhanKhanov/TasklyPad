@@ -348,4 +348,302 @@ void main() {
       expect(ws.isProjectArchived(c), isTrue);
     });
   });
+
+  /// Добавить в [project] задачи, пока активных не станет [count].
+  Future<void> fillTo(String project, int count) => batch(() async {
+    final have = (await app.read()).activeTaskCount(project);
+    for (var i = have; i < count; i++) {
+      await app.tasks.add(content: 't$i', projectId: project);
+    }
+  });
+
+  group('О-81: счёт у предела 300 — только те, что станут активными', () {
+    late String full;
+
+    /// Незавершённая задача, пришедшая с другого устройства в раздел,
+    /// который здесь уже в архиве (запись мимо команд, как синхронизация).
+    Future<String> arrivedInto(String project, String section) =>
+        device.services.mutator.create(EntityTypes.task, {
+          TaskFields.content: 'с другого устройства',
+          TaskFields.projectId: project,
+          TaskFields.sectionId: section,
+          TaskFields.orderKey: 'z',
+          TaskFields.priority: 4,
+        });
+
+    setUp(() async {
+      full = await app.projects.add(name: 'Full');
+    });
+
+    test('перенос архивного раздела с незавершённой задачей в полный проект '
+        '— можно: его задачи не станут активными', () async {
+      final other = await app.projects.add(name: 'Other');
+      final s = await app.sections.add(other, name: 'S');
+      await app.tasks.add(content: 'в разделе', projectId: other, sectionId: s);
+      await app.sections.archive(s);
+      await arrivedInto(other, s);
+      await fillTo(full, Limits.activeTasksPerProject);
+
+      await app.sections.moveToProject(s, full);
+      final ws = await app.read();
+      expect(ws.section(s)!.projectId, full);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+    });
+
+    test('добавление подзадачи под выполненного родителя при 300 активных — '
+        'без отказа', () async {
+      final done = await app.tasks.add(content: 'Выполнена', projectId: full);
+      await app.tasks.complete(done);
+      await fillTo(full, Limits.activeTasksPerProject);
+
+      final sub = await app.tasks.add(content: 'Подзадача', parentId: done);
+      final ws = await app.read();
+      expect(ws.taskParent(sub), done);
+      expect(ws.isTaskActive(sub), isFalse);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+      // Под активного родителя — по-прежнему отказ.
+      final active = ws.projectTasks(full).first.id;
+      await rejectsWithoutOps(
+        () => app.tasks.add(content: 'x', parentId: active),
+        RejectReason.tooManyTasks,
+      );
+    });
+
+    test(
+      'перенос под выполненного родителя в полном проекте — можно',
+      () async {
+        final done = await app.tasks.add(content: 'Выполнена', projectId: full);
+        await app.tasks.complete(done);
+        await fillTo(full, Limits.activeTasksPerProject);
+        final x = await app.tasks.add(content: 'X');
+
+        await app.tasks.move(x, parentId: done);
+        final ws = await app.read();
+        expect(ws.taskParent(x), done);
+        expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+      },
+    );
+
+    test('незавершённая подзадача под выполненной в переносимом и '
+        'дублируемом дереве не считается', () async {
+      final x = await app.tasks.add(content: 'X');
+      final y = await app.tasks.add(content: 'Y', parentId: x);
+      await app.tasks.add(content: 'Z', parentId: y);
+      // Выполнена одна Y: так бывает, когда Z добавили на другом устройстве,
+      // пока здесь выполняли Y (команда завершила бы и Z).
+      await device.services.mutator.update(EntityTypes.task, y, {
+        TaskFields.isCompleted: true,
+      });
+      // Z незавершена, но под выполненной Y: активной не станет.
+      await fillTo(full, Limits.activeTasksPerProject - 1);
+
+      await app.tasks.move(x, projectId: full);
+      var ws = await app.read();
+      expect(ws.rootProjectOf(x), full);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+
+      await app.tasks.delete(
+        ws.projectTasks(full).firstWhere((t) => t.content == 't0').id,
+      );
+      // Копия X — без выполненной Y и её Z: ровно одна новая активная.
+      await app.tasks.duplicate(x);
+      ws = await app.read();
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+    });
+
+    test('дубликат задачи под выполненным родителем в полном проекте — '
+        'можно: копия встаёт под выполненного и активной не становится', () async {
+      final done = await app.tasks.add(content: 'Выполнена', projectId: full);
+      final sub = await app.tasks.add(content: 'Подзадача', parentId: done);
+      await app.tasks.complete(done);
+      await app.tasks.uncomplete(sub);
+      // «Вернуть» подзадачи возвращает и родителя — завершаем его снова одного.
+      await device.services.mutator.update(EntityTypes.task, done, {
+        TaskFields.isCompleted: true,
+      });
+      await fillTo(full, Limits.activeTasksPerProject);
+      var ws = await app.read();
+      expect(ws.task(sub)!.isCompleted, isFalse);
+      expect(ws.isTaskActive(sub), isFalse);
+
+      final copy = await app.tasks.duplicate(sub);
+      ws = await app.read();
+      expect(ws.taskParent(copy), done);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+    });
+
+    test('«Вернуть» с возвратом архивного раздела считает и его незавершённые '
+        'задачи', () async {
+      final s = await app.sections.add(full, name: 'S');
+      final t = await app.tasks.add(
+        content: 'в разделе',
+        projectId: full,
+        sectionId: s,
+      );
+      await app.sections.archive(s);
+      await arrivedInto(full, s);
+      // 299 активных: возврат t вернёт раздел, а с ним и пришедшую — 301.
+      await fillTo(full, Limits.activeTasksPerProject - 1);
+      await rejectsWithoutOps(
+        () => app.tasks.uncomplete(t),
+        RejectReason.tooManyTasks,
+      );
+
+      await app.tasks.delete((await app.read()).projectTasks(full).first.id);
+      await app.tasks.uncomplete(t);
+      final ws = await app.read();
+      expect(ws.section(s)!.isArchived, isFalse);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject);
+    });
+  });
+
+  group('массовые действия у предела 300 — шаги считаются вместе', () {
+    late String full;
+
+    setUp(() async {
+      full = await app.projects.add(name: 'Full');
+    });
+
+    test('«Вернуть» двух задач архивного раздела с пришедшей задачей — 300, '
+        'без лишнего отказа: раздел возвращается один раз', () async {
+      final s = await app.sections.add(full, name: 'S');
+      final z = [
+        for (final name in ['z1', 'z2'])
+          await app.tasks.add(content: name, projectId: full, sectionId: s),
+      ];
+      await app.sections.archive(s);
+      await device.services.mutator.create(EntityTypes.task, {
+        TaskFields.content: 'с другого устройства',
+        TaskFields.projectId: full,
+        TaskFields.sectionId: s,
+        TaskFields.orderKey: 'z',
+        TaskFields.priority: 4,
+      });
+      await fillTo(full, Limits.activeTasksPerProject - 3);
+
+      await app.bulk.uncomplete(z);
+      expect(
+        (await app.read()).activeTaskCount(full),
+        Limits.activeTasksPerProject,
+      );
+    });
+
+    test('«Вернуть» и «Дублировать» двух при 299 — отказ всего действия, ни '
+        'одной op', () async {
+      final done = [
+        for (final name in ['c1', 'c2'])
+          await app.tasks.add(content: name, projectId: full),
+      ];
+      for (final id in done) {
+        await app.tasks.complete(id);
+      }
+      await fillTo(full, Limits.activeTasksPerProject - 1);
+      await rejectsWithoutOps(
+        () => app.bulk.uncomplete(done),
+        RejectReason.tooManyTasks,
+      );
+      final two = [
+        for (final t in (await app.read()).projectTasks(full).take(2)) t.id,
+      ];
+      await rejectsWithoutOps(
+        () => app.bulk.duplicate(two),
+        RejectReason.tooManyTasks,
+      );
+      expect(
+        (await app.read()).activeTaskCount(full),
+        Limits.activeTasksPerProject - 1,
+      );
+    });
+  });
+
+  group('решение 3А «Ход M4.13»: сверх лимита без отказа', () {
+    late String full;
+
+    setUp(() async {
+      full = await app.projects.add(name: 'Full');
+    });
+
+    Future<void> resetOn() => device.services.mutator.update(
+      EntityTypes.settings,
+      settingsEntityId,
+      {SettingsFields.resetRecurringSubtasks: true},
+    );
+
+    const daily = Due(
+      date: '2026-10-23',
+      string: 'каждый день',
+      lang: 'ru',
+      rule: RecurrenceRule(rrule: ['FREQ=DAILY'], fromCompletion: false),
+    );
+
+    Future<void> labelsTo(int count) => batch(() async {
+      final have = (await app.read()).labels.length;
+      for (var i = have; i < count; i++) {
+        await app.labels.add(name: 'l$i');
+      }
+    });
+
+    test('сброс подзадач повторяющейся задачи в полном проекте — 301 '
+        'активная', () async {
+      final r = await app.tasks.add(content: 'R', projectId: full, due: daily);
+      final s = await app.tasks.add(content: 'S', parentId: r);
+      await app.tasks.complete(s);
+      await fillTo(full, Limits.activeTasksPerProject);
+      await resetOn();
+
+      await app.tasks.complete(r);
+      final ws = await app.read();
+      expect(ws.task(s)!.isCompleted, isFalse);
+      expect(ws.activeTaskCount(full), Limits.activeTasksPerProject + 1);
+    });
+
+    test('«Отменить» выполнения в проекте, заполненном за время тоста, — 301 '
+        'активная', () async {
+      await fillTo(full, Limits.activeTasksPerProject);
+      final first = (await app.read()).projectTasks(full).first.id;
+      final undo = await app.tasks.complete(first);
+      await app.tasks.add(content: 'на место выполненной', projectId: full);
+
+      await undo();
+      expect(
+        (await app.read()).activeTaskCount(full),
+        Limits.activeTasksPerProject + 1,
+      );
+    });
+
+    test('«Вернуть» задачу с удалённой меткой при 500 метках — метка '
+        'создаётся заново, 501', () async {
+      final label = await app.labels.add(name: 'дом');
+      final t = await app.tasks.add(content: 'T', labelIds: {label});
+      await app.tasks.complete(t);
+      await app.labels.delete(label);
+      await labelsTo(Limits.labels);
+
+      await app.tasks.uncomplete(t);
+      final ws = await app.read();
+      expect(ws.labels, hasLength(Limits.labels + 1));
+      expect(
+        [for (final l in ws.task(t)!.labelIds) ws.label(l)!.name],
+        ['дом'],
+      );
+    });
+
+    test('сброс подзадачи с удалённой меткой при 500 метках — метка '
+        'создаётся заново, 501', () async {
+      final label = await app.labels.add(name: 'дом');
+      final r = await app.tasks.add(content: 'R', due: daily);
+      final s = await app.tasks.add(
+        content: 'S',
+        parentId: r,
+        labelIds: {label},
+      );
+      await app.tasks.complete(s);
+      await app.labels.delete(label);
+      await labelsTo(Limits.labels);
+      await resetOn();
+
+      await app.tasks.complete(r);
+      expect((await app.read()).labels, hasLength(Limits.labels + 1));
+    });
+  });
 }

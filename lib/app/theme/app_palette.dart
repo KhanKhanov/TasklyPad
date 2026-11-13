@@ -25,6 +25,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.dateTomorrow,
     required this.dateNextWeek,
     required this.danger,
+    required this.warning,
     required this.priority,
   });
 
@@ -67,6 +68,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Опасное действие: удаление.
   final Color danger;
 
+  /// Предупреждение: пометка «Конфликт» (решение 4А «Хода M4.13»). Не `danger`:
+  /// в светлой теме тот красный, как P1 и просрочка.
+  final Color warning;
+
   /// Цвет обводки кружка задачи по приоритету: [0] — P1 … [3] — P4.
   final List<Color> priority;
 
@@ -97,6 +102,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       dateTomorrow: c(dateTomorrow, other.dateTomorrow),
       dateNextWeek: c(dateNextWeek, other.dateNextWeek),
       danger: c(danger, other.danger),
+      warning: c(warning, other.warning),
       priority: [
         for (var i = 0; i < priority.length; i++)
           c(priority[i], other.priority[i]),

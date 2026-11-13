@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../../common/ui/ui_kit.dart';
 import 'project_menu.dart';
 import '../../shell/ui/sidebar_selection.dart';
@@ -84,6 +86,11 @@ class _ProjectTileState extends ConsumerState<ProjectTile> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: textColor, fontSize: 14),
                   ),
+                ),
+                ConflictMark(
+                  entity: ConflictEntity.project,
+                  id: p.id,
+                  iconOnly: true,
                 ),
                 // Меню всегда в дереве, при наведении — видно вместо счётчика.
                 // Открытое меню перекрывает строку, наведение пропадает, и

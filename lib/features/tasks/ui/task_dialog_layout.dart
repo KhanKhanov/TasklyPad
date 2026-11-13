@@ -10,6 +10,7 @@ class TaskDialogLayout extends StatelessWidget {
     required this.top,
     required this.main,
     required this.fields,
+    this.banner,
   });
 
   /// Заголовок: путь, стрелки к соседним задачам, меню, закрыть.
@@ -20,6 +21,9 @@ class TaskDialogLayout extends StatelessWidget {
 
   /// Поля задачи: проект, срок, дедлайн, приоритет, метки.
   final Widget fields;
+
+  /// Плашка под заголовком (конфликт задачи); `null` — без неё.
+  final Widget? banner;
 
   // Свой Scaffold: тосты («Отменить», отказы) — внутри окна, а не под его
   // затемнением на экране списка. ScaffoldMessenger у панели (`TaskPanel`).
@@ -35,6 +39,7 @@ class TaskDialogLayout extends StatelessWidget {
             child: Column(
               children: [
                 top,
+                ?banner,
                 const Divider(height: 1),
                 Expanded(
                   child: ListView(
@@ -56,6 +61,7 @@ class TaskDialogLayout extends StatelessWidget {
           Column(
             children: [
               top,
+              ?banner,
               const Divider(height: 1),
               Expanded(
                 child: Row(

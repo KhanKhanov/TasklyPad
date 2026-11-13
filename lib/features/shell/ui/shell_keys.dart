@@ -11,8 +11,8 @@ import '../../tasks/ui/task_actions.dart';
 /// первой и последней задаче списка; `m` —
 /// сайдбар; `g`, затем буква — переход: `i` «Входящие», `t` «Сегодня», `u`
 /// «Предстоящее», `p` «Мои проекты», `v` и `l` «Фильтры и метки»; `o` `s` —
-/// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3` — «Входящие», «Сегодня»,
-/// «Предстоящее»; `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
+/// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3/4/5` — «Входящие», «Сегодня»,
+/// «Предстоящее», «Проекты», «Фильтры и метки»; `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
 /// появится вместе с «Главной». Пока печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
@@ -78,12 +78,16 @@ class _ShellKeysState extends State<ShellKeys> {
     },
   };
 
-  /// `Ctrl+1/2/3` — «Перейти во Входящие / Сегодня / Предстоящее» (help «Use
-  /// keyboard shortcuts», Windows).
+  /// `Ctrl+1/2/3` — «Перейти во Входящие / Сегодня / Предстоящее», `Ctrl+4/5` —
+  /// «Проекты» и «Фильтры и метки» (help «Use keyboard shortcuts»: строки
+  /// таблицы «mobile keyboard»; у нас на всех платформах, как `Ctrl+1/2/3`;
+  /// решение 2А «Ход M4.13»).
   static final Map<LogicalKeyboardKey, String> _ctrlRoutes = {
     LogicalKeyboardKey.digit1: '/',
     LogicalKeyboardKey.digit2: '/today',
     LogicalKeyboardKey.digit3: '/upcoming',
+    LogicalKeyboardKey.digit4: '/projects',
+    LogicalKeyboardKey.digit5: '/filters-labels',
   };
 
   bool get _pending => _sinceGo.isRunning && _sinceGo.elapsed <= _goWindow;

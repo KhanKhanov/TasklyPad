@@ -17,7 +17,12 @@ import 'task_pickers.dart';
 /// Срок: выбрать в планировщике; смена и «Отложить» — с тостом «Отменить».
 /// Длительность из окна «Время» пишется отдельно, без тоста, как из поля
 /// панели; срок без изменений после этого окна не пишется.
-Future<void> editDue(BuildContext context, WidgetRef ref, Task task) async {
+Future<void> editDue(
+  BuildContext context,
+  WidgetRef ref,
+  Task task, {
+  ScaffoldMessengerState? messenger,
+}) async {
   final picked = await pickDue(
     context,
     ref,
@@ -35,7 +40,11 @@ Future<void> editDue(BuildContext context, WidgetRef ref, Task task) async {
         ? value == before
         : durationInMinutes(value) == durationInMinutes(before);
     if (!same) {
-      await runCommand(context, () => commands.setDuration(task.id, value));
+      await runCommand(
+        context,
+        () => commands.setDuration(task.id, value),
+        messenger: messenger,
+      );
       if (!context.mounted) return;
     }
     if (picked.due == task.due) return;
@@ -46,16 +55,23 @@ Future<void> editDue(BuildContext context, WidgetRef ref, Task task) async {
     () => picked.postpone
         ? commands.postpone(task.id)
         : commands.setDue(task.id, picked.due),
+    messenger: messenger,
   );
 }
 
 /// `Shift+T`: убрать срок — с тостом «Отменить».
-Future<void> removeDue(BuildContext context, WidgetRef ref, Task task) async {
+Future<void> removeDue(
+  BuildContext context,
+  WidgetRef ref,
+  Task task, {
+  ScaffoldMessengerState? messenger,
+}) async {
   if (task.due == null) return;
   await runWithUndo(
     context,
     AppLocalizations.of(context).dueChanged,
     () => ref.read(taskCommandsProvider).setDue(task.id, null),
+    messenger: messenger,
   );
 }
 
@@ -72,8 +88,9 @@ Future<void> moveTaskTo(BuildContext context, WidgetRef ref, Task task) =>
 Future<void> moveTaskWith(
   BuildContext context,
   ProviderContainer container,
-  Task task,
-) async {
+  Task task, {
+  ScaffoldMessengerState? messenger,
+}) async {
   final ws = container.read(workspaceProvider).value;
   if (ws == null) return;
   final target = await pickPlace(context, ws);
@@ -88,11 +105,17 @@ Future<void> moveTaskWith(
           projectId: target.projectId,
           sectionId: target.sectionId,
         ),
+    messenger: messenger,
   );
 }
 
 /// Метки: отметить или создать новую.
-Future<void> editLabels(BuildContext context, WidgetRef ref, Task task) async {
+Future<void> editLabels(
+  BuildContext context,
+  WidgetRef ref,
+  Task task, {
+  ScaffoldMessengerState? messenger,
+}) async {
   final ws = ref.read(workspaceProvider).value;
   if (ws == null) return;
   final picked = await pickLabels(context, ws, task.labelIds);
@@ -100,6 +123,7 @@ Future<void> editLabels(BuildContext context, WidgetRef ref, Task task) async {
   await runCommand(
     context,
     () => ref.read(taskCommandsProvider).setLabels(task.id, picked),
+    messenger: messenger,
   );
 }
 

@@ -60,7 +60,9 @@ class _ProjectDescriptionState extends ConsumerState<ProjectDescription> {
   void _close() {
     final editor = _editor;
     setState(() => _editor = null);
-    editor?.dispose();
+    // Поле с этим контроллером ещё в дереве до конца кадра: освободить сразу —
+    // значит, что поле обратится к освобождённому контроллеру.
+    WidgetsBinding.instance.addPostFrameCallback((_) => editor?.dispose());
   }
 
   Future<void> _save() async {

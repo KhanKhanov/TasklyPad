@@ -87,34 +87,41 @@ final class SectionCommands {
   /// по разделу (Workspace). Поэтому задача, добавленная в этот раздел на
   /// другом устройстве до синхронизации, переезжает вместе с ним, а
   /// правки задач на другом устройстве не спорят с переносом.
-  Future<Undo> moveToProject(String id, String projectId) async {
-    final ws = await _read();
-    final section = _alive(ws, id);
-    if (ws.project(projectId) == null) {
-      throw const CommandRejected(RejectReason.notFound);
-    }
-    final from = section.projectId ?? ws.inbox!.id;
-    if (from != projectId) {
-      _checkSectionRoom(ws, projectId);
-      TaskCommands.checkRoom(
-        ws,
-        projectId,
-        TaskCommands.activeInTrees(ws, _roots(ws, from, id)),
-      );
-    }
-    final undo = await _mutator.capture([
-      (
-        entityType: EntityTypes.section,
-        entityId: id,
-        fields: {SectionFields.projectId, SectionFields.orderKey},
-      ),
-    ]);
-    await _mutator.update(EntityTypes.section, id, {
-      SectionFields.projectId: projectId,
-      SectionFields.orderKey: _keyAfter(ws.sectionsOf(projectId), null),
-    });
-    return undo;
-  }
+  ///
+  /// Проект в архиве (убран на другом устройстве, пока окно было открыто) —
+  /// [RejectReason.notFound], как проект, которого нет. Задачи архивного
+  /// раздела в лимит 300 не идут: они остаются неактивными (О-81).
+  Future<Undo> moveToProject(String id, String projectId) =>
+      _mutator.batch(() async {
+        final ws = await _read();
+        final section = _alive(ws, id);
+        if (ws.project(projectId) == null || ws.isProjectArchived(projectId)) {
+          throw const CommandRejected(RejectReason.notFound);
+        }
+        final from = section.projectId ?? ws.inbox!.id;
+        if (from != projectId) {
+          _checkSectionRoom(ws, projectId);
+          TaskCommands.checkRoom(
+            ws,
+            projectId,
+            section.isArchived
+                ? 0
+                : TaskCommands.openInTrees(ws, _roots(ws, from, id)).length,
+          );
+        }
+        final undo = await _mutator.capture([
+          (
+            entityType: EntityTypes.section,
+            entityId: id,
+            fields: {SectionFields.projectId, SectionFields.orderKey},
+          ),
+        ]);
+        await _mutator.update(EntityTypes.section, id, {
+          SectionFields.projectId: projectId,
+          SectionFields.orderKey: _keyAfter(ws.sectionsOf(projectId), null),
+        });
+        return undo;
+      });
 
   /// Перетаскивание раздела внутри проекта: сразу после [afterId] (`null` —
   /// первым), вместе с задачами (help «Introduction to sections»: «Drag a
@@ -157,8 +164,13 @@ final class SectionCommands {
       });
 
   /// Дубликат сразу после раздела, с незавершёнными задачами. [name] — имя
-  /// копии из интерфейса («Копия …»).
-  Future<String> duplicate(String id, {required String name}) async {
+  /// копии из интерфейса («Копия …»). Копии — незавершённые задачи без
+  /// выполненных подзадач и их потомков ([TaskCommands.copyTree]); в
+  /// архивном проекте они неактивны и в лимит 300 не идут (О-81).
+  Future<String> duplicate(
+    String id, {
+    required String name,
+  }) => _mutator.batch(() async {
     final ws = await _read();
     final section = _alive(ws, id);
     final projectId = section.projectId ?? ws.inbox!.id;
@@ -166,32 +178,28 @@ final class SectionCommands {
     TaskCommands.checkRoom(
       ws,
       projectId,
-      TaskCommands.activeInTrees(ws, _roots(ws, projectId, id)),
+      ws.isProjectArchived(projectId)
+          ? 0
+          : TaskCommands.openInTrees(ws, _roots(ws, projectId, id)).length,
     );
-    return _mutator.batch(() async {
-      final copy = await _mutator.create(EntityTypes.section, {
-        SectionFields.name: _name(Limits.clip(name.trim(), Limits.sectionName)),
-        SectionFields.projectId: projectId,
-        SectionFields.orderKey: _keyAfter(ws.sectionsOf(projectId), id),
-      });
-      for (final task in ws.children(
-        null,
-        projectId: projectId,
-        sectionId: id,
-      )) {
-        if (task.isCompleted) continue;
-        await _tasks.copyTree(
-          ws,
-          task,
-          projectId: projectId,
-          sectionId: copy,
-          parentId: null,
-          orderKey: task.orderKey,
-        );
-      }
-      return copy;
+    final copy = await _mutator.create(EntityTypes.section, {
+      SectionFields.name: _name(Limits.clip(name.trim(), Limits.sectionName)),
+      SectionFields.projectId: projectId,
+      SectionFields.orderKey: _keyAfter(ws.sectionsOf(projectId), id),
     });
-  }
+    for (final task in ws.children(null, projectId: projectId, sectionId: id)) {
+      if (task.isCompleted) continue;
+      await _tasks.copyTree(
+        ws,
+        task,
+        projectId: projectId,
+        sectionId: copy,
+        parentId: null,
+        orderKey: task.orderKey,
+      );
+    }
+    return copy;
+  });
 
   // --- Внутреннее ---
 

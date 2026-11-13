@@ -9,18 +9,20 @@ import '../state/selection.dart';
 import 'task_actions.dart';
 import 'task_edits.dart';
 
-/// Клавиши строки задачи в фокусе, которые меняют задачу или выделение (help
-/// «Use keyboard shortcuts», docs/TODOIST_PARITY.md §10): `e`, `1–4`, `t`,
-/// `Shift+T`, `l`, `v`, `y`, `.`, `x`, `Shift+Delete`, `Ctrl+]` / `Ctrl+[`
-/// (при [hierarchy]). Строка проверяет до вызова, что задачу можно менять.
-/// `Shift+Delete` при выделении — не задача в фокусе, а выделенные: клавишу
-/// забирает оболочка (`SelectionKeys`).
 /// Выделены задачи, видимые в виде: `Shift+Delete` относится к ним.
 bool _hasLiveSelection(WidgetRef ref) {
   final ws = ref.read(workspaceProvider).value;
   return ws != null && ref.read(taskSelectionProvider).live(ws).isNotEmpty;
 }
 
+/// Клавиши строки задачи в фокусе, которые меняют задачу или выделение (help
+/// «Use keyboard shortcuts», docs/TODOIST_PARITY.md §10): `e`, `1–4`, `t`,
+/// `Shift+T`, `l`, `v`, `y`, `.`, `x`, `Shift+Delete`, `Ctrl+]` / `Ctrl+[`
+/// (при [hierarchy]). Строка проверяет до вызова, что задачу можно менять.
+/// `Shift+Delete` при выделении — не задача в фокусе, а выделенные: клавишу
+/// забирает оболочка (`SelectionKeys`). У невыделяемой строки ([selectable]
+/// `false`: подзадача в окне задачи) выделение списка — не её дело: клавиша
+/// удаляет её задачу.
 KeyEventResult taskRowEditKey({
   required BuildContext context,
   required WidgetRef ref,
@@ -30,6 +32,7 @@ KeyEventResult taskRowEditKey({
   required VoidCallback complete,
   required VoidCallback openMenu,
   required VoidCallback toggleSelected,
+  bool selectable = true,
 }) {
   final keys = HardwareKeyboard.instance;
   final commands = ref.read(taskCommandsProvider);
@@ -49,7 +52,8 @@ KeyEventResult taskRowEditKey({
   }
   if (keys.isShiftPressed) {
     switch (key) {
-      case LogicalKeyboardKey.delete when !_hasLiveSelection(ref):
+      case LogicalKeyboardKey.delete
+          when !selectable || !_hasLiveSelection(ref):
         deleteTask(context, ref, task);
       case LogicalKeyboardKey.keyT:
         removeDue(context, ref, task);
@@ -83,4 +87,14 @@ KeyEventResult taskRowEditKey({
       return KeyEventResult.ignored;
   }
   return KeyEventResult.handled;
+}
+
+/// `Ctrl+E` и `Alt+E` (Windows, help «Use keyboard shortcuts»: «Edit task») —
+/// у задачи в фокусе то же, что «Редактировать» в меню строки.
+bool isEditShortcut(LogicalKeyboardKey key) {
+  final keys = HardwareKeyboard.instance;
+  return key == LogicalKeyboardKey.keyE &&
+      !keys.isShiftPressed &&
+      !keys.isMetaPressed &&
+      keys.isControlPressed != keys.isAltPressed;
 }

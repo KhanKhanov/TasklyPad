@@ -42,6 +42,7 @@ const AppTheme tasklyTheme = AppTheme(
     dateTomorrow: _tomorrowUnverified,
     dateNextWeek: _nextWeekUnverified,
     danger: Color(0xFFDE4D40),
+    warning: Color(0xFFB7791F),
     priority: [
       Color(0xFFDA4844),
       _p2Unverified,
@@ -68,6 +69,7 @@ const AppTheme tasklyTheme = AppTheme(
     dateTomorrow: Color(0xFFD08A3C),
     dateNextWeek: Color(0xFF9B72E0),
     danger: Color(0xFFD03F3F),
+    warning: Color(0xFFE0A04A),
     priority: [
       Color(0xFFEA352C),
       _p2Unverified,

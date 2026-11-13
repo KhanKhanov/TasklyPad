@@ -120,8 +120,12 @@ class _AppShellState extends ConsumerState<AppShell> {
                 onPointerDown: _onPointerDown,
                 // Один приёмник перетаскивания на всё окно: списки, сайдбар.
                 child: DragLayer(
-                  // На узком экране сайдбар — выдвижная панель вне тела `Scaffold`.
-                  hitRoot: wide ? _bodyKey : null,
+                  // Слоты ищутся в теле `Scaffold`, а не во всём окне: нижнее
+                  // уведомление непрозрачно для попадания, и на узком экране бросок
+                  // под ним пропадал бы. Выдвижная панель сайдбара на узком экране
+                  // вне тела: пока она открыта, затемнение закрывает её по касанию,
+                  // и перетаскивание не начать — бросать в неё нечего.
+                  hitRoot: _bodyKey,
                   child: Scaffold(
                     key: _scaffold,
                     backgroundColor: palette.background,

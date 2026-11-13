@@ -641,6 +641,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'The same item was changed on two devices. Until you choose, the later change applies.';
 
   @override
+  String get conflictMark => 'Conflict';
+
+  @override
+  String get conflictMarkTooltip => 'Changed on two devices';
+
+  @override
+  String get conflictChoose => 'Choose';
+
+  @override
   String get conflictsEmpty => 'No conflicts';
 
   @override

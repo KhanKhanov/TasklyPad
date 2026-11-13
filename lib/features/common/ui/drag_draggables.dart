@@ -104,6 +104,7 @@ class TouchDraggable extends LongPressDraggable<DragPayload> {
     required super.child,
     required super.feedback,
     super.data,
+    super.maxSimultaneousDrags,
   }) : super(
          dragAnchorStrategy: recordStartAnchor,
          rootOverlay: true,

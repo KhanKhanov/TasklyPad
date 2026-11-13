@@ -313,12 +313,13 @@ final class ConflictRepository {
     final (older, newer, current) = _isDelete(first)
         ? await _deleteSides(type, id, group)
         : await _editSides(type, id, group, carried, entityOps.values);
-    final (title, ownerTitle) = await _titles(type, id);
+    final (:title, :ownerTitle, :ownerId) = await _titles(type, id);
     return ConflictCard(
       entity: _entityOf(type),
       entityId: id,
       title: title,
       ownerTitle: ownerTitle,
+      ownerId: ownerId,
       isInbox: await _isInbox(type, id),
       isDelete: _isDelete(first),
       conflictIds: [
@@ -504,15 +505,29 @@ final class ConflictRepository {
   static DateTime _time(Op op) =>
       DateTime.fromMillisecondsSinceEpoch(op.hlc.wallMs, isUtc: true);
 
-  Future<(String?, String?)> _titles(String type, String id) async {
+  /// Заголовок карточки; у метки задачи — ещё задача-владелец: её название и
+  /// id (пометка спора в строке задачи).
+  Future<({String? title, String? ownerTitle, String? ownerId})> _titles(
+    String type,
+    String id,
+  ) async {
     // У настроек имени нет: заголовок карточки — просто «Настройки».
-    if (type == EntityTypes.settings) return (null, null);
-    if (type != EntityTypes.taskLabel) return (await _title(type, id), null);
+    if (type == EntityTypes.settings) {
+      return (title: null, ownerTitle: null, ownerId: null);
+    }
+    if (type != EntityTypes.taskLabel) {
+      return (title: await _title(type, id), ownerTitle: null, ownerId: null);
+    }
     final labelId = await _store.fieldValue(type, id, TaskLabelFields.labelId);
     final taskId = await _store.fieldValue(type, id, TaskLabelFields.taskId);
     return (
-      labelId is String ? await _title(EntityTypes.label, labelId) : null,
-      taskId is String ? await _title(EntityTypes.task, taskId) : null,
+      title: labelId is String
+          ? await _title(EntityTypes.label, labelId)
+          : null,
+      ownerTitle: taskId is String
+          ? await _title(EntityTypes.task, taskId)
+          : null,
+      ownerId: taskId is String ? taskId : null,
     );
   }
 

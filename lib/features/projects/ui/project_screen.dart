@@ -2,28 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
-import '../../../domain/models.dart';
 import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../common/ui/drag_source.dart';
-import '../../sections/ui/section_block.dart';
-import '../../sections/ui/section_drag.dart';
 import '../../shell/ui/shell_keys.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_drag.dart';
-import '../../tasks/ui/task_drop_places.dart';
 import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
 import '../../views/state/view_options.dart';
 import '../../views/ui/grouped_task_list.dart';
 import '../../views/ui/view_groups.dart';
 import '../../views/ui/view_sort_keys.dart';
+import '../../views/ui/scroll_edge_keys.dart';
 import 'project_parts.dart';
+import 'project_sections.dart';
 
 /// Экран проекта (и «Входящих»): заголовок с «Отображение» и меню, задачи без
 /// раздела, разделы со своими задачами и «Добавить раздел». Сортировка
@@ -45,6 +42,15 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   /// Одновременно открыт один редактор, как в Todoist.
   ({String? sectionId, AddTaskAt at})? _adding;
   bool _addingSection = false;
+
+  /// Прокрутка списка: `Ctrl+Home` / `Ctrl+End` ([ScrollEdgeKeys]).
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   void _openAdd(String? sectionId, AddTaskAt at) => setState(() {
     _adding = at == AddTaskAt.none ? null : (sectionId: sectionId, at: at);
@@ -117,66 +123,79 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     return ViewSortKeys(
       viewType: ViewType.project,
       objectId: project.id,
-      child: Shortcuts(
-        shortcuts: canAdd ? projectShortcuts : const {},
-        child: Actions(
-          actions: {
-            AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
-              blocked: () => ShellKeys.sequencePending(context),
-              () => _openAdd(null, AddTaskAt.bottom),
-            ),
-            AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
-              blocked: () => ShellKeys.sequencePending(context),
-              () => _openAdd(null, AddTaskAt.top),
-            ),
-            // При группировке разделов не видно — `S` ничего не делает.
-            AddSectionIntent: HotkeyAction<AddSectionIntent>(
-              blocked: () => grouped || ShellKeys.sequencePending(context),
-              () => setState(() {
-                _addingSection = true;
-                _adding = null;
-              }),
-            ),
-          },
-          child: Focus(
-            autofocus: true,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-                child: TaskOrderScope(
-                  order: (ws) => _order(ws, project.id),
-                  child: ListView(
-                    // Слева 12 + поле под ручку 20 у каждой строки: геометрия прежняя.
-                    padding: const EdgeInsets.fromLTRB(12, 8, 32, 48),
-                    children: [
-                      DragGutter(
-                        child: ProjectHeader(
-                          project: project,
-                          archived: archived,
-                        ),
-                      ),
-                      if (grouped)
-                        ..._grouped(ws, options, canAdd: canAdd)
-                      else
-                        ..._sectioned(ws, options, canAdd: canAdd),
-                      if (canAdd && !grouped)
+      child: ScrollEdgeKeys(
+        controller: _scroll,
+        child: Shortcuts(
+          shortcuts: canAdd ? projectScreenShortcuts() : const {},
+          child: Actions(
+            actions: {
+              AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
+                blocked: () => ShellKeys.sequencePending(context),
+                () => _openAdd(null, AddTaskAt.bottom),
+              ),
+              AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
+                blocked: () => ShellKeys.sequencePending(context),
+                () => _openAdd(null, AddTaskAt.top),
+              ),
+              // При группировке разделов не видно — `S` ничего не делает.
+              AddSectionIntent: HotkeyAction<AddSectionIntent>(
+                blocked: () => grouped || ShellKeys.sequencePending(context),
+                () => setState(() {
+                  _addingSection = true;
+                  _adding = null;
+                }),
+              ),
+            },
+            child: Focus(
+              autofocus: true,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+                  child: TaskOrderScope(
+                    order: (ws) => _order(ws, project.id),
+                    child: ListView(
+                      controller: _scroll,
+                      // Слева 12 + поле под ручку 20 у каждой строки: геометрия прежняя.
+                      padding: const EdgeInsets.fromLTRB(12, 8, 32, 48),
+                      children: [
                         DragGutter(
-                          child: AddSectionButton(
-                            projectId: project.id,
-                            open: _addingSection,
-                            // Вызывается и после записи раздела — экран к тому
-                            // времени мог уйти (переход по сайдбару).
-                            onOpen: (v) {
-                              if (!mounted) return;
-                              setState(() {
-                                _addingSection = v;
-                                if (v) _adding = null;
-                              });
-                            },
+                          child: ProjectHeader(
+                            project: project,
+                            archived: archived,
                           ),
                         ),
-                    ],
+                        if (grouped)
+                          ..._grouped(ws, options, canAdd: canAdd)
+                        else
+                          ...sectionedChildren(
+                            ws: ws,
+                            projectId: options.objectId!,
+                            view: _view(ws, options),
+                            canAdd: canAdd,
+                            // Перетаскивание: проект не в архиве, без сортировки с направлением.
+                            drags: canAdd && options.allowsDrag,
+                            addAt: _addAt,
+                            onAddAt: _openAdd,
+                          ),
+                        if (canAdd && !grouped)
+                          DragGutter(
+                            child: AddSectionButton(
+                              projectId: project.id,
+                              open: _addingSection,
+                              // Вызывается и после записи раздела — экран к тому
+                              // времени мог уйти (переход по сайдбару).
+                              onOpen: (v) {
+                                if (!mounted) return;
+                                setState(() {
+                                  _addingSection = v;
+                                  if (v) _adding = null;
+                                });
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -215,86 +234,4 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
         const DragGutter(child: ProjectEmpty()),
     ];
   }
-
-  List<Widget> _sectioned(
-    Workspace ws,
-    ViewOptions options, {
-    required bool canAdd,
-  }) {
-    final projectId = options.objectId!;
-    final view = _view(ws, options);
-    // Перетаскивание: проект не в архиве, без сортировки с направлением.
-    final drags = canAdd && options.allowsDrag;
-    final active = [
-      for (final (:section, tasks: _) in view.sections)
-        if (!section.isArchived) section,
-    ];
-    ProjectDrop? drop(String? sectionId) => drags
-        ? ProjectDrop(ws: ws, projectId: projectId, sectionId: sectionId)
-        : null;
-    return [
-      TaskList(
-        items: view.unsectioned,
-        ws: ws,
-        projectId: projectId,
-        addAt: _addAt(null),
-        onAddAt: (at) => _openAdd(null, at),
-        canAdd: canAdd,
-        drop: drop(null),
-        gutter: true,
-      ),
-      if (view.unsectioned.isEmpty && view.sections.isEmpty)
-        const DragGutter(child: ProjectEmpty()),
-      for (final (:section, :tasks) in view.sections) ...[
-        sectionHeaderSlot(
-          // Разделы переставляются и при сортировке: она действует внутри
-          // раздела; архивные — не источник и не цель.
-          enabled: canAdd && !section.isArchived,
-          section: section,
-          projectId: projectId,
-          sections: active,
-          child: drags && !section.isArchived
-              ? SectionDropSlot(
-                  projectId: projectId,
-                  sectionId: section.id,
-                  child: _sectionBlock(ws, projectId, section, !canAdd),
-                )
-              : _sectionBlock(ws, projectId, section, !canAdd),
-        ),
-        if (!section.isCollapsed)
-          sectionTasksSlot(
-            enabled: canAdd && !section.isArchived,
-            section: section,
-            projectId: projectId,
-            child: TaskList(
-              key: ValueKey('tasks-${section.id}'),
-              items: tasks,
-              ws: ws,
-              projectId: projectId,
-              sectionId: section.id,
-              addAt: _addAt(section.id),
-              onAddAt: (at) => _openAdd(section.id, at),
-              canAdd: canAdd && !section.isArchived,
-              drop: section.isArchived ? null : drop(section.id),
-              gutter: true,
-            ),
-          ),
-      ],
-    ];
-  }
-
-  Widget _sectionBlock(
-    Workspace ws,
-    String projectId,
-    Section section,
-    bool readOnly,
-  ) => DragBlocker(
-    // Слот броска задач стоит снаружи: пока тащат, «⋯» заголовка не оживает.
-    child: SectionBlock(
-      key: ValueKey(section.id),
-      section: section,
-      count: ws.activeTaskCountIn(projectId, section.id),
-      readOnly: readOnly,
-    ),
-  );
 }

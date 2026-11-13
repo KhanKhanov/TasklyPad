@@ -168,11 +168,16 @@ class SectionDropSlot extends StatelessWidget {
     required this.projectId,
     required this.sectionId,
     required this.child,
+    this.enabled = true,
   });
 
   final String projectId;
   final String sectionId;
   final Widget child;
+
+  /// `false` — слот отвечает «не моё» (перетаскивание задач выключено): дерево
+  /// остаётся тем же, и смена сортировки не пересоздаёт заголовок раздела.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) => DropMarker(
@@ -181,7 +186,8 @@ class SectionDropSlot extends StatelessWidget {
       resolve: (query, _) {
         final payload = query.payload;
         final origin = payload is TaskDrag ? payload.origin : null;
-        if (payload is! TaskDrag ||
+        if (!enabled ||
+            payload is! TaskDrag ||
             origin is! ProjectDrop ||
             origin.parentId != null ||
             origin.projectId != projectId) {

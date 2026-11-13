@@ -113,7 +113,7 @@ final class OverdueDrop extends TaskListDrop {
 
 /// Строка задачи в списке с перетаскиванием: поле под ручку слева, ручка при
 /// наведении мыши, долгое нажатие касанием, слот броска и отметка места.
-/// Без [drop] — только поле слева, чтобы строки не сдвигались.
+/// Без [drop] — ни ручки, ни слота, только поле слева, чтобы строки не сдвигались.
 class TaskDragRow extends ConsumerStatefulWidget {
   const TaskDragRow({
     super.key,
@@ -172,29 +172,32 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
     );
   }
 
+  /// Дерево не зависит от [TaskDragRow.drop] и «можно тащить»: смена типа
+  /// виджета над [TaskDragRow.child] пересоздала бы строку и унесла фокус
+  /// (выполнили `e` с «Выполненными» — строка заморожена; сменили сортировку).
+  /// Запрет — выключенный источник (`maxSimultaneousDrags: 0`) и слот,
+  /// который отвечает «не моё».
   @override
   Widget build(BuildContext context) {
     final drop = widget.drop;
-    final padded = Padding(
-      padding: const EdgeInsets.only(left: dragGutter),
-      child: widget.child,
-    );
-    if (drop == null) return padded;
     // Выполненную задачу и всё под ней не тащат, но линия над ней нужна.
-    final canDrag = !frozenIds(widget.items).contains(_task.id);
+    final canDrag = drop != null && !frozenIds(widget.items).contains(_task.id);
     final dragging = ref.watch(dragSessionProvider.select((s) => s != null));
     final touch = canDrag ? _payload(drop, multi: false) : null;
     final mouse = canDrag ? _payload(drop, multi: true) : null;
-    Widget row = Stack(
+    final Widget row = Stack(
       children: [
-        if (canDrag)
-          TouchDraggable(
-            data: touch,
-            feedback: TaskDragGhost(payload: touch!),
-            child: padded,
-          )
-        else
-          padded,
+        TouchDraggable(
+          data: touch,
+          maxSimultaneousDrags: canDrag ? 1 : 0,
+          feedback: touch == null
+              ? const SizedBox.shrink()
+              : TaskDragGhost(payload: touch),
+          child: Padding(
+            padding: const EdgeInsets.only(left: dragGutter),
+            child: widget.child,
+          ),
+        ),
         // Ручка — при наведении и пока никого не тащат.
         if (canDrag && _hover && !dragging)
           Positioned(
@@ -210,29 +213,27 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
           ),
       ],
     );
-    row = MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: DragSourceDim(
-        id: _task.id,
-        child: DragBlocker(child: row),
-      ),
-    );
     return DropMarker(
       owner: _task.id,
-      child: switch (drop) {
-        OverdueDrop() => row,
-        _ => DropSlotRegion(
-          resolve: (query, box) => taskDropPlace(
-            drop,
-            query,
-            box,
-            items: widget.items,
-            rowId: _task.id,
+      child: DropSlotRegion(
+        resolve: (query, box) => drop == null || drop is OverdueDrop
+            ? null
+            : taskDropPlace(
+                drop,
+                query,
+                box,
+                items: widget.items,
+                rowId: _task.id,
+              ),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hover = true),
+          onExit: (_) => setState(() => _hover = false),
+          child: DragSourceDim(
+            id: _task.id,
+            child: DragBlocker(child: row),
           ),
-          child: row,
         ),
-      },
+      ),
     );
   }
 }

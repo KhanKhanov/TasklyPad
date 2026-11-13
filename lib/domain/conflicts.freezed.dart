@@ -873,7 +873,8 @@ mixin _$ConflictCard {
 
  ConflictEntity get entity; String get entityId;/// Название задачи или имя проекта, раздела, метки; `null` — пусто.
  String? get title; bool get isInbox;/// У метки задачи — название задачи ([title] — имя метки).
- String? get ownerTitle; bool get isDelete; List<String> get conflictIds;/// Сторона с более ранним последним действием. Пока пользователь не
+ String? get ownerTitle;/// У метки задачи — id задачи: спор помечает её строку и окно.
+ String? get ownerId; bool get isDelete; List<String> get conflictIds;/// Сторона с более ранним последним действием. Пока пользователь не
 /// выбрал, каждое поле решает LWW: в карточке из нескольких действий
 /// часть полей может победить у одной стороны, часть — у другой.
  ConflictSide get older; ConflictSide get newer;/// Действующие значения, если ни одна сторона не действует целиком (поле
@@ -891,20 +892,20 @@ $ConflictCardCopyWith<ConflictCard> get copyWith => _$ConflictCardCopyWithImpl<C
 @override
 bool operator ==(Object other) {
   final _this = this as ConflictCard;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ConflictCard&&(identical(other.entity, _this.entity) || other.entity == _this.entity)&&(identical(other.entityId, _this.entityId) || other.entityId == _this.entityId)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.isInbox, _this.isInbox) || other.isInbox == _this.isInbox)&&(identical(other.ownerTitle, _this.ownerTitle) || other.ownerTitle == _this.ownerTitle)&&(identical(other.isDelete, _this.isDelete) || other.isDelete == _this.isDelete)&&const DeepCollectionEquality().equals(other.conflictIds, _this.conflictIds)&&(identical(other.older, _this.older) || other.older == _this.older)&&(identical(other.newer, _this.newer) || other.newer == _this.newer)&&const DeepCollectionEquality().equals(other.current, _this.current));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ConflictCard&&(identical(other.entity, _this.entity) || other.entity == _this.entity)&&(identical(other.entityId, _this.entityId) || other.entityId == _this.entityId)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.isInbox, _this.isInbox) || other.isInbox == _this.isInbox)&&(identical(other.ownerTitle, _this.ownerTitle) || other.ownerTitle == _this.ownerTitle)&&(identical(other.ownerId, _this.ownerId) || other.ownerId == _this.ownerId)&&(identical(other.isDelete, _this.isDelete) || other.isDelete == _this.isDelete)&&const DeepCollectionEquality().equals(other.conflictIds, _this.conflictIds)&&(identical(other.older, _this.older) || other.older == _this.older)&&(identical(other.newer, _this.newer) || other.newer == _this.newer)&&const DeepCollectionEquality().equals(other.current, _this.current));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ConflictCard;
-  return Object.hash(runtimeType,_this.entity,_this.entityId,_this.title,_this.isInbox,_this.ownerTitle,_this.isDelete,const DeepCollectionEquality().hash(_this.conflictIds),_this.older,_this.newer,const DeepCollectionEquality().hash(_this.current));
+  return Object.hash(runtimeType,_this.entity,_this.entityId,_this.title,_this.isInbox,_this.ownerTitle,_this.ownerId,_this.isDelete,const DeepCollectionEquality().hash(_this.conflictIds),_this.older,_this.newer,const DeepCollectionEquality().hash(_this.current));
 }
 
 @override
 String toString() {
   final _this = this as ConflictCard;
-  return 'ConflictCard(entity: ${_this.entity}, entityId: ${_this.entityId}, title: ${_this.title}, isInbox: ${_this.isInbox}, ownerTitle: ${_this.ownerTitle}, isDelete: ${_this.isDelete}, conflictIds: ${_this.conflictIds}, older: ${_this.older}, newer: ${_this.newer}, current: ${_this.current})';
+  return 'ConflictCard(entity: ${_this.entity}, entityId: ${_this.entityId}, title: ${_this.title}, isInbox: ${_this.isInbox}, ownerTitle: ${_this.ownerTitle}, ownerId: ${_this.ownerId}, isDelete: ${_this.isDelete}, conflictIds: ${_this.conflictIds}, older: ${_this.older}, newer: ${_this.newer}, current: ${_this.current})';
 }
 
 
@@ -915,7 +916,7 @@ abstract mixin class $ConflictCardCopyWith<$Res>  {
   factory $ConflictCardCopyWith(ConflictCard value, $Res Function(ConflictCard) _then) = _$ConflictCardCopyWithImpl;
 @useResult
 $Res call({
- ConflictEntity entity, String entityId, String? title, bool isInbox, String? ownerTitle, bool isDelete, List<String> conflictIds, ConflictSide older, ConflictSide newer, List<ConflictValue> current
+ ConflictEntity entity, String entityId, String? title, bool isInbox, String? ownerTitle, String? ownerId, bool isDelete, List<String> conflictIds, ConflictSide older, ConflictSide newer, List<ConflictValue> current
 });
 
 
@@ -932,13 +933,14 @@ class _$ConflictCardCopyWithImpl<$Res>
 
 /// Create a copy of ConflictCard
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? entity = null,Object? entityId = null,Object? title = freezed,Object? isInbox = null,Object? ownerTitle = freezed,Object? isDelete = null,Object? conflictIds = null,Object? older = null,Object? newer = null,Object? current = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? entity = null,Object? entityId = null,Object? title = freezed,Object? isInbox = null,Object? ownerTitle = freezed,Object? ownerId = freezed,Object? isDelete = null,Object? conflictIds = null,Object? older = null,Object? newer = null,Object? current = null,}) {
   return _then(ConflictCard(
 entity: null == entity ? _self.entity : entity // ignore: cast_nullable_to_non_nullable
 as ConflictEntity,entityId: null == entityId ? _self.entityId : entityId // ignore: cast_nullable_to_non_nullable
 as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,isInbox: null == isInbox ? _self.isInbox : isInbox // ignore: cast_nullable_to_non_nullable
 as bool,ownerTitle: freezed == ownerTitle ? _self.ownerTitle : ownerTitle // ignore: cast_nullable_to_non_nullable
+as String?,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
 as String?,isDelete: null == isDelete ? _self.isDelete : isDelete // ignore: cast_nullable_to_non_nullable
 as bool,conflictIds: null == conflictIds ? _self.conflictIds : conflictIds // ignore: cast_nullable_to_non_nullable
 as List<String>,older: null == older ? _self.older : older // ignore: cast_nullable_to_non_nullable
@@ -1047,10 +1049,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  String? ownerId,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ConflictCard() when $default != null:
-return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
+return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.ownerId,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
   return orElse();
 
 }
@@ -1068,10 +1070,10 @@ return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.owne
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  String? ownerId,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)  $default,) {final _that = this;
 switch (_that) {
 case _ConflictCard():
-return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
+return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.ownerId,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1088,10 +1090,10 @@ return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.owne
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ConflictEntity entity,  String entityId,  String? title,  bool isInbox,  String? ownerTitle,  String? ownerId,  bool isDelete,  List<String> conflictIds,  ConflictSide older,  ConflictSide newer,  List<ConflictValue> current)?  $default,) {final _that = this;
 switch (_that) {
 case _ConflictCard() when $default != null:
-return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
+return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.ownerTitle,_that.ownerId,_that.isDelete,_that.conflictIds,_that.older,_that.newer,_that.current);case _:
   return null;
 
 }
@@ -1103,7 +1105,7 @@ return $default(_that.entity,_that.entityId,_that.title,_that.isInbox,_that.owne
 
 
 class _ConflictCard extends ConflictCard {
-  const _ConflictCard({required this.entity, required this.entityId, this.title, this.isInbox = false, this.ownerTitle, required this.isDelete, required  List<String> conflictIds, required this.older, required this.newer,  List<ConflictValue> current = const <ConflictValue>[]}): _conflictIds = conflictIds,_current = current,super._();
+  const _ConflictCard({required this.entity, required this.entityId, this.title, this.isInbox = false, this.ownerTitle, this.ownerId, required this.isDelete, required  List<String> conflictIds, required this.older, required this.newer,  List<ConflictValue> current = const <ConflictValue>[]}): _conflictIds = conflictIds,_current = current,super._();
   
 
 @override final  ConflictEntity entity;
@@ -1113,6 +1115,8 @@ class _ConflictCard extends ConflictCard {
 @override@JsonKey() final  bool isInbox;
 /// У метки задачи — название задачи ([title] — имя метки).
 @override final  String? ownerTitle;
+/// У метки задачи — id задачи: спор помечает её строку и окно.
+@override final  String? ownerId;
 @override final  bool isDelete;
  final  List<String> _conflictIds;
 @override List<String> get conflictIds {
@@ -1150,18 +1154,18 @@ _$ConflictCardCopyWith<_ConflictCard> get copyWith => __$ConflictCardCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConflictCard&&(identical(other.entity, entity) || other.entity == entity)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.title, title) || other.title == title)&&(identical(other.isInbox, isInbox) || other.isInbox == isInbox)&&(identical(other.ownerTitle, ownerTitle) || other.ownerTitle == ownerTitle)&&(identical(other.isDelete, isDelete) || other.isDelete == isDelete)&&const DeepCollectionEquality().equals(other.conflictIds, _conflictIds)&&(identical(other.older, older) || other.older == older)&&(identical(other.newer, newer) || other.newer == newer)&&const DeepCollectionEquality().equals(other.current, _current));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConflictCard&&(identical(other.entity, entity) || other.entity == entity)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.title, title) || other.title == title)&&(identical(other.isInbox, isInbox) || other.isInbox == isInbox)&&(identical(other.ownerTitle, ownerTitle) || other.ownerTitle == ownerTitle)&&(identical(other.ownerId, ownerId) || other.ownerId == ownerId)&&(identical(other.isDelete, isDelete) || other.isDelete == isDelete)&&const DeepCollectionEquality().equals(other.conflictIds, _conflictIds)&&(identical(other.older, older) || other.older == older)&&(identical(other.newer, newer) || other.newer == newer)&&const DeepCollectionEquality().equals(other.current, _current));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,entity,entityId,title,isInbox,ownerTitle,isDelete,const DeepCollectionEquality().hash(_conflictIds),older,newer,const DeepCollectionEquality().hash(_current));
+    return Object.hash(runtimeType,entity,entityId,title,isInbox,ownerTitle,ownerId,isDelete,const DeepCollectionEquality().hash(_conflictIds),older,newer,const DeepCollectionEquality().hash(_current));
 }
 
 @override
 String toString() {
-    return 'ConflictCard(entity: $entity, entityId: $entityId, title: $title, isInbox: $isInbox, ownerTitle: $ownerTitle, isDelete: $isDelete, conflictIds: $conflictIds, older: $older, newer: $newer, current: $current)';
+    return 'ConflictCard(entity: $entity, entityId: $entityId, title: $title, isInbox: $isInbox, ownerTitle: $ownerTitle, ownerId: $ownerId, isDelete: $isDelete, conflictIds: $conflictIds, older: $older, newer: $newer, current: $current)';
 }
 
 
@@ -1172,7 +1176,7 @@ abstract mixin class _$ConflictCardCopyWith<$Res> implements $ConflictCardCopyWi
   factory _$ConflictCardCopyWith(_ConflictCard value, $Res Function(_ConflictCard) _then) = __$ConflictCardCopyWithImpl;
 @override @useResult
 $Res call({
- ConflictEntity entity, String entityId, String? title, bool isInbox, String? ownerTitle, bool isDelete, List<String> conflictIds, ConflictSide older, ConflictSide newer, List<ConflictValue> current
+ ConflictEntity entity, String entityId, String? title, bool isInbox, String? ownerTitle, String? ownerId, bool isDelete, List<String> conflictIds, ConflictSide older, ConflictSide newer, List<ConflictValue> current
 });
 
 
@@ -1189,13 +1193,14 @@ class __$ConflictCardCopyWithImpl<$Res>
 
 /// Create a copy of ConflictCard
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? entity = null,Object? entityId = null,Object? title = freezed,Object? isInbox = null,Object? ownerTitle = freezed,Object? isDelete = null,Object? conflictIds = null,Object? older = null,Object? newer = null,Object? current = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? entity = null,Object? entityId = null,Object? title = freezed,Object? isInbox = null,Object? ownerTitle = freezed,Object? ownerId = freezed,Object? isDelete = null,Object? conflictIds = null,Object? older = null,Object? newer = null,Object? current = null,}) {
   return _then(_ConflictCard(
 entity: null == entity ? _self.entity : entity // ignore: cast_nullable_to_non_nullable
 as ConflictEntity,entityId: null == entityId ? _self.entityId : entityId // ignore: cast_nullable_to_non_nullable
 as String,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String?,isInbox: null == isInbox ? _self.isInbox : isInbox // ignore: cast_nullable_to_non_nullable
 as bool,ownerTitle: freezed == ownerTitle ? _self.ownerTitle : ownerTitle // ignore: cast_nullable_to_non_nullable
+as String?,ownerId: freezed == ownerId ? _self.ownerId : ownerId // ignore: cast_nullable_to_non_nullable
 as String?,isDelete: null == isDelete ? _self.isDelete : isDelete // ignore: cast_nullable_to_non_nullable
 as bool,conflictIds: null == conflictIds ? _self._conflictIds : conflictIds // ignore: cast_nullable_to_non_nullable
 as List<String>,older: null == older ? _self.older : older // ignore: cast_nullable_to_non_nullable

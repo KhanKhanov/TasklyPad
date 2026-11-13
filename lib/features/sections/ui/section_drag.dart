@@ -8,6 +8,7 @@ import '../../common/ui/drag_layer.dart';
 import '../../common/ui/drag_source.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../tasks/ui/task_drag.dart';
+import '../state/section_renaming.dart';
 
 /// Перетаскиваемый раздел: сам, вместе с задачами (они вычисляются по
 /// разделу, и пишется только его порядок).
@@ -120,6 +121,11 @@ class _SectionHeaderDragState extends ConsumerState<SectionHeaderDrag> {
   Widget build(BuildContext context) {
     final payload = SectionDrag(section: _section, projectId: widget.projectId);
     final ghost = DragGhost(title: _section.name, payload: payload);
+    // Имя правят: перетаскивание выключено, а дерево то же (иначе поле
+    // пересоздалось бы и набранное пропало).
+    final renaming = ref.watch(
+      sectionRenamingProvider.select((s) => s.contains(_section.id)),
+    );
     return DropMarker(
       owner: 'sec:${_section.id}',
       child: DropSlotRegion(
@@ -133,13 +139,14 @@ class _SectionHeaderDragState extends ConsumerState<SectionHeaderDrag> {
               children: [
                 TouchDraggable(
                   data: payload,
+                  maxSimultaneousDrags: renaming ? 0 : 1,
                   feedback: ghost,
                   child: Padding(
                     padding: const EdgeInsets.only(left: dragGutter),
                     child: widget.child,
                   ),
                 ),
-                if (_hover)
+                if (_hover && !renaming)
                   Positioned(
                     left: 0,
                     top: 16,
