@@ -361,5 +361,21 @@
   "formatLink": "Link",
   "formatQuote": "Quote",
   "linkAddress": "Address",
-  "removeLink": "Remove link"
+  "removeLink": "Remove link",
+  "myFilters": "My Filters",
+  "addFilter": "Add filter",
+  "editFilter": "Edit filter",
+  "deleteFilter": "Delete filter",
+  "deleteFilterTitle": "Delete filter?",
+  "deleteFilterBody": "The filter “{name}” will be deleted.",
+  "noFilters": "No filters yet",
+  "filterErrorEmpty": "A condition is needed here",
+  "filterErrorUnexpected": "Unexpected “{text}”",
+  "filterErrorUnclosed": "Unclosed parenthesis",
+  "filterErrorCommaInGroup": "Comma inside parentheses: separate lists only outside parentheses",
+  "filterErrorUnknown": "Unknown condition “{text}”",
+  "filterErrorBadDate": "Unrecognized date “{text}”",
+  "filterErrorUnsupported": "“{text}” is a shared-projects condition and isn’t supported",
+  "filterPreview": "{count, plural, =0{No tasks} =1{1 task} other{{count} tasks}}",
+  "filterBroken": "The filter query has an error"
 }

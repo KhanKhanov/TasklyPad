@@ -2072,7 +2072,7 @@ abstract class AppLocalizations {
   /// **'Длительность — от 1 минуты до 24 часов'**
   String get rejectBadDuration;
 
-  /// Строка под названием проекта без описания (help «Introduction to projects»: Add a description)
+  /// Строка под названием проекта и фильтра без описания (help «Introduction to projects»: Add a description; «Introduction to filters»)
   ///
   /// In ru, this message translates to:
   /// **'Добавить описание'**
@@ -2173,6 +2173,102 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Убрать ссылку'**
   String get removeLink;
+
+  /// Заголовок раздела фильтров на странице «Фильтры и метки» (help «Introduction to filters»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Мои фильтры'**
+  String get myFilters;
+
+  /// Кнопка и заголовок окна нового фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить фильтр'**
+  String get addFilter;
+
+  /// Пункт меню и заголовок окна правки фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить фильтр'**
+  String get editFilter;
+
+  /// Пункт меню фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить фильтр'**
+  String get deleteFilter;
+
+  /// Заголовок подтверждения удаления фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить фильтр?'**
+  String get deleteFilterTitle;
+
+  /// Текст подтверждения удаления фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтр «{name}» будет удалён.'**
+  String deleteFilterBody(String name);
+
+  /// Пустой раздел «Мои фильтры»
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет фильтров'**
+  String get noFilters;
+
+  /// Ошибка запроса: пустой запрос, пустая часть между запятыми или пустые скобки
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь нужно условие'**
+  String get filterErrorEmpty;
+
+  /// Ошибка запроса: оператор не на своём месте
+  ///
+  /// In ru, this message translates to:
+  /// **'Лишнее «{text}»'**
+  String filterErrorUnexpected(String text);
+
+  /// Ошибка запроса: нет закрывающей скобки
+  ///
+  /// In ru, this message translates to:
+  /// **'Скобка не закрыта'**
+  String get filterErrorUnclosed;
+
+  /// Ошибка запроса: запятая в скобках
+  ///
+  /// In ru, this message translates to:
+  /// **'Запятая внутри скобок: отдельные списки — только вне скобок'**
+  String get filterErrorCommaInGroup;
+
+  /// Ошибка запроса: условие не распознано
+  ///
+  /// In ru, this message translates to:
+  /// **'Непонятное условие «{text}»'**
+  String filterErrorUnknown(String text);
+
+  /// Ошибка запроса: значение даты не распознано
+  ///
+  /// In ru, this message translates to:
+  /// **'Непонятная дата «{text}»'**
+  String filterErrorBadDate(String text);
+
+  /// Ошибка запроса: совместная работа вне scope (TODOIST_PARITY §11)
+  ///
+  /// In ru, this message translates to:
+  /// **'«{text}» — условие совместной работы, его здесь нет'**
+  String filterErrorUnsupported(String text);
+
+  /// Предпросмотр в окне фильтра: сколько задач найдено (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, =0{Задач нет} one{{count} задача} few{{count} задачи} many{{count} задач} other{{count} задачи}}'**
+  String filterPreview(int count);
+
+  /// Экран фильтра, запрос которого не разбирается (пришёл с другого устройства)
+  ///
+  /// In ru, this message translates to:
+  /// **'В запросе фильтра ошибка'**
+  String get filterBroken;
 }
 
 class _AppLocalizationsDelegate

@@ -5,13 +5,17 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../common/ui/layout.dart';
+import '../../filters/ui/filter_dialog.dart';
+import '../../filters/ui/filter_drag.dart';
+import '../../filters/ui/filter_tile.dart';
 import 'label_dialog.dart';
 import 'label_drag.dart';
 import 'label_tile.dart';
 
-/// Страница «Фильтры и метки», как в Todoist: раздел «Метки» с «+» и
-/// списком меток (значок цвета метки, название, число задач, меню «⋯»).
-/// Раздел «Мои фильтры» появится вместе с фильтрами (M5).
+/// Страница «Фильтры и метки», как в Todoist: «Мои фильтры» и «Метки», у
+/// каждого раздела «+» и список по порядку (перетаскиванием); у метки — число
+/// задач, у обоих — меню «⋯» при наведении (help «Introduction to filters»,
+/// «Introduction to labels»).
 class FiltersLabelsScreen extends StatelessWidget {
   const FiltersLabelsScreen({super.key});
 
@@ -22,6 +26,11 @@ class FiltersLabelsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final palette = AppPalette.of(context);
     final labels = ws.labels;
+    final filters = ws.filters;
+    Widget empty(String text) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(text, style: TextStyle(color: palette.textSecondary)),
+    );
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -38,37 +47,26 @@ class FiltersLabelsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Container(
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: palette.divider)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.labelsHeader,
-                      style: TextStyle(
-                        color: palette.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: l10n.addLabel,
-                    icon: const Icon(Icons.add, size: 20),
-                    onPressed: () => showLabelDialog(context),
-                  ),
-                ],
-              ),
+            _SectionHeader(
+              title: l10n.myFilters,
+              addTooltip: l10n.addFilter,
+              onAdd: () => showFilterDialog(context),
             ),
-            if (labels.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text(
-                  l10n.noLabels,
-                  style: TextStyle(color: palette.textSecondary),
-                ),
+            if (filters.isEmpty) empty(l10n.noFilters),
+            for (final filter in filters)
+              FilterDragTile(
+                key: ValueKey(filter.id),
+                filter: filter,
+                filters: filters,
+                child: FilterTile(filter: filter),
               ),
+            const SizedBox(height: 24),
+            _SectionHeader(
+              title: l10n.labelsHeader,
+              addTooltip: l10n.addLabel,
+              onAdd: () => showLabelDialog(context),
+            ),
+            if (labels.isEmpty) empty(l10n.noLabels),
             for (final label in labels)
               LabelDragTile(
                 key: ValueKey(label.id),
@@ -81,6 +79,47 @@ class FiltersLabelsScreen extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Заголовок раздела страницы с «+» справа, над чертой.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    required this.addTooltip,
+    required this.onAdd,
+  });
+
+  final String title;
+  final String addTooltip;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: palette.divider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                color: palette.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: addTooltip,
+            icon: const Icon(Icons.add, size: 20),
+            onPressed: onAdd,
+          ),
+        ],
       ),
     );
   }

@@ -18,7 +18,7 @@ class ViewOptionsButton extends ConsumerWidget {
 
   final ViewType viewType;
 
-  /// Проект или метка; у «Сегодня» и «Предстоящего» — `null`.
+  /// Проект, метка или фильтр; у «Сегодня» и «Предстоящего» — `null`.
   final String? objectId;
 
   @override
@@ -94,12 +94,15 @@ class ViewOptionsButton extends ConsumerWidget {
                 (o) => save(options.copyWith(sortOrder: o)),
               ),
           ]),
-        CheckboxMenuButton(
-          value: options.showCompletedTasks,
-          onChanged: (v) =>
-              save(options.copyWith(showCompletedTasks: v ?? false)),
-          child: Text(l10n.completedTasks),
-        ),
+        // Фильтр показывает только активные задачи (help «Introduction to
+        // filters»: «Completed tasks aren't visible in filter views»).
+        if (viewType != ViewType.filter)
+          CheckboxMenuButton(
+            value: options.showCompletedTasks,
+            onChanged: (v) =>
+                save(options.copyWith(showCompletedTasks: v ?? false)),
+            child: Text(l10n.completedTasks),
+          ),
         const Divider(height: 1),
         MenuItemButton(
           onPressed: options.applied == 0

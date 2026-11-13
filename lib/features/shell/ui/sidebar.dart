@@ -8,6 +8,7 @@ import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../filters/ui/filter_tile.dart';
 import '../../labels/ui/label_tile.dart';
 import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_drag.dart';
@@ -22,7 +23,8 @@ import 'sidebar_items.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Сегодня» (со счётчиком
 /// сегодняшних и просроченных — допущение О-69), «Предстоящее», «Фильтры и
-/// метки», «Избранное» (проекты и метки), «Мои проекты» деревом.
+/// метки», «Избранное» (проекты, метки, фильтры — help «Add a project,
+/// label, or filter to favorites»), «Мои проекты» деревом.
 /// «Конфликты» (нашего дополнения) видны, только пока есть нерешённые.
 /// «Добавить задачу» открывает окно быстрого добавления; «Поиск» появится
 /// вместе со своим экраном.
@@ -93,6 +95,7 @@ class Sidebar extends ConsumerWidget {
       for (final l in ws.labels)
         if (l.isFavorite) l,
     ];
+    final favoriteFilters = ws.favoriteFilters;
     return [
       SidebarNavItem(
         icon: Icons.add_circle,
@@ -136,11 +139,13 @@ class Sidebar extends ConsumerWidget {
         icon: Icons.grid_view_outlined,
         label: l10n.filtersAndLabels,
         count: 0,
-        // Метка из «Избранного» подсвечивается там, а не здесь.
+        // Метка и фильтр из «Избранного» подсвечиваются там, а не здесь.
         selected:
             location == '/filters-labels' ||
             (location.startsWith('/label/') &&
-                !favoriteLabels.any((l) => location == '/label/${l.id}')),
+                !favoriteLabels.any((l) => location == '/label/${l.id}')) ||
+            (location.startsWith('/filter/') &&
+                !favoriteFilters.any((f) => location == '/filter/${f.id}')),
         onTap: () => navigate(context, '/filters-labels'),
       ),
       if (conflicts > 0)
@@ -158,7 +163,9 @@ class Sidebar extends ConsumerWidget {
             showConflictsScreen(GoRouter.of(context));
           },
         ),
-      if (favorites.isNotEmpty || favoriteLabels.isNotEmpty) ...[
+      if (favorites.isNotEmpty ||
+          favoriteLabels.isNotEmpty ||
+          favoriteFilters.isNotEmpty) ...[
         SidebarGroupHeader(label: l10n.favorites),
         for (final p in favorites)
           ProjectDropSlot(
@@ -176,6 +183,13 @@ class Sidebar extends ConsumerWidget {
             label: l,
             count: ws.labelTaskCount(l.id),
             selected: location == '/label/${l.id}',
+          ),
+        // Группы — проекты, метки, фильтры, каждая в порядке своего списка.
+        for (final f in favoriteFilters)
+          FilterTile(
+            key: ValueKey('fav-filter-${f.id}'),
+            filter: f,
+            selected: location == '/filter/${f.id}',
           ),
       ],
       SidebarGroupHeader(
