@@ -131,6 +131,9 @@ abstract class ConflictCard with _$ConflictCard {
 
     /// У метки задачи — название задачи ([title] — имя метки).
     String? ownerTitle,
+
+    /// У метки задачи — id задачи: спор помечает её строку и окно.
+    String? ownerId,
     required bool isDelete,
     required List<String> conflictIds,
 

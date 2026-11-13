@@ -6,6 +6,7 @@ import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
 import '../logic/due_dates.dart';
+import '../state/selection.dart';
 import '../state/today.dart';
 import 'scheduler_layout.dart';
 import 'task_actions.dart';
@@ -63,6 +64,10 @@ Future<void> showTaskRowMenu(
   final id = task.id;
   // Строка, откуда открыли меню: её список даёт панели соседей для `J`/`K`.
   final rowContext = context;
+  // Тост — в мессенджер строки (окна задачи, если меню открыто из него): меню
+  // лежит в корневом навигаторе и нашло бы мессенджер приложения под
+  // затемнением окна.
+  final messenger = ScaffoldMessenger.of(context);
   await showMenu<void>(
     context: context,
     position: RelativeRect.fromRect(anchor, Offset.zero & overlay.size),
@@ -74,6 +79,9 @@ Future<void> showTaskRowMenu(
         icon: Icons.edit_outlined,
         act: (context, ref, task) {
           final root = Navigator.of(context, rootNavigator: true).context;
+          // Выделение списка снимается, как обычным кликом по строке
+          // (`TaskRow._open`): иначе `Shift+Delete` в окне задачи не сработает.
+          ref.read(taskSelectionProvider.notifier).clear();
           closeTaskMenu(context);
           // Строка ушла из списка, пока меню было открыто, — панель без
           // соседей.
@@ -89,9 +97,21 @@ Future<void> showTaskRowMenu(
         title: l10n.fieldDue,
         icons: (task) => [
           for (final (quick, icon, label) in quickDueOptions(l10n))
-            (icon, label, null, false, _quickDue(quick)),
-          (Icons.block, l10n.noDue, null, false, removeDue),
-          (Icons.more_horiz, l10n.pickDate, null, false, editDue),
+            (icon, label, null, false, _quickDue(quick, messenger)),
+          (
+            Icons.block,
+            l10n.noDue,
+            null,
+            false,
+            (c, r, t) => removeDue(c, r, t, messenger: messenger),
+          ),
+          (
+            Icons.more_horiz,
+            l10n.pickDate,
+            null,
+            false,
+            (c, r, t) => editDue(c, r, t, messenger: messenger),
+          ),
         ],
       ),
       TaskMenuIcons(
@@ -104,7 +124,7 @@ Future<void> showTaskRowMenu(
               l10n.priorityN(p),
               p,
               task.priority == p,
-              _priority(p),
+              _priority(p, messenger),
             ),
         ],
       ),
@@ -113,13 +133,16 @@ Future<void> showTaskRowMenu(
         id: id,
         text: l10n.actionMoveTo,
         icon: Icons.drive_file_move_outline,
-        act: _afterClose(moveTaskWith),
+        act: _afterClose(
+          (context, container, task) =>
+              moveTaskWith(context, container, task, messenger: messenger),
+        ),
       ),
       TaskMenuEntry(
         id: id,
         text: l10n.fieldLabels,
         icon: Icons.label_outline,
-        act: editLabels,
+        act: (c, r, t) => editLabels(c, r, t, messenger: messenger),
       ),
       TaskMenuEntry(
         id: id,
@@ -129,6 +152,7 @@ Future<void> showTaskRowMenu(
           (context, container, task) => runCommand(
             context,
             () => container.read(taskCommandsProvider).duplicate(task.id),
+            messenger: messenger,
           ),
         ),
       ),
@@ -150,22 +174,25 @@ Future<void> showTaskRowMenu(
 
 /// Быстрый срок — как быстрый вариант планировщика: время, пояс и правило
 /// остаются, у повторяющейся задачи переносится только вхождение.
-TaskMenuAct _quickDue(QuickDue quick) => (context, ref, task) {
-  final day = isoDate(quickDueDate(quick, ref.read(todayProvider)));
-  return runWithUndo(
-    context,
-    AppLocalizations.of(context).dueChanged,
-    () => ref
-        .read(taskCommandsProvider)
-        .setDue(task.id, dueOnDate(task.due, day)),
-  );
-};
+TaskMenuAct _quickDue(QuickDue quick, ScaffoldMessengerState messenger) =>
+    (context, ref, task) {
+      final day = isoDate(quickDueDate(quick, ref.read(todayProvider)));
+      return runWithUndo(
+        context,
+        AppLocalizations.of(context).dueChanged,
+        () => ref
+            .read(taskCommandsProvider)
+            .setDue(task.id, dueOnDate(task.due, day)),
+        messenger: messenger,
+      );
+    };
 
 /// Приоритет — как клавиши `1–4`: без тоста.
-TaskMenuAct _priority(int p) =>
+TaskMenuAct _priority(int p, ScaffoldMessengerState messenger) =>
     (context, ref, task) => runCommand(
       context,
       () => ref.read(taskCommandsProvider).setPriority(task.id, p),
+      messenger: messenger,
     );
 
 /// Действие после закрытия меню: окна и тост — от корневого навигатора, а

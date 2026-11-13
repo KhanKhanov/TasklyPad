@@ -8,10 +8,8 @@ import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../shell/ui/shell_keys.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
-import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_drag.dart';
 import '../../tasks/ui/task_order.dart';
 import '../state/upcoming_day.dart';
@@ -19,6 +17,7 @@ import '../state/view_options.dart';
 import 'day_titles.dart';
 import 'overdue_block.dart';
 import 'upcoming_day_view.dart';
+import 'upcoming_keys.dart';
 import 'view_parts.dart';
 import 'view_sort_keys.dart';
 import 'week_strip.dart';
@@ -194,90 +193,79 @@ class _UpcomingScreenState extends ConsumerState<UpcomingScreen> {
     );
     return ViewSortKeys(
       viewType: ViewType.upcoming,
-      child: Shortcuts(
-        shortcuts: projectShortcuts,
-        child: Actions(
-          actions: {
-            AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
-              blocked: () => ShellKeys.sequencePending(context),
-              _addInSelected,
-            ),
-            AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
-              blocked: () => ShellKeys.sequencePending(context),
-              _addInSelected,
-            ),
-          },
-          child: Focus(
-            autofocus: true,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-                // Порядок вида и у заголовка: «Выбрать задачи» в его «⋯».
-                child: TaskOrderScope(
-                  order: _order,
-                  child: Padding(
-                    // Слева 12 + поле под ручку 20 у строк и заголовков.
-                    padding: const EdgeInsets.fromLTRB(12, 8, 32, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        DragGutter(
-                          child: ViewHeader(
-                            title: l10n.upcomingView,
-                            viewType: ViewType.upcoming,
-                          ),
+      child: UpcomingKeys(
+        selected: selected,
+        today: today,
+        onSelect: _select,
+        onAdd: _addInSelected,
+        child: Focus(
+          autofocus: true,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+              // Порядок вида и у заголовка: «Выбрать задачи» в его «⋯».
+              child: TaskOrderScope(
+                order: _order,
+                child: Padding(
+                  // Слева 12 + поле под ручку 20 у строк и заголовков.
+                  padding: const EdgeInsets.fromLTRB(12, 8, 32, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DragGutter(
+                        child: ViewHeader(
+                          title: l10n.upcomingView,
+                          viewType: ViewType.upcoming,
                         ),
-                        DragGutter(
-                          child: WeekStrip(
-                            selected: selected,
-                            today: today,
-                            onSelect: _select,
-                          ),
+                      ),
+                      DragGutter(
+                        child: WeekStrip(
+                          selected: selected,
+                          today: today,
+                          onSelect: _select,
                         ),
-                        Expanded(
-                          child: TaskOrderScope(
-                            order: _order,
-                            child:
-                                NotificationListener<ScrollUpdateNotification>(
-                                  // Только сам список: поле ввода редактора дня
-                                  // тоже прокручивается (длинное название).
-                                  onNotification: (n) {
-                                    if (n.depth == 0 &&
-                                        n.metrics.axis == Axis.vertical) {
-                                      _scheduleFollow();
-                                    }
-                                    return false;
-                                  },
-                                  child: CustomScrollView(
-                                    key: _viewport,
-                                    controller: _scroll,
-                                    // Выбранный день — в начале; при выбранном
-                                    // сегодня «Просрочено» — над ним, тоже видно.
-                                    center: at == 0 && overdueSliver != null
-                                        ? _overdueKey
-                                        : _centerKey,
-                                    slivers: [
-                                      if (at > 0) ...[
-                                        ?overdueSliver,
-                                        SliverList.builder(
-                                          itemCount: at,
-                                          itemBuilder: (_, i) =>
-                                              day(at - 1 - i),
-                                        ),
-                                      ] else
-                                        ?overdueSliver,
-                                      centerList,
-                                      const SliverPadding(
-                                        padding: EdgeInsets.only(bottom: 48),
-                                      ),
-                                    ],
+                      ),
+                      Expanded(
+                        child: TaskOrderScope(
+                          order: _order,
+                          child: NotificationListener<ScrollUpdateNotification>(
+                            // Только сам список: поле ввода редактора дня
+                            // тоже прокручивается (длинное название).
+                            onNotification: (n) {
+                              if (n.depth == 0 &&
+                                  n.metrics.axis == Axis.vertical) {
+                                _scheduleFollow();
+                              }
+                              return false;
+                            },
+                            child: CustomScrollView(
+                              key: _viewport,
+                              controller: _scroll,
+                              // Выбранный день — в начале; при выбранном
+                              // сегодня «Просрочено» — над ним, тоже видно.
+                              center: at == 0 && overdueSliver != null
+                                  ? _overdueKey
+                                  : _centerKey,
+                              slivers: [
+                                if (at > 0) ...[
+                                  ?overdueSliver,
+                                  SliverList.builder(
+                                    itemCount: at,
+                                    itemBuilder: (_, i) => day(at - 1 - i),
                                   ),
+                                ] else
+                                  ?overdueSliver,
+                                centerList,
+                                const SliverPadding(
+                                  padding: EdgeInsets.only(bottom: 48),
                                 ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -115,6 +115,46 @@ void main() {
     expect(await meta.notifiedConflicts(), isEmpty);
   });
 
+  test('метку сняли на ПК, на телефоне сняли и поставили снова — карточка '
+      'метки задачи знает задачу-владельца (пометка в строке задачи, 1Б '
+      'M4.13)', () async {
+    final label = await onPc.labels.add(name: 'дом');
+    final task = await onPc.tasks.add(content: 'Купить', labelIds: {label});
+    await syncBoth();
+
+    await onPc.tasks.setLabels(task, {});
+    await onPhone.tasks.setLabels(task, {});
+    phone.advance(const Duration(seconds: 1));
+    await onPhone.tasks.setLabels(task, {label});
+    await syncBoth();
+
+    for (final dev in [pc, phone]) {
+      final card = (await repoOf(dev).load()).single;
+      expect(card.entity, ConflictEntity.taskLabel);
+      expect(card.title, 'дом');
+      expect(card.ownerTitle, 'Купить');
+      expect(card.ownerId, task);
+    }
+  });
+
+  test('карточки задачи и проекта — без задачи-владельца', () async {
+    final project = await onPc.projects.add(name: 'Дом');
+    final task = await onPc.tasks.add(content: 'a', projectId: project);
+    await syncBoth();
+    await onPc.tasks.rename(task, 'b');
+    await onPhone.tasks.rename(task, 'c');
+    await onPc.projects.rename(project, 'Дача');
+    await onPhone.projects.rename(project, 'Сад');
+    await syncBoth();
+
+    final cards = await repoOf(pc).load();
+    expect(cards.map((c) => c.entity), {
+      ConflictEntity.task,
+      ConflictEntity.project,
+    });
+    expect(cards.map((c) => c.ownerId), everyElement(isNull));
+  });
+
   test('перенос задачи в разные проекты и разделы — одна карточка на оба '
       'поля; выбор ранней стороны переносит целиком на обоих', () async {
     final work = await onPc.projects.add(name: 'Работа');

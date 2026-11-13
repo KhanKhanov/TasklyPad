@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../../common/ui/ui_kit.dart';
 import 'label_menu.dart';
 import '../../shell/ui/sidebar_selection.dart';
@@ -60,6 +62,11 @@ class _LabelTileState extends State<LabelTile> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: textColor, fontSize: 14),
                   ),
+                ),
+                ConflictMark(
+                  entity: ConflictEntity.label,
+                  id: l.id,
+                  iconOnly: true,
                 ),
                 // Меню всегда в дереве (как у проекта): открытое меню
                 // перекрывает строку, и кнопка, убранная из дерева при уходе

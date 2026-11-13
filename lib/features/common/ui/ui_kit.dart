@@ -79,12 +79,15 @@ String rejectMessage(AppLocalizations l10n, RejectReason reason) =>
     };
 
 /// Выполнить действие; отказ правилами — короткое сообщение внизу экрана.
-Future<void> runCommand(BuildContext context, Future<void> Function() action) =>
-    runGuarded(
-      ScaffoldMessenger.of(context),
-      AppLocalizations.of(context),
-      action,
-    );
+Future<void> runCommand(
+  BuildContext context,
+  Future<void> Function() action, {
+  ScaffoldMessengerState? messenger,
+}) => runGuarded(
+  messenger ?? ScaffoldMessenger.of(context),
+  AppLocalizations.of(context),
+  action,
+);
 
 final Logger _commandLogger = Logger();
 

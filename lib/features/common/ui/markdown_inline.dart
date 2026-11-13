@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:markdown/markdown.dart' as md;
 
@@ -37,12 +38,24 @@ class MarkdownInline extends StatefulWidget {
     required this.style,
     this.maxLines,
     this.overflow,
+    this.linksEnabled = true,
+    this.onTapInstead,
   });
 
   final String text;
   final TextStyle style;
   final int? maxLines;
   final TextOverflow? overflow;
+
+  /// `false` — нажатие на ссылку ссылку не открывает (строка в режиме
+  /// выделения): вместо этого [onTapInstead]. То же при нажатых `Ctrl` и
+  /// `Shift`: с ними нажатие — выделение строки (help «Add or manage multiple
+  /// tasks»).
+  final bool linksEnabled;
+
+  /// Что делать с нажатием, которое не открывает ссылку: отдать строке под
+  /// текстом (иначе нажатие на ссылку съедено ею и строка его не видит).
+  final VoidCallback? onTapInstead;
 
   @override
   State<MarkdownInline> createState() => _MarkdownInlineState();
@@ -74,7 +87,18 @@ class _MarkdownInlineState extends State<MarkdownInline> {
 
   TapGestureRecognizer _link(String? href) {
     if (_used == _links.length) _links.add(TapGestureRecognizer());
-    return _links[_used++]..onTap = () => openLink(context, href);
+    return _links[_used++]
+      ..onTap = () {
+        final keys = HardwareKeyboard.instance;
+        if (widget.onTapInstead != null &&
+            (!widget.linksEnabled ||
+                keys.isControlPressed ||
+                keys.isShiftPressed)) {
+          widget.onTapInstead?.call();
+        } else {
+          openLink(context, href);
+        }
+      };
   }
 
   @override

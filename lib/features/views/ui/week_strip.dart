@@ -30,6 +30,23 @@ class WeekStrip extends StatelessWidget {
   static DateTime _monday(DateTime day) =>
       DateTime(day.year, day.month, day.day - (day.weekday - 1));
 
+  /// День, на который ведёт стрелка «Предыдущая неделя» (и `Shift+←`): та же
+  /// неделя раньше, но не раньше [today]; `null` — назад уже некуда.
+  static DateTime? previousWeek(DateTime selected, DateTime today) {
+    final monday = _monday(selected);
+    if (!monday.isAfter(today)) return null;
+    final previous = DateTime(monday.year, monday.month, monday.day - 7);
+    return previous.isBefore(today) ? today : previous;
+  }
+
+  /// День, на который ведёт стрелка «Следующая неделя» (и `Shift+→`): понедельник
+  /// следующей недели; `null` — дальше [lastDay] не уходим.
+  static DateTime? nextWeek(DateTime selected, DateTime today) {
+    final monday = _monday(selected);
+    final next = DateTime(monday.year, monday.month, monday.day + 7);
+    return next.isAfter(lastDay(today)) ? null : next;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -37,8 +54,8 @@ class WeekStrip extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final last = lastDay(today);
     final monday = _monday(selected);
-    final previous = DateTime(monday.year, monday.month, monday.day - 7);
-    final next = DateTime(monday.year, monday.month, monday.day + 7);
+    final previous = previousWeek(selected, today);
+    final next = nextWeek(selected, today);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -69,14 +86,12 @@ class WeekStrip extends StatelessWidget {
             IconButton(
               tooltip: l10n.previousWeek,
               icon: const Icon(Icons.chevron_left),
-              onPressed: monday.isAfter(today)
-                  ? () => onSelect(previous.isBefore(today) ? today : previous)
-                  : null,
+              onPressed: previous == null ? null : () => onSelect(previous),
             ),
             IconButton(
               tooltip: l10n.nextWeek,
               icon: const Icon(Icons.chevron_right),
-              onPressed: next.isAfter(last) ? null : () => onSelect(next),
+              onPressed: next == null ? null : () => onSelect(next),
             ),
             TextButton(
               onPressed: selected == today ? null : () => onSelect(today),

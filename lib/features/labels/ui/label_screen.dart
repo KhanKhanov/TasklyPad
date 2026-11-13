@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
 import '../../../domain/view_options.dart';
@@ -10,6 +11,7 @@ import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../../common/ui/layout.dart';
 import '../../shell/ui/shell_keys.dart';
 import '../../tasks/ui/task_actions.dart';
@@ -142,6 +144,11 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      ConflictBanner(
+                        entity: ConflictEntity.label,
+                        id: label.id,
+                        margin: const EdgeInsets.only(bottom: 8),
                       ),
                       if (grouped)
                         GroupedTaskList(

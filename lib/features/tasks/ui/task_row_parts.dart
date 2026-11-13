@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/markdown_text.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/markdown_inline.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../state/today.dart';
 import 'due_ui.dart';
 import 'task_actions.dart';
@@ -92,10 +94,18 @@ class TaskText extends ConsumerWidget {
     required this.ws,
     this.onToggleCollapse,
     this.showProject = false,
+    this.linksEnabled = true,
+    this.onRowTap,
   });
 
   final Task task;
   final Workspace ws;
+
+  /// `false` — ссылки в тексте не открываются (режим выделения строк).
+  final bool linksEnabled;
+
+  /// Нажатие строки: его получает нажатие на ссылку, которая не открывается.
+  final VoidCallback? onRowTap;
 
   /// Чип «# Проект / Раздел» — в списках из разных проектов (экран метки).
   final bool showProject;
@@ -111,6 +121,7 @@ class TaskText extends ConsumerWidget {
     final due = task.due;
     final deadline = task.deadline;
     final small = TextStyle(fontSize: 12, color: palette.textSecondary);
+    final conflicted = isInConflict(ref, ConflictEntity.task, task.id);
     final chips = <Widget>[
       if (progress.total > 0)
         _Chip(
@@ -157,6 +168,8 @@ class TaskText extends ConsumerWidget {
                 ? palette.textSecondary
                 : projectColor(project.color),
           ),
+      // Спор о задаче или её метках; не нажимается, как метки.
+      if (conflicted) ConflictMark(entity: ConflictEntity.task, id: task.id),
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
@@ -165,6 +178,8 @@ class TaskText extends ConsumerWidget {
         children: [
           MarkdownInline(
             task.content,
+            linksEnabled: linksEnabled,
+            onTapInstead: onRowTap,
             style: TextStyle(
               fontSize: 14,
               color: task.isCompleted
@@ -179,6 +194,8 @@ class TaskText extends ConsumerWidget {
             MarkdownInline(
               first,
               maxLines: 1,
+              linksEnabled: linksEnabled,
+              onTapInstead: onRowTap,
               overflow: TextOverflow.ellipsis,
               style: small,
             ),

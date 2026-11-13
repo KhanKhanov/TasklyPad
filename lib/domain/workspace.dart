@@ -506,6 +506,13 @@ final class Workspace {
   /// Число активных задач проекта (с подзадачами) — счётчик в сайдбаре.
   int activeTaskCount(String projectId) => _activeCounts[projectId] ?? 0;
 
+  /// Задача активна — входит в [activeTaskCount] своего проекта: не
+  /// завершена, предки не завершены, корень в активном проекте и разделе.
+  bool isTaskActive(String id) {
+    final t = _tasks[id];
+    return t != null && _isActive(t);
+  }
+
   /// Счётчики всех проектов — одним проходом по задачам на снимок, а не
   /// проходом на каждый проект в сайдбаре.
   late final Map<String, int> _activeCounts = () {

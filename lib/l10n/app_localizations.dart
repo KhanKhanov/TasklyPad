@@ -1214,6 +1214,24 @@ abstract class AppLocalizations {
   /// **'Одно и то же изменили на двух устройствах. Пока вы не выбрали, действует более поздняя правка.'**
   String get conflictsHint;
 
+  /// Пометка спорной сущности в строке, заголовке и сайдбаре
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфликт'**
+  String get conflictMark;
+
+  /// Подсказка и текст плашки у спорной сущности
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменено на двух устройствах'**
+  String get conflictMarkTooltip;
+
+  /// Кнопка плашки: открыть окно с карточками конфликта
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать'**
+  String get conflictChoose;
+
   /// Пустой экран «Конфликты»
   ///
   /// In ru, this message translates to:

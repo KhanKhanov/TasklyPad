@@ -26,15 +26,17 @@ class TaskEndSlot extends StatelessWidget {
   /// а не конец списка.
   final bool atStart;
 
+  /// Дерево постоянно, как у [TaskDragRow]: слот без [drop] просто отвечает
+  /// «не моё». Иначе смена сортировки пересоздала бы открытый редактор.
   @override
   Widget build(BuildContext context) {
     final drop = this.drop;
-    if (drop == null || drop is OverdueDrop) return child;
     return DropMarker(
-      owner: drop.endOwner,
+      owner: drop?.endOwner ?? 'end:none',
       child: DropSlotRegion(
-        resolve: (query, box) =>
-            taskDropPlace(drop, query, box, items: items, atStart: atStart),
+        resolve: (query, box) => drop == null || drop is OverdueDrop
+            ? null
+            : taskDropPlace(drop, query, box, items: items, atStart: atStart),
         child: child,
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,9 +23,9 @@ const Duration undoToastDuration = Duration(seconds: 5);
 ///
 /// Пока тост виден, `Ctrl+Z` делает то же, что кнопка (help «Use keyboard
 /// shortcuts»: «Click Undo or press Ctrl+Z before the message closes»), кроме
-/// поля ввода — там это отмена правки текста. Клавишу слушает содержимое
-/// тоста ([_UndoShortcut]): обработчик живёт, пока тост на экране, и
-/// снимается и при закрытии окна задачи вместе с её `ScaffoldMessenger`.
+/// поля ввода — там это отмена правки текста. Видимые тосты (оболочки и окна
+/// задачи) — один общий стек: клавиша отменяет последнее показанное действие,
+/// а не все сразу. Запись живёт, пока тост на экране ([_UndoShortcut]).
 void showUndoToast(
   ScaffoldMessengerState messenger,
   AppLocalizations l10n,
@@ -32,49 +33,67 @@ void showUndoToast(
   UndoAction undo,
 ) {
   var used = false;
-  late final bool Function() undoByKey;
   void run() {
     if (used) return;
     used = true;
-    if (identical(_currentUndoToast[messenger], undoByKey)) {
-      _currentUndoToast[messenger] = null;
-    }
     unawaited(runGuarded(messenger, l10n, undo.call));
   }
 
   late final AppToast toast;
-  undoByKey = () {
+  final entry = _UndoEntry(messenger, () {
     run();
     toast.dismiss();
-    return true;
-  };
-  _currentUndoToast[messenger] = undoByKey;
+  });
+  // Уходящий прежний тост этого же мессенджера ещё на экране, пока новый
+  // ждёт очереди: `Ctrl+Z` отменяет последнее действие, а не то, чей тост
+  // виден.
+  _visibleUndos.removeWhere((e) => identical(e.messenger, messenger));
+  _visibleUndos.add(entry);
   messenger.hideCurrentSnackBar();
   toast = showAppToast(
     messenger,
     text: message,
     duration: undoToastDuration,
     action: (label: l10n.actionUndo, onPressed: run),
-    // Уходящий прежний тост ещё на экране, пока новый ждёт очереди: `Ctrl+Z`
-    // отменяет последнее действие, а не то, чей тост виден.
-    wrap: (body) => _UndoShortcut(
-      onUndo: () => _currentUndoToast[messenger]?.call() ?? false,
-      child: body,
-    ),
+    wrap: (body) => _UndoShortcut(entry: entry, child: body),
   );
 }
 
-/// Отмена последнего действия с тостом у каждого `ScaffoldMessenger`:
-/// `Ctrl+Z` относится только к нему. Ключ — сам мессенджер, поэтому запись
-/// уходит вместе с ним (окно задачи закрыто — запись собрана сборщиком).
-final Expando<bool Function()> _currentUndoToast = Expando('тост «Отменить»');
+/// Тост «Отменить», видимый сейчас: что сделает нажатие `Ctrl+Z`.
+class _UndoEntry {
+  _UndoEntry(this.messenger, this.fire);
+
+  final ScaffoldMessengerState messenger;
+  final VoidCallback fire;
+
+  /// Сколько экземпляров содержимого тоста на экране: эффект «джин» рисует
+  /// его несколько раз (полосками), и запись уходит, когда не осталось ни
+  /// одного.
+  int live = 0;
+}
+
+/// Видимые тосты «Отменить» всего приложения, последний — самый новый.
+final List<_UndoEntry> _visibleUndos = [];
+
+/// Событие `Ctrl+Z`, которое уже обработано, и результат: обработчик есть у
+/// каждого видимого тоста, а отменить нужно одно действие на одно нажатие.
+KeyEvent? _lastUndoEvent;
+bool _lastUndoHandled = false;
+
+bool _undoLast(KeyEvent event) {
+  if (identical(_lastUndoEvent, event)) return _lastUndoHandled;
+  _lastUndoEvent = event;
+  _visibleUndos.removeWhere((e) => !e.messenger.mounted);
+  if (_visibleUndos.isEmpty) return _lastUndoHandled = false;
+  _visibleUndos.removeLast().fire();
+  return _lastUndoHandled = true;
+}
 
 /// Содержимое тоста, которое слушает `Ctrl+Z`, пока стоит на экране.
 class _UndoShortcut extends StatefulWidget {
-  const _UndoShortcut({required this.onUndo, required this.child});
+  const _UndoShortcut({required this.entry, required this.child});
 
-  /// `true` — клавиша обработана.
-  final bool Function() onUndo;
+  final _UndoEntry entry;
   final Widget child;
 
   @override
@@ -85,12 +104,14 @@ class _UndoShortcutState extends State<_UndoShortcut> {
   @override
   void initState() {
     super.initState();
+    widget.entry.live++;
     HardwareKeyboard.instance.addHandler(_onKey);
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    if (--widget.entry.live == 0) _visibleUndos.remove(widget.entry);
     super.dispose();
   }
 
@@ -105,7 +126,7 @@ class _UndoShortcutState extends State<_UndoShortcut> {
         isTypingInTextField()) {
       return false;
     }
-    return widget.onUndo();
+    return _undoLast(event);
   }
 
   @override
@@ -167,12 +188,15 @@ Future<void> deleteTask(BuildContext context, WidgetRef ref, Task task) async {
 /// успеха. Действие ничего не изменило (повторное нажатие) — тоста нет:
 /// иначе пустая отмена заменила бы тост первого нажатия. Результат — отмена
 /// сделанного; `null`, если действие отказало или ничего не изменило.
+/// [messenger] — где показать тост, если не там, где стоит [context]: пункты
+/// меню лежат в корневом навигаторе, а тост нужен в окне задачи.
 Future<UndoAction?> runWithUndo(
   BuildContext context,
   String message,
-  Future<UndoAction> Function() action,
-) async {
-  final messenger = ScaffoldMessenger.of(context);
+  Future<UndoAction> Function() action, {
+  ScaffoldMessengerState? messenger,
+}) async {
+  messenger ??= ScaffoldMessenger.of(context);
   final l10n = AppLocalizations.of(context);
   UndoAction? undo;
   await runGuarded(messenger, l10n, () async => undo = await action());
@@ -228,4 +252,16 @@ const Map<ShortcutActivator, Intent> projectShortcuts = {
   SingleActivator(LogicalKeyboardKey.keyA): AddTaskBottomIntent(),
   SingleActivator(LogicalKeyboardKey.keyA, shift: true): AddTaskTopIntent(),
   SingleActivator(LogicalKeyboardKey.keyS): AddSectionIntent(),
+};
+
+/// Клавиши проекта и «Входящих»: [projectShortcuts] и на Android ещё
+/// `Ctrl+Shift+N` — то же, что `Shift+A` (help «Use keyboard shortcuts»: строка
+/// таблицы «mobile keyboard», «only works inside projects»). На Windows её нет:
+/// там `Ctrl+Shift+N` — «Открыть вид в новом окне» (M9, решение 2А «Ход
+/// M4.13»).
+Map<ShortcutActivator, Intent> projectScreenShortcuts() => {
+  ...projectShortcuts,
+  if (defaultTargetPlatform == TargetPlatform.android)
+    const SingleActivator(LogicalKeyboardKey.keyN, control: true, shift: true):
+        const AddTaskTopIntent(),
 };

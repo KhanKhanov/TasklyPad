@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/close_own_route.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../state/title_date_controller.dart';
 import 'task_dialog_layout.dart';
 import 'task_dialog_top_bar.dart';
@@ -192,7 +195,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
         if (!_closing) {
           _closing = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) Navigator.of(context).pop();
+            if (mounted) closeOwnRoute(context);
           });
         }
         return const SizedBox.shrink();
@@ -213,6 +216,7 @@ class _TaskDialogState extends ConsumerState<TaskDialog> {
       );
       return TaskDialogLayout(
         top: top,
+        banner: ConflictBanner(entity: ConflictEntity.task, id: task.id),
         main: _main(context, ws, task, readOnly),
         fields: TaskFields(task: task, ws: ws, readOnly: readOnly),
       );

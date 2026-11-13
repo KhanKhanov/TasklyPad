@@ -16,56 +16,11 @@ import '../../app/support/fake_conflict_notifier.dart';
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
 import '../settings/fake_sync.dart';
+import 'support/conflict_fixtures.dart';
 
 // Экран «Конфликты», пункт сайдбара и уведомление о новых конфликтах.
 // Конфликт — настоящий: второе устройство и обмен ops через движок. Локаль — en.
 void main() {
-  /// Задача «a», переименованная параллельно: здесь — в «mine», на другом
-  /// устройстве — позже [renames] раз, последний — в «theirs». Возвращает id
-  /// задачи.
-  ///
-  /// Каждый шаг с базой приложения — отдельным `runAsync` с кадрами между
-  /// ними: правка будит потоки экранов, их запросы идут в фейковом времени
-  /// теста, и следующий запрос к той же базе внутри одного `runAsync` ждал
-  /// бы их вечно.
-  Future<String> makeConflict(
-    WidgetTester tester,
-    TestDevice device, {
-    int renames = 1,
-  }) async {
-    final mutator = device.services.mutator;
-    final other = (await tester.runAsync(() => TestDevice.start(seed: 7)))!;
-    final id = (await tester.runAsync(
-      () => mutator.create(EntityTypes.task, {
-        TaskFields.content: 'a',
-        TaskFields.projectId: inboxProjectId,
-      }),
-    ))!;
-    await settle(tester);
-    final created = (await tester.runAsync(device.ownOps))!;
-    await settle(tester);
-    await tester.runAsync(() async {
-      await other.services.engine.applyAll(created);
-      for (var i = renames; i > 0; i--) {
-        other.advance(const Duration(minutes: 1));
-        await other.services.mutator.update(EntityTypes.task, id, {
-          TaskFields.content: i == 1 ? 'theirs' : 'theirs $i',
-        });
-      }
-    });
-    await tester.runAsync(
-      () => mutator.update(EntityTypes.task, id, {TaskFields.content: 'mine'}),
-    );
-    await settle(tester);
-    final theirs = (await tester.runAsync(other.ownOps))!;
-    await tester.runAsync(() async {
-      await device.services.engine.applyAll(theirs);
-      await other.db.close();
-    });
-    await settle(tester);
-    return id;
-  }
-
   ProviderContainer containerOf(WidgetTester tester) =>
       ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
 

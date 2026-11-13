@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logger/logger.dart';
 import 'package:oplog_sync/oplog_sync.dart' show uuidV8;
@@ -29,7 +30,6 @@ final class ToastConflictNotifier implements ConflictNotifier {
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
   final StreamController<void> _opened = StreamController.broadcast();
-  Future<void>? _window;
   Future<bool>? _ready;
   int _nextId = 0;
 
@@ -39,13 +39,36 @@ final class ToastConflictNotifier implements ConflictNotifier {
   String get _activator =>
       _profile == null ? _guid : uuidV8(['planner.toast', _profile]);
 
-  Future<void> _ensureWindow() => _window ??= windowManager.ensureInitialized();
+  /// Окно приложения (window_manager 0.6: интерфейс nativeapi), запомненное.
+  /// `getCurrent()` на Windows — `GetActiveWindow()`: окно есть, только пока
+  /// приложение активно, а по клику на уведомление оно обычно свёрнуто или
+  /// под другим окном (ревью M4.13). Поэтому окно запоминается, когда
+  /// приложение становится активным ([_lifecycle]), и при каждом обращении,
+  /// пока оно впереди. При запуске ([start] — до первого кадра) окно ещё не
+  /// показано.
+  Window? _window;
+
+  /// Живёт всё время работы приложения, как и сам уведомитель.
+  AppLifecycleListener? _lifecycle;
+
+  Window? get _appWindow {
+    try {
+      return _window = WindowManager.instance.getCurrent() ?? _window;
+    } on ArgumentError catch (error, stackTrace) {
+      // Нативной библиотеки nativeapi нет — окном не управляем.
+      _log.w(
+        'Окно приложения недоступно',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return _window;
+    }
+  }
 
   /// Неудачная инициализация не запоминается: следующий вызов попробует
   /// снова.
   Future<bool> _ensurePlugin() => _ready ??=
       () async {
-        await _ensureWindow();
         final ok = await _plugin.initialize(
           settings: InitializationSettings(
             windows: WindowsInitializationSettings(
@@ -65,8 +88,14 @@ final class ToastConflictNotifier implements ConflictNotifier {
 
   Future<void> _onOpened() async {
     try {
-      await windowManager.show();
-      await windowManager.focus();
+      final window = _appWindow;
+      if (window == null) {
+        _log.w('Окно приложения ещё не найдено — не показано по клику');
+      } else {
+        if (window.isMinimized) window.restore();
+        window.show();
+        window.focus();
+      }
     } on Object catch (error, stackTrace) {
       // Окно не вышло на передний план — экран «Конфликты» всё равно откроется.
       _log.w('Окно не показано по клику', error: error, stackTrace: stackTrace);
@@ -76,6 +105,8 @@ final class ToastConflictNotifier implements ConflictNotifier {
 
   @override
   Future<void> start() async {
+    _lifecycle ??= AppLifecycleListener(onResume: () => _appWindow);
+    _appWindow;
     if (!await _ensurePlugin()) {
       _log.w('Уведомления Windows не инициализированы');
     }
@@ -83,10 +114,11 @@ final class ToastConflictNotifier implements ConflictNotifier {
 
   @override
   Future<bool> isAppActive() async {
-    await _ensureWindow();
-    return await windowManager.isVisible() &&
-        !await windowManager.isMinimized() &&
-        await windowManager.isFocused();
+    final window = _appWindow;
+    return window != null &&
+        window.isVisible &&
+        !window.isMinimized &&
+        window.isFocused;
   }
 
   @override

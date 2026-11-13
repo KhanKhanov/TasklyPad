@@ -24,10 +24,15 @@ void main() {
       app = AppCommands(device);
     });
 
-    test('описание пишется без пробелов по краям и стирается пустым', () async {
+    test('описание хранится как введено — блок кода отступом цел; только из '
+        'пробелов — пустое; стирается пустым', () async {
       final p = await app.projects.add(name: 'Work');
-      await app.projects.setDescription(p, '  Квартальный план \n');
-      expect((await app.read()).project(p)!.description, 'Квартальный план');
+      const code = '    final x = 1;\n    print(x);\n';
+      await app.projects.setDescription(p, code);
+      expect((await app.read()).project(p)!.description, code);
+      await app.projects.setDescription(p, '  \n\t ');
+      expect((await app.read()).project(p)!.description, '');
+      await app.projects.setDescription(p, 'План');
       await app.projects.setDescription(p, '');
       expect((await app.read()).project(p)!.description, '');
     });
@@ -126,6 +131,28 @@ void main() {
         expect(find.text('Add a description'), findsOneWidget);
         final ws = await tester.runAsync(() => AppCommands(device).read());
         expect(ws!.project(id)!.description, '');
+      });
+    });
+
+    testWidgets('закрытие редактора («Save», «Cancel», Esc) не обращается к '
+        'освобождённому контроллеру: ошибок кадра нет', (tester) async {
+      await withApp(tester, (device) async {
+        await open(tester, device);
+        for (final close in [
+          () => tester.tap(find.widgetWithText(FilledButton, 'Save')),
+          () => tester.tap(find.text('Cancel')),
+          () => tester.sendKeyEvent(LogicalKeyboardKey.escape),
+        ]) {
+          await tester.tap(find.text('Add a description'));
+          await tester.pumpAndSettle();
+          await tester.enterText(find.byType(TextField), '');
+          await tester.pump();
+          await close();
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+          await settle(tester);
+          expect(find.byType(TextField), findsNothing);
+        }
       });
     });
 

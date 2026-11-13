@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
 import '../../../domain/view_options.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflict_mark.dart';
 import '../../sections/ui/section_editor.dart';
 import '../../tasks/ui/select_tasks_button.dart';
 import '../../views/ui/view_options_button.dart';
@@ -78,6 +80,11 @@ class ProjectHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 title,
+                ConflictBanner(
+                  entity: ConflictEntity.project,
+                  id: project.id,
+                  margin: const EdgeInsets.only(bottom: 8),
+                ),
                 ProjectDescription(project: project, readOnly: archived),
               ],
             ),

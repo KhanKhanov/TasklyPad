@@ -5,6 +5,7 @@ import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/view_options.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/shielded_menu_anchor.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/view_options.dart';
 
@@ -62,7 +63,7 @@ class ViewOptionsButton extends ConsumerWidget {
     final sorting = sortings.contains(options.sorting)
         ? options.sorting
         : Sorting.byDefault;
-    return MenuAnchor(
+    return ShieldedMenuAnchor(
       menuChildren: [
         if (groupings.length > 1)
           submenu(l10n.viewGrouping, _groupingText(l10n, options.grouping), [

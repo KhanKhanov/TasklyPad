@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/conflicts.dart';
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
+import '../../conflicts/ui/conflict_cards_dialog.dart';
+import '../../conflicts/ui/conflict_mark.dart';
+import '../state/section_renaming.dart';
 import 'section_editor.dart';
 
 enum _SectionAction { edit, move, duplicate, archive, unarchive, delete }
@@ -38,6 +42,32 @@ class SectionBlock extends ConsumerStatefulWidget {
 class _SectionBlockState extends ConsumerState<SectionBlock> {
   bool _editing = false;
 
+  // Берётся сразу: в `dispose` читать провайдеры через `ref` уже нельзя.
+  late final SectionRenaming _renaming;
+
+  @override
+  void initState() {
+    super.initState();
+    _renaming = ref.read(sectionRenamingProvider.notifier);
+  }
+
+  /// Правка имени: пока поле открыто, раздел не перетаскивается
+  /// ([sectionRenamingProvider]).
+  void _setEditing(bool on) {
+    setState(() => _editing = on);
+    _renaming.set(widget.section.id, on: on);
+  }
+
+  @override
+  void dispose() {
+    if (_editing) {
+      // Состояние провайдера нельзя менять, пока дерево разбирается.
+      final id = widget.section.id;
+      Future.microtask(() => _renaming.stopIfMounted(id));
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -50,9 +80,9 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
         submitLabel: l10n.actionSave,
         onSubmit: (name) async {
           await commands.rename(s.id, name);
-          if (mounted) setState(() => _editing = false);
+          if (mounted) _setEditing(false);
         },
-        onCancel: () => setState(() => _editing = false),
+        onCancel: () => _setEditing(false),
       );
     }
     return Container(
@@ -81,7 +111,7 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
                   child: GestureDetector(
                     onTap: widget.readOnly || s.isArchived
                         ? null
-                        : () => setState(() => _editing = true),
+                        : () => _setEditing(true),
                     child: Text(
                       s.name,
                       overflow: TextOverflow.ellipsis,
@@ -103,6 +133,19 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
                       fontSize: 12,
                     ),
                   ),
+                // Чип конфликта открывает карточки (нет конфликта — пусто).
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: ConflictMark(
+                    entity: ConflictEntity.section,
+                    id: s.id,
+                    onTap: () => showConflictCards(
+                      context,
+                      ConflictEntity.section,
+                      s.id,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -153,7 +196,7 @@ class _SectionBlockState extends ConsumerState<SectionBlock> {
     final s = widget.section;
     switch (action) {
       case _SectionAction.edit:
-        setState(() => _editing = true);
+        _setEditing(true);
       case _SectionAction.move:
         final target = await _pickProject(context, ref, s);
         if (target == null || !context.mounted) return;

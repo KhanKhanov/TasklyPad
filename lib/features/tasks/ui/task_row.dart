@@ -112,10 +112,14 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
     final key = event.logicalKey;
-    if (keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
     if (ShellKeys.sequencePending(context)) {
       return KeyEventResult.ignored;
     }
+    if (isEditShortcut(key)) {
+      _open();
+      return KeyEventResult.handled;
+    }
+    if (keys.isAltPressed || keys.isMetaPressed) return KeyEventResult.ignored;
     switch (key) {
       case LogicalKeyboardKey.enter
           when !keys.isControlPressed && !keys.isShiftPressed:
@@ -149,6 +153,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
         }
       },
       toggleSelected: _toggleSelected,
+      selectable: widget.selectable,
     );
   }
 
@@ -267,6 +272,8 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                       ws: widget.ws,
                       onToggleCollapse: _canCollapse ? _toggleCollapse : null,
                       showProject: widget.showProject,
+                      linksEnabled: !touchSelecting,
+                      onRowTap: _canSelect ? _onTap : null,
                     ),
                   ),
                   Visibility(

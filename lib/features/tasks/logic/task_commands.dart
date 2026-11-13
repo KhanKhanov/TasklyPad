@@ -70,7 +70,11 @@ final class TaskCommands {
     if (parentId != null && ws.taskDepth(parentId) + 1 > Limits.taskLevels) {
       throw const CommandRejected(RejectReason.tooDeep);
     }
-    checkRoom(ws, place.projectId, 1);
+    // Подзадача под выполненным родителем не активна и в лимит не идёт
+    // (О-81); архивный проект, архивный раздел и родителя в них [_place] уже
+    // отклонил.
+    final placeActive = parentId == null || ws.isTaskActive(parentId);
+    checkRoom(ws, place.projectId, placeActive ? 1 : 0);
     final siblings = ws.children(
       parentId,
       projectId: place.projectId,
@@ -315,14 +319,41 @@ final class TaskCommands {
   /// синхронизацией между чтением и записью, не посчитается по старому.
   Future<Undo> complete(String id, {bool resetSubtasks = false}) =>
       _mutator.batch(() async {
-        final ws = await _read();
-        final task = await _alive(id, ws);
-        final due = task.due;
-        if (due != null && due.isRecurring && !task.isCompleted) {
-          return _completeOccurrence(ws, task, due, forceReset: resetSubtasks);
-        }
-        return _completeTree(ws, id);
+        final steps = await _steps();
+        return _completeStep(steps, id, forceReset: resetSubtasks);
       });
+
+  /// [complete] каждой из [ids] по порядку — шаги действия над выделенными
+  /// одной транзакцией, по отмене на шаг. [snapshot] — снимок, уже
+  /// прочитанный в той же транзакции; перечитывается он, только когда
+  /// прошлый шаг изменил то, что читает следующий ([_Steps]).
+  Future<List<Undo>> completeEach(List<String> ids, {Workspace? snapshot}) =>
+      _mutator.batch(() async {
+        final steps = await _steps(snapshot);
+        return [for (final id in ids) await _completeStep(steps, id)];
+      });
+
+  /// Шаг [complete]: читает и меняет дерево задачи, а повторяющаяся со
+  /// сбросом подзадач — ещё и метки ([_labelRevival]).
+  Future<Undo> _completeStep(
+    _Steps steps,
+    String id, {
+    bool forceReset = false,
+  }) async {
+    final seen = await _alive(id, steps.ws);
+    final tree = _treeKey(steps.ws, id);
+    final ws = await steps.fresh([
+      tree,
+      if (seen.due?.isRecurring ?? false) _Steps.labels,
+    ]);
+    final task = await _alive(id, ws);
+    steps.changed([tree]);
+    final due = task.due;
+    if (due != null && due.isRecurring && !task.isCompleted) {
+      return _completeOccurrence(steps, ws, task, due, forceReset: forceReset);
+    }
+    return _completeTree(ws, id);
+  }
 
   /// «Завершить навсегда»: задача завершается вместе с незавершёнными
   /// подзадачами, срок и правило остаются как были (help «Reset a
@@ -349,7 +380,12 @@ final class TaskCommands {
   ///
   /// Момент выполнения — стенное время устройства: пояс срока, отличный от
   /// пояса устройства, не учитывается (решение 1А «Ход M3.4», О-64).
+  ///
+  /// Лимиты 300 задач в проекте и 500 меток сброс не проверяет (решение 3А
+  /// «Ход M4.13», [Limits]). «Отменить» возвращает и метки сброшенных
+  /// подзадач: связи с удалёнными метками и без созданных заново (О-70).
   Future<Undo> _completeOccurrence(
+    _Steps steps,
     Workspace ws,
     Task task,
     Due due, {
@@ -366,6 +402,7 @@ final class TaskCommands {
               if (s.isCompleted) s.id,
           ].take(resetSubtasksLimit).toList()
         : const <String>[];
+    final revival = _labelRevival(ws, reset);
     final undo = await _mutator.capture(
       [
         _dueTarget(task, next),
@@ -375,6 +412,7 @@ final class TaskCommands {
             TaskFields.completedAt,
             TaskFields.completedLabelNames,
           }),
+        ...revival.restored,
       ],
       // Запись уже есть (пришла с другого устройства) — «Отменить» вернёт
       // её прежнее время, а не удалит чужое выполнение.
@@ -384,6 +422,7 @@ final class TaskCommands {
           entityId: record,
           fields: {CompletionFields.completedAt},
         ),
+        ...revival.created,
       ],
     );
     await _mutator.update(EntityTypes.completion, record, {
@@ -401,7 +440,8 @@ final class TaskCommands {
         TaskFields.completedLabelNames: null,
       });
     }
-    await _reviveLabels(ws, reset);
+    await _applyRevival(revival);
+    if (!revival.isEmpty) steps.changed([_Steps.labels]);
     return undo;
   }
 
@@ -479,10 +519,37 @@ final class TaskCommands {
   /// ведёт: он восстанавливает прежние значения полей.
   ///
   /// Удалённые метки возвращённых задач возвращаются, как в Todoist
-  /// ([_reviveLabels]); снимок имён меток снимается. [Undo] (в интерфейсе его
-  /// нет) возвращает только поля задач и раздела, метки остаются.
-  Future<Undo> uncomplete(String id) async {
-    final ws = await _read();
+  /// ([_labelRevival]); снимок имён меток снимается. Лимит 500 меток при этом
+  /// не проверяется (решение 3А «Ход M4.13»). [Undo] (в интерфейсе его нет)
+  /// возвращает только поля задач и раздела, метки остаются.
+  Future<Undo> uncomplete(String id) => _mutator.batch(() async {
+    final steps = await _steps();
+    return _uncompleteStep(steps, id);
+  });
+
+  /// [uncomplete] каждой из [ids] по порядку — как [completeEach].
+  Future<List<Undo>> uncompleteEach(List<String> ids, {Workspace? snapshot}) =>
+      _mutator.batch(() async {
+        final steps = await _steps(snapshot);
+        return [for (final id in ids) await _uncompleteStep(steps, id)];
+      });
+
+  /// Шаг [uncomplete]: читает и меняет дерево задачи, раздел её корня (его
+  /// возврат из архива) и метки; места активных соседей и число активных
+  /// задач проекта после прошлых шагов берёт из [steps].
+  Future<Undo> _uncompleteStep(_Steps steps, String id) async {
+    await _alive(id, steps.ws);
+    final tree = _treeKey(steps.ws, id);
+    final rootSection = steps.ws.rootSectionOf(id);
+    final ws = await steps.fresh([
+      tree,
+      if (rootSection != null) _Steps.section(rootSection.id),
+      // Возврат раздела ставит его среди активных разделов проекта: раздел,
+      // возвращённый прошлым шагом, должен быть в снимке среди соседей.
+      if (rootSection != null && rootSection.isArchived)
+        _Steps.sections(steps.ws.rootProjectOf(id)),
+      _Steps.labels,
+    ]);
     var root = await _alive(id, ws);
     final ids = <String>[];
     for (String? t = id; t != null; t = ws.taskParent(t)) {
@@ -490,26 +557,37 @@ final class TaskCommands {
       if (root.isCompleted) ids.add(t);
     }
     if (ids.isEmpty) return _mutator.capture(const []);
-    // Активными становятся верхняя возвращаемая задача и всё её поддерево,
-    // кроме выполненных отдельно подзадач.
     final top = ids.last;
-    checkRoom(
-      ws,
-      ws.rootProjectOf(top),
-      {
-        for (final t in ws.taskSubtree(top))
-          if (!ws.task(t)!.isCompleted || ids.contains(t)) t,
-      }.length,
-    );
+    final projectId = ws.rootProjectOf(top);
     final section = ws.section(root.sectionId ?? '');
     final reinstateSection = section != null && section.isArchived;
+    // Активными становятся верхняя возвращаемая задача и её поддерево без
+    // выполненных отдельно подзадач и их потомков, а с возвратом раздела — и
+    // остальные задачи раздела (О-81). В архивном проекте — никто.
+    bool doneAfter(Task t) => t.isCompleted && !ids.contains(t.id);
+    final opening = ws.isProjectArchived(projectId)
+        ? 0
+        : openInTrees(ws, [
+            if (reinstateSection)
+              for (final r in ws.children(
+                null,
+                projectId: projectId,
+                sectionId: section.id,
+              ))
+                r.id
+            else
+              top,
+          ], done: doneAfter).length;
+    checkRoom(ws, projectId, opening, already: steps.addedTo(projectId));
 
-    // Ключи считаются до записи: соседи — незавершённые и не возвращаемые.
+    // Ключи считаются до записи: соседи — незавершённые (в том числе
+    // возвращённые прошлыми шагами) и не возвращаемые.
     final keys = <String, String>{
       for (final t in ids)
         t: ?_returnKey(t, ws.task(t)!.orderKey, [
           for (final s in _siblings(ws, ws.task(t)!))
-            if (!s.isCompleted && !ids.contains(s.id)) (s.id, s.orderKey),
+            if (!steps.isCompleted(s) && !ids.contains(s.id))
+              (s.id, steps.orderKey(s)),
         ]),
     };
     final sectionKey = reinstateSection
@@ -538,23 +616,34 @@ final class TaskCommands {
           },
         ),
     ]);
-    await _mutator.batch(() async {
-      for (final t in ids) {
-        await _mutator.update(EntityTypes.task, t, {
-          TaskFields.isCompleted: false,
-          TaskFields.completedAt: null,
-          TaskFields.completedLabelNames: null,
-          TaskFields.orderKey: ?keys[t],
-        });
-      }
-      if (reinstateSection) {
-        await _mutator.update(EntityTypes.section, section.id, {
-          SectionFields.isArchived: false,
-          SectionFields.orderKey: ?sectionKey,
-        });
-      }
-      await _reviveLabels(ws, ids);
-    });
+    for (final t in ids) {
+      await _mutator.update(EntityTypes.task, t, {
+        TaskFields.isCompleted: false,
+        TaskFields.completedAt: null,
+        TaskFields.completedLabelNames: null,
+        TaskFields.orderKey: ?keys[t],
+      });
+    }
+    if (reinstateSection) {
+      await _mutator.update(EntityTypes.section, section.id, {
+        SectionFields.isArchived: false,
+        SectionFields.orderKey: ?sectionKey,
+      });
+    }
+    final revival = _labelRevival(ws, ids);
+    await _applyRevival(revival);
+    steps
+      ..changed([
+        tree,
+        if (reinstateSection) ...[
+          _Steps.section(section.id),
+          _Steps.sections(projectId),
+        ],
+        if (!revival.isEmpty) _Steps.labels,
+      ])
+      ..reopened(projectId, opening, {
+        for (final t in ids) t: keys[t] ?? ws.task(t)!.orderKey,
+      });
     return undo;
   }
 
@@ -599,12 +688,17 @@ final class TaskCommands {
   /// [revivedLabelId] из id удалённой и имени: два устройства, вернувшие
   /// такие задачи офлайн, создают одну метку, а разные имена одной удалённой
   /// метки в снимках задач — разные метки.
-  Future<void> _reviveLabels(Workspace ws, List<String> ids) async {
+  ///
+  /// Только расчёт: пишет [_applyRevival], а «Отменить» берёт из результата,
+  /// что вернуть ([_Revival.restored]) и что удалить ([_Revival.created]).
+  static _Revival _labelRevival(Workspace ws, List<String> ids) {
     final byName = <String, String>{};
     for (final l in ws.labels) {
       byName.putIfAbsent(l.name.toLowerCase(), () => l.id);
     }
     final keys = [for (final l in ws.labels) l.orderKey];
+    final labels = <String, ({String name, String orderKey})>{};
+    final relinks = <({String task, String from, String to})>[];
     for (final t in ids) {
       final task = ws.task(t)!;
       for (final old in task.labelIds) {
@@ -613,24 +707,35 @@ final class TaskCommands {
         // создателя ещё не пришли): создавать нечего.
         final name = ws.taskLabel(task, old)!.name;
         if (name.trim().isEmpty) continue;
-        final target = byName[name.toLowerCase()] ??= await () async {
+        final target = byName[name.toLowerCase()] ??= () {
           var id = old;
           do {
             id = revivedLabelId(id, name);
           } while (ws.label(id) != null || ws.deletedLabel(id) != null);
           final key = keyAtEnd(keys);
           keys.add(key);
-          await _mutator.update(EntityTypes.label, id, {
-            LabelFields.name: name,
-            LabelFields.color: 'charcoal',
-            LabelFields.orderKey: key,
-            LabelFields.isFavorite: false,
-          });
+          labels[id] = (name: name, orderKey: key);
           return id;
         }();
-        await _link(t, old, linked: false);
-        await _link(t, target, linked: true);
+        relinks.add((task: t, from: old, to: target));
       }
+    }
+    return _Revival(labels, relinks);
+  }
+
+  /// Записать [revival]: новые метки, затем перевязки задач.
+  Future<void> _applyRevival(_Revival revival) async {
+    for (final MapEntry(key: id, value: label) in revival.labels.entries) {
+      await _mutator.update(EntityTypes.label, id, {
+        LabelFields.name: label.name,
+        LabelFields.color: 'charcoal',
+        LabelFields.orderKey: label.orderKey,
+        LabelFields.isFavorite: false,
+      });
+    }
+    for (final link in revival.relinks) {
+      await _link(link.task, link.from, linked: false);
+      await _link(link.task, link.to, linked: true);
     }
   }
 
@@ -665,7 +770,9 @@ final class TaskCommands {
   /// только если место меняется: у подзадач они намеренно устаревшие
   /// (SYNC_DESIGN «Специальные случаи»), и перестановка на месте спорила бы
   /// с их правками. Равные ключи соседей разводятся здесь же (О-8). Задачи
-  /// уже на этом месте — без записи и с пустой отменой.
+  /// уже на этом месте — с пустой отменой: записывается только исправленный
+  /// `parent_id`, если записанный устарел (см. `staleParent`). Это не видимая
+  /// правка: «Отменить» его не возвращает, и тоста без перемены нет.
   Future<Undo> placeAll(
     List<String> roots, {
     String? projectId,
@@ -694,14 +801,18 @@ final class TaskCommands {
       sectionId: sectionId,
       parentId: parentId,
     );
-    checkRoom(
-      ws,
-      place.projectId,
-      activeInTrees(ws, [
-        for (final id in roots)
-          if (ws.rootProjectOf(id) != place.projectId) id,
-      ]),
-    );
+    // Прирост активных в проекте (О-81): активными станут незавершённые без
+    // завершённого предка, если место активно (родитель не выполнен), минус
+    // те, что уже активны в этом проекте.
+    final opening = parentId == null || ws.isTaskActive(parentId)
+        ? openInTrees(ws, roots).length
+        : 0;
+    final staying = {
+      for (final root in roots)
+        for (final t in ws.taskSubtree(root))
+          if (ws.isTaskActive(t) && ws.rootProjectOf(t) == place.projectId) t,
+    }.length;
+    checkRoom(ws, place.projectId, opening - staying);
     final moved = roots.toSet();
     final siblings = ws.children(
       parentId,
@@ -718,7 +829,20 @@ final class TaskCommands {
       ...roots,
       for (final t in others.skip(index)) t.id,
     ];
+    // Записанный родитель отличается от действующего: цикл, разорванный
+    // после правок двух устройств, или родитель, которого здесь ещё нет.
+    // Перенос пишет его и тогда, когда видимое место то же: иначе цикл
+    // восстановится, как только второй элемент уйдёт из-под первого. На
+    // экране это ничего не меняет, поэтому в «Отменить» не входит: отмена
+    // вернула бы устаревшего родителя.
+    bool staleParent(String id) => ws.task(id)!.parentId != parentId;
     if (_sameOrder(target, [for (final t in siblings) t.id])) {
+      for (final id in roots) {
+        if (!staleParent(id)) continue;
+        await _mutator.update(EntityTypes.task, id, {
+          TaskFields.parentId: parentId,
+        });
+      }
       return _mutator.capture(const []);
     }
     final keys = insertionKeys(
@@ -760,7 +884,8 @@ final class TaskCommands {
           TaskFields.projectId: place.projectId,
           TaskFields.sectionId: place.sectionId,
           TaskFields.parentId: parentId,
-        },
+        } else if (staleParent(id))
+          TaskFields.parentId: parentId,
         TaskFields.orderKey: keys.inserted[i],
       });
     }
@@ -831,34 +956,84 @@ final class TaskCommands {
   Future<bool> moveDown(String id) => _shift(id, up: false);
 
   /// Дубликат задачи с незавершёнными подзадачами и метками — сразу после
-  /// неё. Возвращает id копии.
-  Future<String> duplicate(String id) async {
-    final ws = await _read();
+  /// неё, а в «Сегодня» и «Предстоящем» — сразу после неё в своём дне (ключ
+  /// порядка дня между её ключом и следующим). Возвращает id копии.
+  Future<String> duplicate(String id) => _mutator.batch(() async {
+    final steps = await _steps();
+    return _duplicateStep(steps, id);
+  });
+
+  /// [duplicate] каждой из [ids] по порядку — как [completeEach]. Копии
+  /// прошлых шагов снимок не перечитывают: их места и число в проекте ведёт
+  /// [_Steps].
+  Future<List<String>> duplicateEach(List<String> ids, {Workspace? snapshot}) =>
+      _mutator.batch(() async {
+        final steps = await _steps(snapshot);
+        return [for (final id in ids) await _duplicateStep(steps, id)];
+      });
+
+  Future<String> _duplicateStep(_Steps steps, String id) async {
+    final ws = steps.ws;
     final task = await _alive(id, ws);
-    // Копия всегда активна, с незавершёнными подзадачами.
-    checkRoom(
+    final projectId = ws.rootProjectOf(id);
+    final parentId = ws.taskParent(id);
+    // Копия всегда незавершённая, с незавершёнными подзадачами, а активна —
+    // если активно её место: не под выполненным родителем, не в архиве (О-81).
+    final placeActive = parentId != null
+        ? ws.isTaskActive(parentId)
+        : !ws.isProjectArchived(projectId) &&
+              !(ws.rootSectionOf(id)?.isArchived ?? false);
+    final adding = placeActive
+        ? 1 + openInTrees(ws, [for (final c in ws.children(id)) c.id]).length
+        : 0;
+    checkRoom(ws, projectId, adding, already: steps.addedTo(projectId));
+    final group = _siblingGroup(ws, task);
+    final siblings = [
+      for (final t in _siblings(ws, task)) (t.id, t.orderKey),
+      ...steps.copiesIn(group),
+    ]..sort(_byKeyThenId);
+    final index = siblings.indexWhere((s) => s.$1 == id);
+    final orderKey = keyForInsert([for (final s in siblings) s.$2], index + 1);
+    final copy = await copyTree(
       ws,
-      ws.rootProjectOf(id),
-      activeInTrees(ws, [id]) + (task.isCompleted ? 1 : 0),
+      task,
+      projectId: projectId,
+      sectionId: task.sectionId,
+      parentId: parentId,
+      orderKey: orderKey,
+      dayOrderKey: (source) => _dayKeyAfter(ws, steps, source),
     );
-    final siblings = _siblings(ws, task);
-    final index = siblings.indexWhere((t) => t.id == id);
-    return _mutator.batch(
-      () => copyTree(
-        ws,
-        task,
-        projectId: ws.rootProjectOf(id),
-        sectionId: task.sectionId,
-        parentId: ws.taskParent(id),
-        orderKey: keyForInsert([
-          for (final t in siblings) t.orderKey,
-        ], index + 1),
-      ),
-    );
+    steps.copied(group, copy, orderKey, projectId, adding);
+    return copy;
+  }
+
+  /// Ключ порядка дня копии [source] — сразу после неё в её дне: между её
+  /// ключом и следующим ключом активных задач того же дня (и копий прошлых
+  /// шагов). `null` — у неё нет ключа или срока.
+  static String? _dayKeyAfter(Workspace ws, _Steps steps, Task source) {
+    final key = source.dayOrderKey;
+    final date = source.due?.date;
+    if (date == null || !_isValidKey(key)) return null;
+    String? next;
+    for (final k in [
+      for (final t in ws.todayTasks(date)) t.dayOrderKey,
+      ...steps.dayKeysOn(date),
+    ]) {
+      if (_isValidKey(k) &&
+          k.compareTo(key) > 0 &&
+          (next == null || k.compareTo(next) < 0)) {
+        next = k;
+      }
+    }
+    final copyKey = between(key, next);
+    steps.dayKeyUsed(date, copyKey);
+    return copyKey;
   }
 
   /// Копия задачи [source] и её незавершённых подзадач в новое место; для
   /// дубликатов задачи, раздела и проекта. Вызывать внутри [Mutator.batch].
+  /// [dayOrderKey] — ключ порядка дня копии каждой задачи дерева по
+  /// оригиналу (дубликат задачи); без него копии ключа дня не получают.
   Future<String> copyTree(
     Workspace ws,
     Task source, {
@@ -866,6 +1041,7 @@ final class TaskCommands {
     required String? sectionId,
     required String? parentId,
     required String orderKey,
+    String? Function(Task source)? dayOrderKey,
   }) async {
     final id = await _mutator.create(EntityTypes.task, {
       TaskFields.content: source.content,
@@ -875,6 +1051,7 @@ final class TaskCommands {
       TaskFields.sectionId: ?sectionId,
       TaskFields.parentId: ?parentId,
       TaskFields.orderKey: orderKey,
+      TaskFields.dayOrderKey: ?dayOrderKey?.call(source),
       TaskFields.priority: source.priority,
       TaskFields.due: ?_dueValue(source.due),
       TaskFields.deadline: ?_deadlineValue(source.deadline),
@@ -894,6 +1071,7 @@ final class TaskCommands {
         sectionId: sectionId,
         parentId: id,
         orderKey: child.orderKey,
+        dayOrderKey: dayOrderKey,
       );
     }
     return id;
@@ -994,7 +1172,12 @@ final class TaskCommands {
       if (!t.isCompleted || t.id == task.id) t,
   ];
 
-  /// Проект и раздел нового места: подзадача — как у родителя.
+  /// Проект и раздел нового места: подзадача — как у родителя. Место в
+  /// архивном проекте или архивном разделе, в том числе родитель там, —
+  /// [RejectReason.notFound], как
+  /// место, которого нет: его убрали в архив на другом устройстве, пока окно
+  /// было открыто, и задача ушла бы туда невидимой (интерфейс туда не
+  /// переносит и не добавляет).
   ({String projectId, String? sectionId}) _place(
     Workspace ws, {
     String? projectId,
@@ -1004,10 +1187,12 @@ final class TaskCommands {
     if (parentId != null) {
       final parent = ws.task(parentId);
       if (parent == null) throw const CommandRejected(RejectReason.notFound);
-      return (
-        projectId: ws.rootProjectOf(parentId),
-        sectionId: parent.sectionId,
-      );
+      final project = ws.rootProjectOf(parentId);
+      if (ws.isProjectArchived(project) ||
+          (ws.rootSectionOf(parentId)?.isArchived ?? false)) {
+        throw const CommandRejected(RejectReason.notFound);
+      }
+      return (projectId: project, sectionId: parent.sectionId);
     }
     final inbox = ws.inbox?.id ?? inboxProjectId;
     if (sectionId != null) {
@@ -1016,13 +1201,15 @@ final class TaskCommands {
       final section = ws.section(sectionId);
       final sectionProject = section?.projectId ?? inbox;
       if (section == null ||
+          section.isArchived ||
+          ws.isProjectArchived(sectionProject) ||
           (projectId != null && projectId != sectionProject)) {
         throw const CommandRejected(RejectReason.notFound);
       }
       return (projectId: sectionProject, sectionId: sectionId);
     }
     final project = projectId ?? inbox;
-    if (ws.project(project) == null) {
+    if (ws.project(project) == null || ws.isProjectArchived(project)) {
       throw const CommandRejected(RejectReason.notFound);
     }
     return (projectId: project, sectionId: null);
@@ -1053,19 +1240,40 @@ final class TaskCommands {
   /// [Limits.activeTasksPerProject] — [RejectReason.tooManyTasks] (решение 3А
   /// «Часть M4.11» plans/m4). Проверяется только прирост: проект, уже
   /// переполненный синхронизацией, не мешает правкам и уходу задач.
-  static void checkRoom(Workspace ws, String projectId, int adding) {
+  /// [already] — активные, добавленные прошлыми шагами того же действия
+  /// после чтения [ws] ([_Steps]).
+  static void checkRoom(
+    Workspace ws,
+    String projectId,
+    int adding, {
+    int already = 0,
+  }) {
     if (adding <= 0) return;
-    if (ws.activeTaskCount(projectId) + adding > Limits.activeTasksPerProject) {
+    if (ws.activeTaskCount(projectId) + already + adding >
+        Limits.activeTasksPerProject) {
       throw const CommandRejected(RejectReason.tooManyTasks);
     }
   }
 
-  /// Активных задач в поддеревьях [roots] вместе с корнями.
-  static int activeInTrees(Workspace ws, Iterable<String> roots) => {
-    for (final root in roots)
-      for (final id in ws.taskSubtree(root))
-        if (ws.task(id) case final t? when !t.isCompleted) id,
-  }.length;
+  /// Задачи поддеревьев [roots], которые активны, если корни встанут в
+  /// активное место (О-81): незавершённые, у которых в поддереве нет
+  /// завершённого предка; завершённый корень не даёт ни одной. [done] —
+  /// завершена ли задача после действия (по умолчанию — как в снимке).
+  static Set<String> openInTrees(
+    Workspace ws,
+    Iterable<String> roots, {
+    bool Function(Task task)? done,
+  }) {
+    final isDone = done ?? (Task t) => t.isCompleted;
+    final open = <String>{};
+    final pending = [...roots];
+    while (pending.isNotEmpty) {
+      final task = ws.task(pending.removeLast());
+      if (task == null || isDone(task) || !open.add(task.id)) continue;
+      pending.addAll([for (final c in ws.children(task.id)) c.id]);
+    }
+    return open;
+  }
 
   static String _content(String content) {
     final text = content.trim();
@@ -1145,4 +1353,170 @@ final class TaskCommands {
   static Map<String, Object?>? _durationValue(TaskDuration? d) => d == null
       ? null
       : {DurationKeys.amount: d.amount, DurationKeys.unit: d.unit};
+
+  /// Шаги одного действия над снимком [snapshot] (уже прочитанным в той же
+  /// транзакции) или над свежим.
+  Future<_Steps> _steps([Workspace? snapshot]) async =>
+      _Steps(snapshot ?? await _read(), _read);
+
+  /// Ключ [_Steps] дерева задачи [id] — по её корневой задаче.
+  static String _treeKey(Workspace ws, String id) {
+    var root = id;
+    for (var p = ws.taskParent(root); p != null; p = ws.taskParent(p)) {
+      root = p;
+    }
+    return 'tree:$root';
+  }
+
+  /// Соседи задачи по месту ([_siblings]) — одной строкой: родитель или
+  /// проект и раздел корня.
+  static String _siblingGroup(Workspace ws, Task task) {
+    final parent = ws.taskParent(task.id);
+    if (parent != null) return 'parent:$parent';
+    final section = ws.section(task.sectionId ?? '') == null
+        ? ''
+        : task.sectionId;
+    return 'root:${ws.rootProjectOf(task.id)}:$section';
+  }
+
+  /// Порядок соседей, как в [Workspace]: ключ, затем id.
+  static int _byKeyThenId((String, String) a, (String, String) b) {
+    final byKey = a.$2.compareTo(b.$2);
+    return byKey != 0 ? byKey : a.$1.compareTo(b.$1);
+  }
+
+  /// Верный ключ порядка: не пустой и не на `0` (fractional_index.dart).
+  static bool _isValidKey(String key) => key.isNotEmpty && !key.endsWith('0');
+}
+
+/// Снимок для шагов одного действия над выделенными задачами (300 задач —
+/// 300 шагов) в одной транзакции: перечитывается, только когда прошлый шаг
+/// изменил то, что читает следующий, — дерево задачи (`tree:`), раздел её
+/// корня (`section:`), порядок активных разделов проекта (`sections:`) или
+/// метки ([labels]). Остальное, что меняют шаги и
+/// читают другие — задачи, возвращённые в работу, копии и число активных в
+/// проекте, — шаги записывают сюда же, и следующий учитывает это поверх
+/// снимка. Так результат и «Отменить» — те же, что при свежем снимке на
+/// каждом шаге (замер и решение — plans/m4 «Ход M4.13»).
+final class _Steps {
+  _Steps(this.ws, this._read);
+
+  /// Ключ «метки изменились»: новые метки и перевязки задач.
+  static const String labels = 'labels';
+
+  /// Ключ раздела [id].
+  static String section(String id) => 'section:$id';
+
+  /// Ключ порядка активных разделов проекта [projectId].
+  static String sections(String projectId) => 'sections:$projectId';
+
+  Workspace ws;
+  final Future<Workspace> Function() _read;
+  final Set<String> _changed = {};
+  final Map<String, int> _added = {};
+  final Map<String, String> _reopened = {};
+  final Map<String, List<(String, String)>> _copies = {};
+  final Map<String, List<String>> _dayKeys = {};
+
+  /// Снимок для шага, который читает [needs]: свежий, если прошлые шаги их
+  /// меняли.
+  Future<Workspace> fresh(Iterable<String> needs) async {
+    if (needs.any(_changed.contains)) {
+      ws = await _read();
+      _changed.clear();
+      _added.clear();
+      _reopened.clear();
+      _copies.clear();
+      _dayKeys.clear();
+    }
+    return ws;
+  }
+
+  /// Шаг изменил [keys].
+  void changed(Iterable<String> keys) => _changed.addAll(keys);
+
+  /// Активных задач, добавленных в проект [projectId] после чтения снимка.
+  int addedTo(String projectId) => _added[projectId] ?? 0;
+
+  /// Шаг вернул в работу задачи [orderKeys] (id → ключ порядка после шага),
+  /// и в проекте [projectId] стало на [opening] активных больше.
+  void reopened(String projectId, int opening, Map<String, String> orderKeys) {
+    _added[projectId] = addedTo(projectId) + opening;
+    _reopened.addAll(orderKeys);
+  }
+
+  /// Завершена ли [task] с учётом возвращённых прошлыми шагами.
+  bool isCompleted(Task task) =>
+      task.isCompleted && !_reopened.containsKey(task.id);
+
+  /// Ключ порядка [task] с учётом прошлых шагов.
+  String orderKey(Task task) => _reopened[task.id] ?? task.orderKey;
+
+  /// Копии прошлых шагов среди соседей [group]: id и ключ порядка.
+  List<(String, String)> copiesIn(String group) => _copies[group] ?? const [];
+
+  /// Шаг создал копию [id] с ключом [orderKey] среди соседей [group], и в
+  /// проекте [projectId] стало на [adding] активных больше.
+  void copied(
+    String group,
+    String id,
+    String orderKey,
+    String projectId,
+    int adding,
+  ) {
+    (_copies[group] ??= []).add((id, orderKey));
+    _added[projectId] = addedTo(projectId) + adding;
+  }
+
+  /// Ключи порядка дня [date], выданные копиям прошлых шагов.
+  List<String> dayKeysOn(String date) => _dayKeys[date] ?? const [];
+
+  void dayKeyUsed(String date, String key) => (_dayKeys[date] ??= []).add(key);
+}
+
+/// Возврат удалённых меток задачам, которые возвращаются в работу
+/// ([TaskCommands._labelRevival]).
+final class _Revival {
+  _Revival(this.labels, this.relinks);
+
+  /// Метки, создаваемые заново: id → имя и ключ порядка.
+  final Map<String, ({String name, String orderKey})> labels;
+
+  /// Перевязки: задача, удалённая метка, живая метка вместо неё.
+  final List<({String task, String from, String to})> relinks;
+
+  bool get isEmpty => relinks.isEmpty;
+
+  /// Что «Отменить» возвращает: связи задач с удалёнными метками.
+  List<UndoTarget> get restored => [
+    for (final r in relinks)
+      (
+        entityType: EntityTypes.taskLabel,
+        entityId: taskLabelId(r.task, r.from),
+        fields: {TaskLabelFields.deleted},
+      ),
+  ];
+
+  /// Что «Отменить» удаляет, если этого не было до действия: новые связи и
+  /// метки, созданные заново ([Mutator.capture], `created`). Уже бывшая
+  /// живой связь возвращается как была.
+  List<UndoTarget> get created => [
+    for (final r in relinks)
+      (
+        entityType: EntityTypes.taskLabel,
+        entityId: taskLabelId(r.task, r.to),
+        fields: {TaskLabelFields.deleted},
+      ),
+    for (final id in labels.keys)
+      (
+        entityType: EntityTypes.label,
+        entityId: id,
+        fields: {
+          LabelFields.name,
+          LabelFields.color,
+          LabelFields.orderKey,
+          LabelFields.isFavorite,
+        },
+      ),
+  ];
 }

@@ -539,6 +539,93 @@ void main() {
       );
     });
 
+    test('О-70: «Отменить» после сброса подзадачи с удалённой меткой — '
+        'прежняя связь с удалённой меткой, созданной заново метки и связи с '
+        'ней нет', () async {
+      final id = await app.tasks.add(
+        content: 'Уборка',
+        due: _due('2026-10-26', 'FREQ=DAILY'),
+      );
+      final label = await app.labels.add(name: 'дом');
+      final sub = await app.tasks.add(
+        content: 'Шаг',
+        parentId: id,
+        labelIds: {label},
+      );
+      await app.tasks.complete(sub);
+      await app.labels.delete(label);
+      await setReset(true);
+
+      final undo = await app.tasks.complete(id);
+      final revived = (await app.read()).labels.single.id;
+      await undo();
+
+      final ws = await app.read();
+      expect(ws.task(sub)!.isCompleted, isTrue);
+      expect(ws.labels, isEmpty);
+      final link = await device.entity(
+        EntityTypes.taskLabel,
+        taskLabelId(sub, label),
+      );
+      expect(link![TaskLabelFields.deleted], isFalse);
+      final newLink = await device.entity(
+        EntityTypes.taskLabel,
+        taskLabelId(sub, revived),
+      );
+      expect(newLink![TaskLabelFields.deleted], isTrue);
+      expect(
+        (await device.entity(EntityTypes.label, revived))![LabelFields.deleted],
+        isTrue,
+      );
+      // Снимок имён — прежний: на выполненной подзадаче имя «дом».
+      expect(
+        (await device.entity(
+          EntityTypes.task,
+          sub,
+        ))![TaskFields.completedLabelNames],
+        {label: 'дом'},
+      );
+    });
+
+    test('О-70: «Отменить» сброса, где у подзадачи уже была живая метка с тем '
+        'же именем, — живая связь остаётся', () async {
+      final id = await app.tasks.add(
+        content: 'Уборка',
+        due: _due('2026-10-26', 'FREQ=DAILY'),
+      );
+      final old = await app.labels.add(name: 'дом');
+      final sub = await app.tasks.add(
+        content: 'Шаг',
+        parentId: id,
+        labelIds: {old},
+      );
+      await app.tasks.complete(sub);
+      await app.labels.delete(old);
+      final live = await app.labels.add(name: 'Дом');
+      await device.services.mutator.update(
+        EntityTypes.taskLabel,
+        taskLabelId(sub, live),
+        {
+          TaskLabelFields.taskId: sub,
+          TaskLabelFields.labelId: live,
+          TaskLabelFields.deleted: false,
+        },
+      );
+      await setReset(true);
+
+      final undo = await app.tasks.complete(id);
+      await undo();
+
+      final ws = await app.read();
+      expect([for (final l in ws.labels) l.id], [live]);
+      expect(ws.task(sub)!.labelIds, contains(live));
+      final link = await device.entity(
+        EntityTypes.taskLabel,
+        taskLabelId(sub, old),
+      );
+      expect(link![TaskLabelFields.deleted], isFalse);
+    });
+
     test('«Отменить» не удаляет запись о выполнении, пришедшую раньше с '
         'другого устройства, а возвращает её время', () async {
       final due = _due('2026-10-26', 'FREQ=DAILY');

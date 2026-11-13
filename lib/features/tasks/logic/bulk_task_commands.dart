@@ -9,7 +9,10 @@ import 'task_commands.dart';
 /// решение 9 плана M4): каждое — одна транзакция, всё или ничего (отказ на
 /// одной задаче отменяет действие целиком), а действие с «Отменить» — одна
 /// отмена на все задачи. Шаги — те же одиночные правки [TaskCommands]:
-/// задача меняется так же, как если бы её правили по одной.
+/// задача меняется так же, как если бы её правили по одной. Снимок читается
+/// один раз на действие: «Выполнить», «Вернуть» и «Дублировать» перечитывают
+/// его, только когда прошлый шаг изменил то, что читает следующий
+/// ([TaskCommands.completeEach]).
 ///
 /// [ids] — в порядке списка, где их выделили: в нём задачи встают при
 /// переносе и дубликате. Задачи, которых уже нет (удалены, в том числе на
@@ -134,26 +137,29 @@ final class BulkTaskCommands {
         final depth = ws.taskDepth(a).compareTo(ws.taskDepth(b));
         return depth != 0 ? depth : order[a]!.compareTo(order[b]!);
       });
-    return _mutator.combine([
-      for (final id in byDepth)
-        if (!ws.task(id)!.isCompleted) await _tasks.complete(id),
-    ]);
+    return _mutator.combine(
+      await _tasks.completeEach([
+        for (final id in byDepth)
+          if (!ws.task(id)!.isCompleted) id,
+      ], snapshot: ws),
+    );
   });
 
   /// «Вернуть» выполненные задачи.
   Future<Undo> uncomplete(List<String> ids) => _mutator.batch(() async {
     final ws = await _read();
-    return _mutator.combine([
-      for (final id in _alive(ws, ids))
-        if (ws.task(id)!.isCompleted) await _tasks.uncomplete(id),
-    ]);
+    return _mutator.combine(
+      await _tasks.uncompleteEach([
+        for (final id in _alive(ws, ids))
+          if (ws.task(id)!.isCompleted) id,
+      ], snapshot: ws),
+    );
   });
 
   /// «Дублировать»: копия каждой — сразу после неё.
   Future<void> duplicate(List<String> ids) => _mutator.batch(() async {
-    for (final id in _roots(await _read(), ids)) {
-      await _tasks.duplicate(id);
-    }
+    final ws = await _read();
+    await _tasks.duplicateEach(_roots(ws, ids), snapshot: ws);
   });
 
   /// «Удалить» — после подтверждения, без «Отменить», как одиночное.

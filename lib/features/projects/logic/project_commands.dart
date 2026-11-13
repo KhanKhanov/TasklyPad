@@ -58,9 +58,12 @@ final class ProjectCommands {
       _update(id, {ProjectFields.color: color}, protectInbox: true);
 
   /// Описание (help «Introduction to projects»): до [Limits.description]
-  /// символов; у «Входящих» описания нет (допущение О-69).
+  /// символов; у «Входящих» описания нет (допущение О-69). Хранится как
+  /// введено, как у задачи: пробелы по краям — часть markdown (блок кода
+  /// отступом); текст только из пробелов — пустое описание.
   Future<void> setDescription(String id, String description) async {
-    final text = Limits.checkLength(description.trim(), Limits.description);
+    final text = description.trim().isEmpty ? '' : description;
+    Limits.checkLength(text, Limits.description);
     await _update(id, {ProjectFields.description: text}, protectInbox: true);
   }
 
@@ -76,8 +79,10 @@ final class ProjectCommands {
       _update(id, {ProjectFields.isCollapsed: collapsed});
 
   /// Перенести проект с подпроектами под [parentId] (`null` — верхний
-  /// уровень), в конец уровня.
-  Future<Undo> move(String id, {String? parentId}) async {
+  /// уровень), в конец уровня. Родитель в архиве (убран на другом
+  /// устройстве) — [RejectReason.notFound], как в [reorder]. Снимок, запись
+  /// и «Отменить» — в одной транзакции.
+  Future<Undo> move(String id, {String? parentId}) => _mutator.batch(() async {
     final ws = await _read();
     _alive(ws, id, protectInbox: true);
     if (parentId != null) {
@@ -85,6 +90,9 @@ final class ProjectCommands {
         throw const CommandRejected(RejectReason.cycle);
       }
       _checkParent(ws, parentId, height: ws.projectHeight(id));
+      if (ws.isProjectArchived(parentId)) {
+        throw const CommandRejected(RejectReason.notFound);
+      }
     }
     final siblings = [
       for (final p in ws.childProjects(parentId))
@@ -102,13 +110,16 @@ final class ProjectCommands {
       ProjectFields.orderKey: keyAtEnd([for (final p in siblings) p.orderKey]),
     });
     return undo;
-  }
+  });
 
   /// Перетаскивание проекта: сразу после [afterId] (`null` — первым) на уровне
   /// [parentId] (`null` — верхний), с подпроектами. Проект перетаскивается сам,
   /// без ручки; уровень — сдвигом, три уровня (help «Introduction to
-  /// projects», «Create a sub-project»). Родитель пишется, только если он
-  /// другой; равные ключи соседей разводятся здесь же (О-8). Без «Отменить»:
+  /// projects», «Create a sub-project»). Родитель пишется, только если
+  /// записанный отличается от [parentId]: действующий может совпасть с целью
+  /// при другом записанном — цикл, разорванный после правок двух устройств, —
+  /// и без записи цикл вернулся бы, как только второй проект уйдёт из-под
+  /// первого. Равные ключи соседей разводятся здесь же (О-8). Без «Отменить»:
   /// help говорит о нём только у задач (решение 8 плана M4).
   Future<void> reorder(String id, {String? parentId, String? afterId}) =>
       _mutator.batch(() async {
@@ -137,8 +148,16 @@ final class ProjectCommands {
             : after < 0
             ? others.length
             : after + 1;
-        final sameParent = ws.projectParent(id) == parentId;
-        if (sameParent && level.indexWhere((p) => p.id == id) == index) return;
+        final staleParent = ws.project(id)!.parentId != parentId;
+        if (ws.projectParent(id) == parentId &&
+            level.indexWhere((p) => p.id == id) == index) {
+          if (staleParent) {
+            await _mutator.update(EntityTypes.project, id, {
+              ProjectFields.parentId: parentId,
+            });
+          }
+          return;
+        }
         final keys = insertionKeys(
           [for (final p in others) p.orderKey],
           index,
@@ -151,7 +170,7 @@ final class ProjectCommands {
           });
         }
         await _mutator.update(EntityTypes.project, id, {
-          if (!sameParent) ProjectFields.parentId: parentId,
+          if (staleParent) ProjectFields.parentId: parentId,
           ProjectFields.orderKey: keys.inserted.single,
         });
       });
@@ -207,17 +226,17 @@ final class ProjectCommands {
   /// Подпроекты не копируются (в Todoist их дублируют по одному). [name] —
   /// имя копии из
   /// интерфейса («Копия …»).
-  Future<String> duplicate(String id, {required String name}) async {
-    final ws = await _read();
-    final source = _alive(ws, id, protectInbox: true);
-    _checkRoom(ws, 1);
-    // Действующий родитель, а не записанный: записанный мог ещё не прийти
-    // или быть отброшен разрывом цикла.
-    final parentId = ws.projectParent(id);
-    final siblings = ws.childProjects(parentId);
-    final index = siblings.indexWhere((p) => p.id == id);
-    final keys = [for (final p in siblings) p.orderKey];
-    return _mutator.batch(() async {
+  Future<String> duplicate(String id, {required String name}) => _mutator.batch(
+    () async {
+      final ws = await _read();
+      final source = _alive(ws, id, protectInbox: true);
+      _checkRoom(ws, 1);
+      // Действующий родитель, а не записанный: записанный мог ещё не прийти
+      // или быть отброшен разрывом цикла.
+      final parentId = ws.projectParent(id);
+      final siblings = ws.childProjects(parentId);
+      final index = siblings.indexWhere((p) => p.id == id);
+      final keys = [for (final p in siblings) p.orderKey];
       final copy = await _mutator.create(EntityTypes.project, {
         ProjectFields.name: _name(Limits.clip(name.trim(), Limits.projectName)),
         ProjectFields.color: source.color,
@@ -266,8 +285,8 @@ final class ProjectCommands {
         }
       }
       return copy;
-    });
-  }
+    },
+  );
 
   // --- Внутреннее ---
 
