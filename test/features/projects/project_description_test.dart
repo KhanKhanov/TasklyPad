@@ -95,6 +95,32 @@ void main() {
       });
     });
 
+    testWidgets('переход на другой проект с открытым редактором — редактор '
+        'закрыт, черновик никуда не записан', (tester) async {
+      await withApp(tester, (device) async {
+        final work = await open(tester, device);
+        final home = (await tester.runAsync(
+          () => AppCommands(device).projects.add(name: 'Home'),
+        ))!;
+        await settle(tester);
+        await tester.tap(find.text('Add a description'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'Черновик');
+        await tester.tap(find.text('Home'));
+        await settle(tester);
+
+        expect(find.widgetWithText(TextField, 'Черновик'), findsNothing);
+        expect(find.text('Add a description'), findsOneWidget);
+        await tester.tap(find.text('Add a description'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        final ws = (await tester.runAsync(() => AppCommands(device).read()))!;
+        expect(ws.project(home)!.description, '');
+        expect(ws.project(work)!.description, '');
+      });
+    });
+
     testWidgets('«Save» без правки, когда описание сменилось на другом '
         'устройстве, — без записи: пришедшее не затирается', (tester) async {
       await withApp(tester, (device) async {
