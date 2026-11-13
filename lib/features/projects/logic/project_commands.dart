@@ -2,6 +2,7 @@ import '../../../core/fractional_index.dart';
 import '../../../data/projection/entity_fields.dart';
 import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
+import '../../../domain/view_options.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import '../../tasks/logic/task_commands.dart';
@@ -250,7 +251,7 @@ final class ProjectCommands {
         if (source.description.isNotEmpty)
           ProjectFields.description: source.description,
       });
-      await _views.copyProject(id, copy);
+      await _views.copy(ViewType.project, id, copy);
       for (final task in ws.children(null, projectId: id)) {
         if (task.isCompleted) continue;
         await _tasks.copyTree(

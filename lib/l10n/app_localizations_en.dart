@@ -1193,6 +1193,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rejectTooManyLabelsTotal => 'You can\'t have more than 500 labels';
 
   @override
+  String get rejectTooManyFilters => 'You can\'t have more than 150 filters';
+
+  @override
+  String get rejectEmptyQuery => 'Enter a query';
+
+  @override
   String get rejectTooManyTasks =>
       'A project can\'t have more than 300 active tasks';
 

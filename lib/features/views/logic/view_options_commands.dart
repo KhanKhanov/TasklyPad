@@ -67,12 +67,13 @@ final class ViewOptionsCommands {
     ),
   );
 
-  /// Настройки проекта [sourceId] — копии [copyId] (дубликат проекта, help
-  /// «Introduction to projects»): пишутся поля, отличные от умолчаний.
-  Future<void> copyProject(String sourceId, String copyId) async {
-    final source = await _read(ViewType.project, objectId: sourceId);
+  /// Настройки вида [viewType] объекта [sourceId] — копии [copyId]
+  /// (дубликат проекта, help «Introduction to projects»; дубликат фильтра):
+  /// пишутся поля, отличные от умолчаний.
+  Future<void> copy(ViewType viewType, String sourceId, String copyId) async {
+    final source = await _read(viewType, objectId: sourceId);
     await save(
-      ViewOptions(viewType: ViewType.project, objectId: copyId),
+      ViewOptions(viewType: viewType, objectId: copyId),
       source.copyWith(objectId: copyId),
     );
   }

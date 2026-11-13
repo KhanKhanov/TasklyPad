@@ -13,8 +13,7 @@ import 'support/devices.dart';
 
 // Фильтры схемы v6 (решения 2А–4А docs/plans/m5-filters-search.md) на двух
 // устройствах тем же путём, что в приложении: Mutator → журнал drift → папка
-// на диске → другая база. Команд фильтров ещё нет (коммит 2 M5.2) — правки
-// пишутся через Mutator, как их будут писать команды.
+// на диске → другая база; правки — командами фильтров и «Отображения».
 void main() {
   late TestDevice pc;
   late TestDevice phone;
@@ -60,35 +59,22 @@ void main() {
     meta: dev.services.meta,
   ).load();
 
-  /// Новый фильтр на [dev] — все поля одной правкой, как создание метки.
-  Future<String> addFilter(
-    TestDevice dev, {
-    required String name,
-    required String query,
-    String orderKey = 'a0',
-  }) => dev.services.mutator.create(EntityTypes.filter, {
-    FilterFields.name: name,
-    FilterFields.query: query,
-    FilterFields.orderKey: orderKey,
-  });
-
-  Future<void> edit(TestDevice dev, String id, Map<String, Object?> fields) =>
-      dev.services.mutator.update(EntityTypes.filter, id, fields);
-
-  test('фильтры, созданные на двух устройствах офлайн, — оба остаются, по '
-      'порядку, без конфликтов', () async {
-    final first = await addFilter(pc, name: 'Срочное', query: 'p1');
-    final second = await addFilter(
-      phone,
+  test('фильтры, созданные на двух устройствах офлайн, — оба остаются, в '
+      'одном порядке на обоих, без конфликтов', () async {
+    final first = await onPc.filters.add(name: 'Срочное', query: 'p1');
+    final second = await onPhone.filters.add(
       name: 'Сегодня и просрочено',
       query: 'today | overdue',
-      orderKey: 'a1',
     );
     await syncBoth();
 
+    // Оба встали в конец пустого списка — с одним ключом; при равенстве
+    // ключей порядок — по id, одинаково на обоих устройствах.
+    final onPcOrder = [for (final f in (await onPc.read()).filters) f.id];
+    expect(onPcOrder.toSet(), {first, second});
     for (final dev in [onPc, onPhone]) {
       final ws = await dev.read();
-      expect(ws.filters.map((f) => f.id), [first, second]);
+      expect([for (final f in ws.filters) f.id], onPcOrder);
       expect(ws.filter(second)!.query, 'today | overdue');
       expect(ws.filter(first)!.color, 'charcoal');
     }
@@ -99,11 +85,11 @@ void main() {
 
   test('запрос одного фильтра правят на двух устройствах офлайн — карточка с '
       'полем «Запрос» и пометка фильтра', () async {
-    final filter = await addFilter(pc, name: 'Срочное', query: 'p1');
+    final filter = await onPc.filters.add(name: 'Срочное', query: 'p1');
     await syncBoth();
 
-    await edit(pc, filter, {FilterFields.query: 'p1 & today'});
-    await edit(phone, filter, {FilterFields.query: 'p1 | p2'});
+    await onPc.filters.edit(filter, query: 'p1 & today');
+    await onPhone.filters.edit(filter, query: 'p1 | p2');
     await syncBoth();
 
     final onPcConflicts = await pc.conflicts();
@@ -129,21 +115,25 @@ void main() {
 
   test('описание и избранное фильтра правят на двух устройствах офлайн — '
       'карточка без пометки; порядок — молча', () async {
-    final filter = await addFilter(pc, name: 'Срочное', query: 'p1');
+    final filter = await onPc.filters.add(name: 'Срочное', query: 'p1');
     await syncBoth();
 
     // ПК ставит избранное и снимает: значение то же, что было, но правка
     // записана, и спорит с правкой телефона (Mutator пишет только изменения).
-    await edit(pc, filter, {
-      FilterFields.description: 'утром',
-      FilterFields.isFavorite: true,
+    // Порядок — прямой записью ключа: перестановка в списке из одного фильтра
+    // ничего не пишет.
+    await onPc.filters.edit(filter, description: 'утром', isFavorite: true);
+    await pc.services.mutator.update(EntityTypes.filter, filter, {
       FilterFields.orderKey: 'b0',
     });
     pc.advance(const Duration(milliseconds: 10));
-    await edit(pc, filter, {FilterFields.isFavorite: false});
-    await edit(phone, filter, {
-      FilterFields.description: 'вечером',
-      FilterFields.isFavorite: true,
+    await onPc.filters.setFavorite(filter, false);
+    await onPhone.filters.edit(
+      filter,
+      description: 'вечером',
+      isFavorite: true,
+    );
+    await phone.services.mutator.update(EntityTypes.filter, filter, {
       FilterFields.orderKey: 'c0',
     });
     await syncBoth();
@@ -171,11 +161,11 @@ void main() {
 
   test('фильтр удалён на ПК, его имя изменено на телефоне — карточка '
       '«удалено / изменено» без пометки', () async {
-    final filter = await addFilter(pc, name: 'Срочное', query: 'p1');
+    final filter = await onPc.filters.add(name: 'Срочное', query: 'p1');
     await syncBoth();
 
-    await pc.services.mutator.delete(EntityTypes.filter, filter);
-    await edit(phone, filter, {FilterFields.name: 'Важное'});
+    await onPc.filters.delete(filter);
+    await onPhone.filters.edit(filter, name: 'Важное');
     await syncBoth();
 
     final card = (await cards(pc)).single;
@@ -192,12 +182,9 @@ void main() {
 
   test('фильтр «Отображения» одного вида правят на двух устройствах офлайн — '
       'побеждает поздняя правка, карточки нет', () async {
-    final id = viewOptionsId(ViewType.today.apiName, null);
-    for (final (dev, query) in [(pc, 'p1'), (phone, '#Работа')]) {
-      await dev.services.mutator.update(EntityTypes.viewOptions, id, {
-        ViewOptionsFields.viewType: ViewType.today.apiName,
-        ViewOptionsFields.filteredBy: query,
-      });
+    const today = ViewOptions(viewType: ViewType.today);
+    for (final (dev, query) in [(onPc, 'p1'), (onPhone, '#Работа')]) {
+      await dev.views.save(today, today.copyWith(filteredBy: query));
     }
     await syncBoth();
 

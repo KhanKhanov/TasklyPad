@@ -340,6 +340,8 @@
   "dragHandleHint": "Drag to move",
   "rejectTooLong": "The text is too long",
   "rejectTooManyLabelsTotal": "You can't have more than 500 labels",
+  "rejectTooManyFilters": "You can't have more than 150 filters",
+  "rejectEmptyQuery": "Enter a query",
   "rejectTooManyTasks": "A project can't have more than 300 active tasks",
   "rejectTooManyProjects": "You can't have more than 500 active projects",
   "rejectBadDuration": "Duration must be between 1 minute and 24 hours",

@@ -1183,6 +1183,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rejectTooManyLabelsTotal => 'Меток не может быть больше 500';
 
   @override
+  String get rejectTooManyFilters => 'Фильтров не может быть больше 150';
+
+  @override
+  String get rejectEmptyQuery => 'Введите запрос';
+
+  @override
   String get rejectTooManyTasks =>
       'В проекте не может быть больше 300 активных задач';
 

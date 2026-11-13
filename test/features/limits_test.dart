@@ -213,6 +213,58 @@ void main() {
     });
   });
 
+  group('фильтры — имя 60, запрос 1024, 150 всего (О-80)', () {
+    test('имя и запрос на пределе — записаны; сверх — отказ при добавлении, '
+        'правке и дубликате', () async {
+      final id = await app.filters.add(name: '😀' * 60, query: 'a' * 1024);
+      final saved = (await app.read()).filter(id)!;
+      expect((Limits.length(saved.name), saved.query.length), (60, 1024));
+      await rejectsWithoutOps(
+        () => app.filters.add(name: 'a' * 61, query: 'p1'),
+        RejectReason.tooLong,
+      );
+      await rejectsWithoutOps(
+        () => app.filters.add(name: 'Срочное', query: 'a' * 1025),
+        RejectReason.tooLong,
+      );
+      await rejectsWithoutOps(
+        () => app.filters.edit(id, name: 'a' * 61),
+        RejectReason.tooLong,
+      );
+      await rejectsWithoutOps(
+        () => app.filters.edit(id, query: 'a' * 1025),
+        RejectReason.tooLong,
+      );
+      await rejectsWithoutOps(
+        () => app.filters.setDescription(id, 'a' * (Limits.description + 1)),
+        RejectReason.tooLong,
+      );
+    });
+
+    test('копия с именем на пределе — имя обрезается, а не отказ', () async {
+      final id = await app.filters.add(name: 'Срочное', query: 'p1');
+      final copy = await app.filters.duplicate(id, name: 'Копия ${'a' * 60}');
+      expect(Limits.length((await app.read()).filter(copy)!.name), 60);
+    });
+
+    test('151-й фильтр — отказ при добавлении и дубликате', () async {
+      final ids = await batch(
+        () async => [
+          for (var i = 0; i < Limits.filters; i++)
+            await app.filters.add(name: 'f$i', query: 'p1'),
+        ],
+      );
+      await rejectsWithoutOps(
+        () => app.filters.add(name: 'extra', query: 'p1'),
+        RejectReason.tooManyFilters,
+      );
+      await rejectsWithoutOps(
+        () => app.filters.duplicate(ids.first, name: 'Копия'),
+        RejectReason.tooManyFilters,
+      );
+    });
+  });
+
   group('300 активных задач в проекте', () {
     late String full;
 

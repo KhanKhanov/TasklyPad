@@ -2042,6 +2042,18 @@ abstract class AppLocalizations {
   /// **'Меток не может быть больше 500'**
   String get rejectTooManyLabelsTotal;
 
+  /// Отказ: 151-й фильтр (help «Usage limits»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтров не может быть больше 150'**
+  String get rejectTooManyFilters;
+
+  /// Отказ: пустой запрос фильтра
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите запрос'**
+  String get rejectEmptyQuery;
+
   /// Отказ: 301-я активная задача в проекте (help «Usage limits»)
   ///
   /// In ru, this message translates to:

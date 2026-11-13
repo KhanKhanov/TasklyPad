@@ -76,6 +76,8 @@ String rejectMessage(AppLocalizations l10n, RejectReason reason) =>
       RejectReason.tooManyTasks => l10n.rejectTooManyTasks,
       RejectReason.tooManyProjects => l10n.rejectTooManyProjects,
       RejectReason.badDuration => l10n.rejectBadDuration,
+      RejectReason.emptyQuery => l10n.rejectEmptyQuery,
+      RejectReason.tooManyFilters => l10n.rejectTooManyFilters,
     };
 
 /// Выполнить действие; отказ правилами — короткое сообщение внизу экрана.
