@@ -6,7 +6,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
-import '../logic/duration_text.dart';
+import '../../../domain/rules.dart';
 import 'scheduler_dialog.dart';
 import 'task_actions.dart';
 import 'task_pickers.dart';

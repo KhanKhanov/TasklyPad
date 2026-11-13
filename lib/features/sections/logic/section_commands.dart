@@ -5,6 +5,7 @@ import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import '../../tasks/logic/task_commands.dart';
+import '../../tasks/logic/task_room.dart';
 
 /// Действия пользователя над разделами — всё через [Mutator].
 final class SectionCommands {
@@ -101,12 +102,12 @@ final class SectionCommands {
         final from = section.projectId ?? ws.inbox!.id;
         if (from != projectId) {
           _checkSectionRoom(ws, projectId);
-          TaskCommands.checkRoom(
+          TaskRoom.checkRoom(
             ws,
             projectId,
             section.isArchived
                 ? 0
-                : TaskCommands.openInTrees(ws, _roots(ws, from, id)).length,
+                : TaskRoom.openInTrees(ws, _roots(ws, from, id)).length,
           );
         }
         final undo = await _mutator.capture([
@@ -175,12 +176,12 @@ final class SectionCommands {
     final section = _alive(ws, id);
     final projectId = section.projectId ?? ws.inbox!.id;
     _checkSectionRoom(ws, projectId);
-    TaskCommands.checkRoom(
+    TaskRoom.checkRoom(
       ws,
       projectId,
       ws.isProjectArchived(projectId)
           ? 0
-          : TaskCommands.openInTrees(ws, _roots(ws, projectId, id)).length,
+          : TaskRoom.openInTrees(ws, _roots(ws, projectId, id)).length,
     );
     final copy = await _mutator.create(EntityTypes.section, {
       SectionFields.name: _name(Limits.clip(name.trim(), Limits.sectionName)),

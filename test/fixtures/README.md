@@ -9,6 +9,7 @@ quick_add.json     "Купить молоко завтра в 17:00 #Дом @с�
 dates.json         "следующая пятница", "Jan 15", "через 3 дня"    → дата/время
 recurrence.json    "каждый 3-й пт", "every! 3 days"                 → RRULE + from_completion
 recurrence_next.json  срок с правилом + момент выполнения          → следующий срок
+durations.json     "1ч 30м", "90", "1:30"                           → минуты своей длительности
 filters.json       "today & p1 | overdue"                          → AST / список задач
 ```
 
@@ -50,6 +51,9 @@ filters.json       "today & p1 | overdue"                          → AST / с�
   `labels`, `priority`, `deadline`, `duration` {amount, unit}, `description`, `no_date`, `highlights` —
   список {text, kind} по порядку в строке. `dismissed` — подстроки, подсветку которых пользователь
   отменил; `"smart_dates": false` — выключено «Умное распознавание дат».
+- `durations.json` — строка поля длительности (lib/nlp/duration_text.dart); `lang` и `now` не нужны.
+  `expect`: `minutes` или `none: true`; `in_range` — результат `Limits.durationInRange` (диапазон общий с
+  быстрым добавлением и командами).
 - Каждое правило из `recurrence.json` проходит `nextOccurrence` (lib/domain/recurrence.dart), а текст
   правила, разобранный обратно, даёт то же правило.
 
