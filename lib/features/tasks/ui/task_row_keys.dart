@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
+import '../../../domain/workspace.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/selection.dart';
 import 'task_actions.dart';
@@ -97,4 +98,34 @@ bool isEditShortcut(LogicalKeyboardKey key) {
       !keys.isShiftPressed &&
       !keys.isMetaPressed &&
       keys.isControlPressed != keys.isAltPressed;
+}
+
+/// Клик по строке задачи (help «Use keyboard shortcuts», «Add or manage
+/// multiple tasks»): `Ctrl+Shift` — диапазон от прошлой выделенной, `Ctrl`
+/// или `Shift` — выделить; в режиме выделения на телефоне касание выделяет;
+/// обычный клик снимает выделение и открывает панель (решение 2А «Ход
+/// M4.8»). [canSelect] `false` — только открыть; [order] — порядок соседей
+/// списка для диапазона.
+void taskRowTap({
+  required WidgetRef ref,
+  required Task task,
+  required Workspace ws,
+  required bool canSelect,
+  required List<String> Function(Workspace ws)? order,
+  required VoidCallback toggleSelected,
+  required VoidCallback open,
+}) {
+  final keys = HardwareKeyboard.instance;
+  final ctrl = keys.isControlPressed;
+  final shift = keys.isShiftPressed;
+  if (canSelect && ctrl && shift) {
+    ref
+        .read(taskSelectionProvider.notifier)
+        .selectRange(task.id, ws, order: order);
+  } else if (canSelect &&
+      (ctrl || shift || ref.read(taskSelectionProvider).touchMode)) {
+    toggleSelected();
+  } else {
+    open();
+  }
 }

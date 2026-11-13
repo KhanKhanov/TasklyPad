@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:planner/features/filters/ui/filter_screen.dart';
 import 'package:planner/features/labels/ui/filters_labels_screen.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
@@ -125,8 +126,6 @@ void main() {
       final orange = tester.getTopLeft(row('Orange task'));
       expect(p1.dy < red.dy && red.dy < p2.dy && p2.dy < orange.dy, isTrue);
       expect(row('Plain task'), findsNothing);
-      // Список не добавляет задач (кнопка — со следующим шагом).
-      expect(onScreen(find.text('Add task')), findsNothing);
 
       await tester.tap(find.text('Add a description'));
       await tester.pumpAndSettle();
@@ -138,6 +137,138 @@ void main() {
       expect(find.text('Самое важное'), findsOneWidget);
     });
   });
+
+  testWidgets('«Add task» во втором списке — задача со значениями его части: '
+      'проект, метка, приоритет (решение 1А)', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final work = (await tester.runAsync(
+        () => app.projects.add(name: 'Work'),
+      ))!;
+      await settle(tester);
+      final home = (await tester.runAsync(() => app.labels.add(name: 'home')))!;
+      await settle(tester);
+      await addFilter(
+        tester,
+        app,
+        name: 'Mixed',
+        query: 'p1, #Work & %home & p2',
+      );
+      await openFiltersLabels(tester);
+      await tester.tap(onScreen(find.text('Mixed')));
+      await settle(tester);
+
+      await tester.tap(onScreen(find.text('Add task')).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Task name'),
+        'Paint fence',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await settle(tester);
+
+      final ws = (await tester.runAsync(app.read))!;
+      final added = ws.children(null, projectId: work).single;
+      expect(added.content, 'Paint fence');
+      expect(added.labelIds, [home]);
+      expect(added.priority, 2);
+      expect(row('Paint fence'), findsOneWidget);
+    });
+  });
+
+  testWidgets('стрелка у задачи с подзадачами раскрывает их только на экране: '
+      'в данных задача не свёрнута и не развёрнута (решение 2А)', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final parent = (await tester.runAsync(
+        () => app.tasks.add(content: 'Parent', priority: 1),
+      ))!;
+      await settle(tester);
+      await tester.runAsync(
+        () => app.tasks.add(content: 'Child', parentId: parent),
+      );
+      await settle(tester);
+      await addFilter(tester, app, name: 'Top', query: 'p1');
+      final before = (await tester.runAsync(device.ownOps))!.length;
+      await openFiltersLabels(tester);
+      await tester.tap(onScreen(find.text('Top')));
+      await settle(tester);
+
+      expect(row('Child'), findsNothing);
+      await tester.tap(onScreen(find.byIcon(Icons.chevron_right)));
+      await settle(tester);
+      expect(row('Child'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Child')).dx,
+        greaterThan(tester.getTopLeft(find.text('Parent')).dx),
+      );
+      await tester.tap(onScreen(find.byIcon(Icons.expand_more)));
+      await settle(tester);
+      expect(row('Child'), findsNothing);
+      expect((await tester.runAsync(device.ownOps))!.length, before);
+    });
+    // Раскрытие — только на компьютере (help); тесты по умолчанию — Android.
+  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+  testWidgets('подзадача тоже в списке: под раскрытым родителем — одна строка, '
+      'своей строкой не повторяется', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final parent = (await tester.runAsync(
+        () => app.tasks.add(content: 'Parent', priority: 1),
+      ))!;
+      await settle(tester);
+      await tester.runAsync(
+        () => app.tasks.add(content: 'Child', parentId: parent, priority: 1),
+      );
+      await settle(tester);
+      await addFilter(tester, app, name: 'Top', query: 'p1');
+      await openFiltersLabels(tester);
+      await tester.tap(onScreen(find.text('Top')));
+      await settle(tester);
+      expect(row('Child'), findsOneWidget);
+
+      await tester.tap(onScreen(find.byIcon(Icons.chevron_right)));
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      expect(row('Child'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Child')).dx,
+        greaterThan(tester.getTopLeft(find.text('Parent')).dx),
+      );
+    });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+  testWidgets('на телефоне задачу в фильтре не раскрыть — стрелки нет', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final parent = (await tester.runAsync(
+        () => app.tasks.add(content: 'Parent', priority: 1),
+      ))!;
+      await settle(tester);
+      await tester.runAsync(
+        () => app.tasks.add(content: 'Child', parentId: parent),
+      );
+      await settle(tester);
+      await addFilter(tester, app, name: 'Top', query: 'p1');
+      GoRouter.of(
+        tester.element(find.byType(Scaffold).first),
+      ).go('/filter/${(await tester.runAsync(app.read))!.filters.single.id}');
+      await settle(tester);
+      expect(row('Parent'), findsOneWidget);
+      expect(onScreen(find.byIcon(Icons.chevron_right)), findsNothing);
+      expect(onScreen(find.byIcon(Icons.expand_more)), findsNothing);
+      // Счётчик подзадач не сворачивает: в данные ничего не пишется.
+      final before = (await tester.runAsync(device.ownOps))!.length;
+      await tester.tap(onScreen(find.text('0/1')));
+      await settle(tester);
+      expect((await tester.runAsync(device.ownOps))!.length, before);
+    });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('меню фильтра: изменить, дублировать, удалить с подтверждением '
       '— с экрана удалённого фильтра уходим на «Filters & Labels»', (

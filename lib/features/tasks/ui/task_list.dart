@@ -6,6 +6,7 @@ import '../../../domain/workspace.dart';
 import 'add_task_editor.dart';
 import 'task_drag.dart';
 import 'task_row.dart';
+import 'task_row_parts.dart';
 import '../../common/ui/drag_rows.dart';
 
 /// Где открыт редактор «Добавить задачу» в списке.
@@ -27,6 +28,9 @@ class TaskList extends StatelessWidget {
     this.canAdd = true,
     this.labelIds = const {},
     this.due,
+    this.priority,
+    this.deadline,
+    this.collapseOf,
     this.showProject = false,
     this.hierarchy = true,
     this.drop,
@@ -50,6 +54,14 @@ class TaskList extends StatelessWidget {
 
   /// Срок новой задачи: в «Сегодня» — сегодня, в «Предстоящем» — день.
   final Due? due;
+
+  /// Приоритет и дедлайн новой задачи: на экране фильтра — из запроса.
+  final int? priority;
+  final String? deadline;
+
+  /// Свёрнутость подзадач строки вне данных задачи (экран фильтра); `null`
+  /// у списка или строки — поле задачи.
+  final RowCollapse? Function(TreeItem<Task> item)? collapseOf;
 
   /// Показать у задач проект и раздел (список из разных проектов).
   final bool showProject;
@@ -77,6 +89,8 @@ class TaskList extends StatelessWidget {
     atTop: top,
     labelIds: labelIds,
     due: due,
+    priority: priority,
+    deadline: deadline,
     onClose: () => onAddAt(AddTaskAt.none),
   );
 
@@ -110,6 +124,7 @@ class TaskList extends StatelessWidget {
             selectable: parentId == null,
             showProject: showProject,
             hierarchy: hierarchy,
+            collapse: collapseOf?.call(item),
           ),
           item,
         ),

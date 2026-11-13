@@ -15,11 +15,15 @@ import '../../common/ui/description_line.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflict_mark.dart';
+import '../../shell/ui/shell_keys.dart';
 import '../../tasks/state/today.dart';
+import '../../tasks/ui/task_actions.dart';
+import '../../tasks/ui/task_list.dart';
 import '../../tasks/ui/task_order.dart';
 import '../../views/state/view_options.dart';
 import '../../views/ui/view_options_button.dart';
 import '../../views/ui/view_sort_keys.dart';
+import '../logic/filter_add_values.dart';
 import 'filter_dialog.dart';
 import 'filter_lists.dart';
 import 'filter_menu.dart';
@@ -31,69 +35,127 @@ import 'filter_query_field.dart';
 /// сортировка «Отображения»; вручную не упорядочивается (help «Sort or group
 /// tasks»). Запрос разбирается заново при каждой перестройке: даты в нём —
 /// от сегодняшнего дня. Запрос с ошибкой (пришёл с другого устройства) —
-/// текст ошибки и «Изменить фильтр».
-class FilterScreen extends ConsumerWidget {
+/// текст ошибки и «Изменить фильтр». «Добавить задачу» у каждого списка — со
+/// значениями его части (решение 1А plans/m5); `a` / `Shift+A` — у первого.
+class FilterScreen extends ConsumerStatefulWidget {
   const FilterScreen({super.key, required this.filterId});
 
   final String filterId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) =>
-      WorkspaceView(builder: (context, ws) => _build(context, ref, ws));
+  ConsumerState<FilterScreen> createState() => _FilterScreenState();
+}
 
-  Widget _build(BuildContext context, WidgetRef ref, Workspace ws) {
+class _FilterScreenState extends ConsumerState<FilterScreen> {
+  /// Список, где открыт редактор «Добавить задачу», и его место.
+  FilterAdding _adding = (list: 0, at: AddTaskAt.none);
+
+  /// Задачи, подзадачи которых раскрыты на этом экране (решение 2А).
+  final Set<String> _expanded = {};
+
+  /// Запрос, по которому открыт редактор: части другого запроса — другие
+  /// списки, и номер списка в [_adding] указывал бы не туда.
+  String? _query;
+
+  void _add(int list, AddTaskAt at) =>
+      setState(() => _adding = (list: list, at: at));
+
+  void _toggle(String id) => setState(
+    () => _expanded.contains(id) ? _expanded.remove(id) : _expanded.add(id),
+  );
+
+  @override
+  void didUpdateWidget(FilterScreen old) {
+    super.didUpdateWidget(old);
+    // Другой фильтр на том же экране — раскрытое и редактор не переносятся.
+    if (old.filterId != widget.filterId) {
+      _adding = (list: 0, at: AddTaskAt.none);
+      _expanded.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => WorkspaceView(builder: _build);
+
+  Widget _build(BuildContext context, Workspace ws) {
     final l10n = AppLocalizations.of(context);
-    final filter = ws.filter(filterId);
+    final filter = ws.filter(widget.filterId);
     final inbox = ws.inbox;
     if (filter == null || inbox == null) {
       return Center(child: Text(l10n.rejectNotFound));
     }
-    final options = ref.watch(viewOptionsProvider(ViewType.filter, filterId));
+    final options = ref.watch(
+      viewOptionsProvider(ViewType.filter, widget.filterId),
+    );
     // Подписка: «сегодня» в запросе и группы по дням меняются в полночь.
     ref.watch(todayProvider);
-    final (shown, error) = _evaluate(ref, filter, ws, options);
+    if (_query != filter.query) {
+      _adding = (list: 0, at: AddTaskAt.none);
+      _query = filter.query;
+    }
+    final (shown, error) = _evaluate(filter, ws, options);
     return ViewSortKeys(
       viewType: ViewType.filter,
       objectId: filter.id,
-      child: Focus(
-        autofocus: true,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: contentMaxWidth),
-            child: TaskOrderScope(
-              // Порядок — на момент открытия панели, по свежему снимку.
-              order: (ws) => _order(ref, ws),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
-                children: [
-                  _Header(filter: filter),
-                  ConflictBanner(
-                    entity: ConflictEntity.filter,
-                    id: filter.id,
-                    margin: const EdgeInsets.only(bottom: 8),
+      child: Shortcuts(
+        shortcuts: projectShortcuts,
+        child: Actions(
+          actions: {
+            AddTaskBottomIntent: HotkeyAction<AddTaskBottomIntent>(
+              blocked: () => ShellKeys.sequencePending(context),
+              () => _add(0, AddTaskAt.bottom),
+            ),
+            AddTaskTopIntent: HotkeyAction<AddTaskTopIntent>(
+              blocked: () => ShellKeys.sequencePending(context),
+              () => _add(0, AddTaskAt.top),
+            ),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+                child: TaskOrderScope(
+                  // Порядок — на момент открытия панели, по свежему снимку.
+                  order: _order,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(32, 8, 32, 48),
+                    children: [
+                      _Header(filter: filter),
+                      ConflictBanner(
+                        entity: ConflictEntity.filter,
+                        id: filter.id,
+                        margin: const EdgeInsets.only(bottom: 8),
+                      ),
+                      // Ключ по фильтру: экран тот же при переходе на другой
+                      // фильтр, черновик не должен уйти в него.
+                      DescriptionLine(
+                        key: ValueKey(filter.id),
+                        text: filter.description,
+                        readOnly: false,
+                        placeholder: l10n.addProjectDescription,
+                        onSave: (text) => ref
+                            .read(filterCommandsProvider)
+                            .setDescription(filter.id, text),
+                      ),
+                      if (shown != null)
+                        FilterLists(
+                          lists: shown.lists,
+                          values: shown.values,
+                          ws: ws,
+                          inboxId: inbox.id,
+                          grouping: options.grouping,
+                          adding: _adding,
+                          onAdd: _add,
+                          expanded: _expanded,
+                          onToggle: _toggle,
+                        )
+                      else if (error != null)
+                        _Broken(filter: filter, error: error),
+                    ],
                   ),
-                  // Ключ по фильтру: экран тот же при переходе на другой
-                  // фильтр, черновик не должен уйти в него.
-                  DescriptionLine(
-                    key: ValueKey(filter.id),
-                    text: filter.description,
-                    readOnly: false,
-                    placeholder: l10n.addProjectDescription,
-                    onSave: (text) => ref
-                        .read(filterCommandsProvider)
-                        .setDescription(filter.id, text),
-                  ),
-                  if (shown != null)
-                    FilterLists(
-                      lists: shown,
-                      ws: ws,
-                      inboxId: inbox.id,
-                      grouping: options.grouping,
-                    )
-                  else if (error != null)
-                    _Broken(filter: filter, error: error),
-                ],
+                ),
               ),
             ),
           ),
@@ -102,44 +164,52 @@ class FilterScreen extends ConsumerWidget {
     );
   }
 
-  /// Списки запроса фильтра на сейчас или ошибка его разбора.
-  static (List<FilterList>?, FilterSyntaxError?) _evaluate(
-    WidgetRef ref,
+  /// Списки запроса фильтра на сейчас и значения новой задачи каждого или
+  /// ошибка разбора.
+  (_Shown?, FilterSyntaxError?) _evaluate(
     SavedFilter filter,
     Workspace ws,
     ViewOptions options,
   ) {
     final now = ref.read(clockProvider).nowWall();
     try {
+      final query = parseFilterQuery(filter.query, now: now);
       final lists = evaluateFilter(
         ws,
-        parseFilterQuery(filter.query, now: now),
+        query,
         now: now,
         sorting: options.sorting,
         sortOrder: options.sortOrder,
       );
-      return (lists, null);
+      final values = [for (final p in query.parts) filterAddValues(ws, p.node)];
+      return ((lists: lists, values: values), null);
     } on FilterSyntaxError catch (e) {
       return (null, e);
     }
   }
 
-  List<String> _order(WidgetRef ref, Workspace ws) {
-    final filter = ws.filter(filterId);
+  List<String> _order(Workspace ws) {
+    final filter = ws.filter(widget.filterId);
     if (filter == null) return const [];
-    final options = ref.read(viewOptionsProvider(ViewType.filter, filterId));
-    final (lists, _) = _evaluate(ref, filter, ws, options);
-    return lists == null
+    final options = ref.read(
+      viewOptionsProvider(ViewType.filter, widget.filterId),
+    );
+    final (shown, _) = _evaluate(filter, ws, options);
+    return shown == null
         ? const []
         : filterOrder(
             ws,
-            lists,
+            shown.lists,
             options.grouping,
+            expanded: _expanded,
             today: ref.read(todayProvider),
             clock: ref.read(clockProvider),
           );
   }
 }
+
+/// Списки фильтра и значения новой задачи каждого.
+typedef _Shown = ({List<FilterList> lists, List<FilterAddValues> values});
 
 /// Название фильтра, «Отображение» и меню «⋯».
 class _Header extends StatelessWidget {

@@ -32,6 +32,7 @@ class TaskRow extends ConsumerStatefulWidget {
     this.showProject = false,
     this.hierarchy = true,
     this.selectable = true,
+    this.collapse,
   });
 
   final TreeItem<Task> item;
@@ -50,6 +51,10 @@ class TaskRow extends ConsumerStatefulWidget {
   /// `false` — `x` и клики с `Ctrl`/`Shift` не выделяют (подзадачи в окне
   /// задачи).
   final bool selectable;
+
+  /// Свёрнутость подзадач вне данных задачи (экран фильтра); `null` — поле
+  /// задачи `collapsed`, как в проекте.
+  final RowCollapse? collapse;
 
   @override
   ConsumerState<TaskRow> createState() => _TaskRowState();
@@ -72,12 +77,15 @@ class _TaskRowState extends ConsumerState<TaskRow> {
 
   bool get _canCollapse => widget.collapsible && widget.item.childCount > 0;
 
-  void _toggleCollapse() => runCommand(
-    context,
-    () => ref
-        .read(taskCommandsProvider)
-        .setCollapsed(_task.id, !_task.isCollapsed),
-  );
+  void _toggleCollapse() => switch (widget.collapse) {
+    final c? => c.toggle(),
+    null => runCommand(
+      context,
+      () => ref
+          .read(taskCommandsProvider)
+          .setCollapsed(_task.id, !_task.isCollapsed),
+    ),
+  };
 
   /// `e`: повторное нажатие, пока первое пишется, не действует.
   Future<void> _complete() async {
@@ -176,30 +184,17 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     showTaskDialog(context, _task.id);
   }
 
-  /// Клик по строке (help «Use keyboard shortcuts», «Add or manage multiple
-  /// tasks»): `Ctrl+Shift` — диапазон от прошлой выделенной, `Ctrl` или
-  /// `Shift` — выделить; в режиме выделения на телефоне касание выделяет;
-  /// обычный клик снимает выделение и открывает панель (решение 2А «Ход
-  /// M4.8»). Задачу архивного проекта не выделить: менять её нельзя.
-  void _onTap() {
-    final keys = HardwareKeyboard.instance;
-    final ctrl = keys.isControlPressed;
-    final shift = keys.isShiftPressed;
-    if (_canSelect && ctrl && shift) {
-      ref
-          .read(taskSelectionProvider.notifier)
-          .selectRange(
-            _task.id,
-            widget.ws,
-            order: TaskOrderScope.maybeOf(context),
-          );
-    } else if (_canSelect &&
-        (ctrl || shift || ref.read(taskSelectionProvider).touchMode)) {
-      _toggleSelected();
-    } else {
-      _open();
-    }
-  }
+  /// Клик по строке — [taskRowTap]. Задачу архивного проекта не выделить:
+  /// менять её нельзя.
+  void _onTap() => taskRowTap(
+    ref: ref,
+    task: _task,
+    ws: widget.ws,
+    canSelect: _canSelect,
+    order: TaskOrderScope.maybeOf(context),
+    toggleSelected: _toggleSelected,
+    open: _open,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +253,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CollapseToggle(
-                    collapsed: t.isCollapsed,
+                    collapsed: widget.collapse?.collapsed ?? t.isCollapsed,
                     onToggle: _canCollapse ? _toggleCollapse : null,
                   ),
                   TaskCheckCircle(
