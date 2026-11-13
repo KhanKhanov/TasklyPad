@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/models.dart';
 import '../../../domain/workspace.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../common/ui/drag_source.dart';
 import '../../sections/ui/section_block.dart';
 import '../../sections/ui/section_drag.dart';

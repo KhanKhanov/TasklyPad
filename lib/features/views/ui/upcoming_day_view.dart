@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../tasks/ui/add_task_editor.dart';
 import '../../tasks/ui/task_drag.dart';
 import '../../tasks/ui/task_drop_places.dart';

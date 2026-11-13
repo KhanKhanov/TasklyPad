@@ -6,7 +6,7 @@ import '../../../domain/view_options.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/state/drag_session.dart';
 import '../../common/ui/drag_layer.dart';
-import '../../common/ui/drag_source.dart';
+import '../../common/ui/drag_rows.dart';
 import '../state/selection.dart';
 import 'task_actions.dart';
 import 'task_drag.dart';
@@ -143,21 +143,19 @@ class ProjectDropSlot extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => DropMarker(
+  Widget build(BuildContext context) => DropArea(
     owner: 'project:$projectId',
-    child: DropSlotRegion(
-      resolve: (query, _) => query.payload is TaskDrag
-          ? MoveTasksPlace(
-              ids: (query.payload as TaskDrag).ids,
-              projectId: projectId,
-              indicator: DropIndicator(
-                owner: 'project:$projectId',
-                mark: DropMark.frame,
-              ),
-            )
-          : null,
-      child: child,
-    ),
+    resolve: (query, _) => query.payload is TaskDrag
+        ? MoveTasksPlace(
+            ids: (query.payload as TaskDrag).ids,
+            projectId: projectId,
+            indicator: DropIndicator(
+              owner: 'project:$projectId',
+              mark: DropMark.frame,
+            ),
+          )
+        : null,
+    child: child,
   );
 }
 
@@ -180,32 +178,30 @@ class SectionDropSlot extends StatelessWidget {
   final bool enabled;
 
   @override
-  Widget build(BuildContext context) => DropMarker(
+  Widget build(BuildContext context) => DropArea(
     owner: 'section:$sectionId',
-    child: DropSlotRegion(
-      resolve: (query, _) {
-        final payload = query.payload;
-        final origin = payload is TaskDrag ? payload.origin : null;
-        if (!enabled ||
-            payload is! TaskDrag ||
-            origin is! ProjectDrop ||
-            origin.parentId != null ||
-            origin.projectId != projectId) {
-          return null;
-        }
-        return MoveTasksPlace(
-          ids: payload.ids,
-          projectId: projectId,
-          sectionId: sectionId,
-          atTop: true,
-          indicator: DropIndicator(
-            owner: 'section:$sectionId',
-            mark: DropMark.frame,
-          ),
-        );
-      },
-      child: child,
-    ),
+    resolve: (query, _) {
+      final payload = query.payload;
+      final origin = payload is TaskDrag ? payload.origin : null;
+      if (!enabled ||
+          payload is! TaskDrag ||
+          origin is! ProjectDrop ||
+          origin.parentId != null ||
+          origin.projectId != projectId) {
+        return null;
+      }
+      return MoveTasksPlace(
+        ids: payload.ids,
+        projectId: projectId,
+        sectionId: sectionId,
+        atTop: true,
+        indicator: DropIndicator(
+          owner: 'section:$sectionId',
+          mark: DropMark.frame,
+        ),
+      );
+    },
+    child: child,
   );
 }
 
@@ -217,11 +213,9 @@ class DayDropSlot extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => DropMarker(
+  Widget build(BuildContext context) => DropArea(
     owner: 'day:$date',
-    child: DropSlotRegion(
-      resolve: (query, _) => dayHeaderPlace(query.payload, date),
-      child: child,
-    ),
+    resolve: (query, _) => dayHeaderPlace(query.payload, date),
+    child: child,
   );
 }

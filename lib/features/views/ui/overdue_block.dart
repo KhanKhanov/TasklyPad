@@ -7,6 +7,7 @@ import '../../../domain/models.dart';
 import '../../../domain/tree.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../tasks/ui/scheduler_dialog.dart';
 import '../../tasks/ui/task_actions.dart';
 import '../../tasks/ui/task_drag.dart';

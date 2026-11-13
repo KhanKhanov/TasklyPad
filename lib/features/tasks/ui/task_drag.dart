@@ -7,8 +7,7 @@ import '../../../domain/tree.dart';
 import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
-import '../../common/ui/drag_layer.dart';
-import '../../common/ui/drag_slots.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../common/ui/drag_source.dart';
 import '../../common/state/drag_session.dart';
 import '../state/selection.dart';
@@ -19,25 +18,8 @@ import 'task_drop_calc.dart';
 export 'task_drag_payload.dart';
 export 'task_end_slot.dart';
 
-/// Поле слева от строки задачи под ручку перетаскивания.
-const double dragGutter = 20;
-
 /// Шаг уровня подзадачи в строке (как отступ в `TaskRow`).
 const double taskIndentStep = 28;
-
-/// Сдвиг вправо на [dragGutter] у того, что стоит рядом со строками задач в
-/// списке с полем под ручку: заголовки, «Добавить раздел», «Пусто».
-class DragGutter extends StatelessWidget {
-  const DragGutter({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: dragGutter),
-    child: child,
-  );
-}
 
 /// Список, из которого тащат задачи и в который их бросают: что с ним можно
 /// делать при перетаскивании. Нет значения — нет ни ручки, ни слота.
@@ -213,25 +195,23 @@ class _TaskDragRowState extends ConsumerState<TaskDragRow> {
           ),
       ],
     );
-    return DropMarker(
+    return DropArea(
       owner: _task.id,
-      child: DropSlotRegion(
-        resolve: (query, box) => drop == null || drop is OverdueDrop
-            ? null
-            : taskDropPlace(
-                drop,
-                query,
-                box,
-                items: widget.items,
-                rowId: _task.id,
-              ),
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hover = true),
-          onExit: (_) => setState(() => _hover = false),
-          child: DragSourceDim(
-            id: _task.id,
-            child: DragBlocker(child: row),
-          ),
+      resolve: (query, box) => drop == null || drop is OverdueDrop
+          ? null
+          : taskDropPlace(
+              drop,
+              query,
+              box,
+              items: widget.items,
+              rowId: _task.id,
+            ),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: DragSourceDim(
+          id: _task.id,
+          child: DragBlocker(child: row),
         ),
       ),
     );

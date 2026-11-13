@@ -7,6 +7,7 @@ import 'package:planner/domain/models.dart';
 import 'package:planner/domain/view_options.dart';
 import 'package:planner/features/common/state/drag_session.dart';
 import 'package:planner/features/common/ui/drag_layer.dart';
+import 'package:planner/features/common/ui/drag_rows.dart';
 import 'package:planner/features/common/ui/drag_source.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/tasks/ui/selection_toolbar.dart';

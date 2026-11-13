@@ -8,6 +8,7 @@ import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../shell/ui/shell_keys.dart';

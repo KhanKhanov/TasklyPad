@@ -5,9 +5,9 @@ import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
 import '../../common/state/drag_session.dart';
 import '../../common/ui/drag_layer.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../common/ui/drag_source.dart';
 import '../../common/ui/ui_kit.dart';
-import '../../tasks/ui/task_drag.dart';
 import '../state/section_renaming.dart';
 
 /// Перетаскиваемый раздел: сам, вместе с задачами (они вычисляются по
@@ -102,13 +102,13 @@ class _SectionHeaderDragState extends ConsumerState<SectionHeaderDrag> {
     }
     final others = [
       for (final s in widget.sections)
-        if (s.id != payload.section.id) s,
+        if (s.id != payload.section.id) s.id,
     ];
-    final at = others.indexWhere((s) => s.id == _section.id);
+    final at = others.indexOf(_section.id);
     if (at < 0) return null;
     return ReorderSectionPlace(
       id: payload.section.id,
-      afterId: at == 0 ? null : others[at - 1].id,
+      afterId: afterIdAt(others, at),
       indicator: DropIndicator(
         owner: 'sec:${_section.id}',
         mark: DropMark.above,
@@ -126,40 +126,38 @@ class _SectionHeaderDragState extends ConsumerState<SectionHeaderDrag> {
     final renaming = ref.watch(
       sectionRenamingProvider.select((s) => s.contains(_section.id)),
     );
-    return DropMarker(
+    return DropArea(
       owner: 'sec:${_section.id}',
-      child: DropSlotRegion(
-        resolve: _resolve,
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hover = true),
-          onExit: (_) => setState(() => _hover = false),
-          child: DragSourceDim(
-            id: _section.id,
-            child: Stack(
-              children: [
-                TouchDraggable(
-                  data: payload,
-                  maxSimultaneousDrags: renaming ? 0 : 1,
-                  feedback: ghost,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: dragGutter),
-                    child: widget.child,
+      resolve: _resolve,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hover = true),
+        onExit: (_) => setState(() => _hover = false),
+        child: DragSourceDim(
+          id: _section.id,
+          child: Stack(
+            children: [
+              TouchDraggable(
+                data: payload,
+                maxSimultaneousDrags: renaming ? 0 : 1,
+                feedback: ghost,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: dragGutter),
+                  child: widget.child,
+                ),
+              ),
+              if (_hover && !renaming)
+                Positioned(
+                  left: 0,
+                  top: 16,
+                  width: dragGutter,
+                  height: 40,
+                  child: MouseDraggable(
+                    data: payload,
+                    feedback: ghost,
+                    child: const DragGrip(),
                   ),
                 ),
-                if (_hover && !renaming)
-                  Positioned(
-                    left: 0,
-                    top: 16,
-                    width: dragGutter,
-                    height: 40,
-                    child: MouseDraggable(
-                      data: payload,
-                      feedback: ghost,
-                      child: const DragGrip(),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -182,28 +180,26 @@ class SectionTasksSlot extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => DropMarker(
+  Widget build(BuildContext context) => DropArea(
     owner: 'secend:${section.id}',
-    child: DropSlotRegion(
-      resolve: (query, _) {
-        final payload = query.payload;
-        if (payload is! SectionDrag ||
-            payload.projectId != projectId ||
-            payload.section.id == section.id) {
-          return null;
-        }
-        return ReorderSectionPlace(
-          id: payload.section.id,
-          afterId: section.id,
-          indicator: DropIndicator(
-            owner: 'secend:${section.id}',
-            mark: DropMark.below,
-            indent: dragGutter,
-          ),
-        );
-      },
-      child: child,
-    ),
+    resolve: (query, _) {
+      final payload = query.payload;
+      if (payload is! SectionDrag ||
+          payload.projectId != projectId ||
+          payload.section.id == section.id) {
+        return null;
+      }
+      return ReorderSectionPlace(
+        id: payload.section.id,
+        afterId: section.id,
+        indicator: DropIndicator(
+          owner: 'secend:${section.id}',
+          mark: DropMark.below,
+          indent: dragGutter,
+        ),
+      );
+    },
+    child: child,
   );
 }
 

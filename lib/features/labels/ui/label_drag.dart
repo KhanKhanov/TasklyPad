@@ -5,7 +5,7 @@ import '../../../app/data_providers.dart';
 import '../../../domain/models.dart';
 import '../../common/state/drag_session.dart';
 import '../../common/ui/drag_layer.dart';
-import '../../common/ui/drag_source.dart';
+import '../../common/ui/drag_rows.dart';
 import '../../common/ui/ui_kit.dart';
 
 /// Перетаскиваемая метка.
@@ -66,17 +66,16 @@ class LabelDragTile extends StatelessWidget {
     if (payload is! LabelDrag) return null;
     final dragged = payload.label.id;
     final upper = box.globalToLocal(query.pointer).dy < box.size.height / 2;
-    final others = [
-      for (final l in labels)
-        if (l.id != dragged) l,
-    ];
     if (label.id == dragged) return null;
-    final at = others.indexWhere((l) => l.id == label.id);
-    if (at < 0) return null;
+    final row = labels.indexWhere((l) => l.id == label.id);
+    if (row < 0) return null;
+    bool keeps(Label l) => l.id != dragged;
     // Над строкой — перед ней, под строкой — после неё.
     return ReorderLabelPlace(
       id: dragged,
-      afterId: upper ? (at == 0 ? null : others[at - 1].id) : label.id,
+      afterId: afterIdAt([
+        for (final l in labels.where(keeps)) l.id,
+      ], dropIndex(labels, row, upper: upper, keeps: keeps)),
       indicator: DropIndicator(
         owner: 'label:${label.id}',
         mark: upper ? DropMark.above : DropMark.below,
@@ -85,27 +84,12 @@ class LabelDragTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final payload = LabelDrag(label);
-    final ghost = DragGhost(title: label.name, payload: payload);
-    return DropMarker(
-      owner: 'label:${label.id}',
-      child: DropSlotRegion(
-        resolve: _resolve,
-        child: DragSourceDim(
-          id: label.id,
-          child: MouseDraggable(
-            data: payload,
-            feedback: ghost,
-            rowDrag: true,
-            child: TouchDraggable(
-              data: payload,
-              feedback: ghost,
-              child: DragBlocker(child: child),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => WholeRowDrag(
+    owner: 'label:${label.id}',
+    resolve: _resolve,
+    id: label.id,
+    payload: LabelDrag(label),
+    title: label.name,
+    child: child,
+  );
 }
