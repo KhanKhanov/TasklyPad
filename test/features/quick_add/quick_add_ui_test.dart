@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/workspace.dart';
+import 'package:planner/features/common/ui/app_switch.dart';
 import 'package:planner/features/quick_add/state/quick_add_controller.dart';
 import 'package:planner/features/quick_add/ui/quick_add_composer.dart';
 import 'package:planner/features/quick_add/ui/quick_add_field.dart';
@@ -558,21 +559,21 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
     await settle(tester);
     expect(find.text('General'), findsOneWidget);
-    return find.widgetWithText(SwitchListTile, 'Smart date recognition');
+    return find.widgetWithText(AppSwitchTile, 'Smart date recognition');
   }
 
   testWidgets('компьютер: «Settings → General» — переключатель сохраняет '
       'только «Update», одной op', (tester) async {
     await withApp(tester, (device) async {
       final general = await openGeneral(tester);
-      expect(tester.widget<SwitchListTile>(general).value, isTrue);
+      expect(tester.widget<AppSwitchTile>(general).value, isTrue);
       await tester.tap(general);
       await tester.pump();
       expect(await saved(tester, device), isTrue);
       await tester.tap(find.text('Update').first);
       await settle(tester);
       expect(await saved(tester, device), isFalse);
-      expect(tester.widget<SwitchListTile>(general).value, isFalse);
+      expect(tester.widget<AppSwitchTile>(general).value, isFalse);
       final ops = (await tester.runAsync(device.ownOps))!;
       expect(
         ops.where((op) => op.field == SettingsFields.smartDateRecognition),
@@ -589,7 +590,7 @@ void main() {
       await tester.tap(general);
       await settle(tester);
       expect(await saved(tester, device), isFalse);
-      expect(tester.widget<SwitchListTile>(general).value, isFalse);
+      expect(tester.widget<AppSwitchTile>(general).value, isFalse);
     });
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 }

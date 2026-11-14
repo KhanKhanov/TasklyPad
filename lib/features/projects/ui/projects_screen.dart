@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_switch.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import 'project_dialog.dart';
@@ -57,8 +58,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
+            AppSwitchTile(
               title: Text(l10n.onlyArchivedProjects),
               value: _archived,
               onChanged: (v) => setState(() => _archived = v),

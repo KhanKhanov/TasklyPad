@@ -9,6 +9,7 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../nlp/filter_parser.dart';
+import '../../common/ui/app_switch.dart';
 import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../tasks/state/today.dart';
@@ -186,8 +187,7 @@ class _FilterDialogState extends ConsumerState<_FilterDialog> {
                 onChanged: (v) => setState(() => _color = v ?? _color),
               ),
               const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
+              AppSwitchTile(
                 value: _favorite,
                 title: Text(l10n.addToFavorites),
                 onChanged: (v) => setState(() => _favorite = v),
