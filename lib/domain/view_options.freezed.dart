@@ -18,7 +18,7 @@ mixin _$ViewOptions {
  ViewType get viewType;/// Id проекта, метки или фильтра; у «Сегодня» и «Предстоящего» — `null`.
  String? get objectId; Grouping get grouping; Sorting get sorting; SortOrder get sortOrder;/// «Выполненные задачи» в списке вида.
  bool get showCompletedTasks;/// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
-/// без фильтра. Применение и выбор — M5.3.
+/// без фильтра. Выбор — [ViewFilter].
  String? get filteredBy;
 /// Create a copy of ViewOptions
 /// with the given fields replaced by the non-null parameter values.
@@ -234,7 +234,7 @@ class _ViewOptions extends ViewOptions {
 /// «Выполненные задачи» в списке вида.
 @override@JsonKey() final  bool showCompletedTasks;
 /// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
-/// без фильтра. Применение и выбор — M5.3.
+/// без фильтра. Выбор — [ViewFilter].
 @override final  String? filteredBy;
 
 /// Create a copy of ViewOptions

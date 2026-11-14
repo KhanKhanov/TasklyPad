@@ -288,6 +288,59 @@ final class SettingsRepositoryProvider
 String _$settingsRepositoryHash() =>
     r'2de17899c89cd144d3e134172002d79d8b2f2dfd';
 
+/// Журнал «Уведомления» этого устройства (`local_meta`).
+
+@ProviderFor(notificationLogRepository)
+final notificationLogRepositoryProvider = NotificationLogRepositoryProvider._();
+
+/// Журнал «Уведомления» этого устройства (`local_meta`).
+
+final class NotificationLogRepositoryProvider
+    extends
+        $FunctionalProvider<
+          NotificationLogRepository,
+          NotificationLogRepository,
+          NotificationLogRepository
+        >
+    with $Provider<NotificationLogRepository> {
+  /// Журнал «Уведомления» этого устройства (`local_meta`).
+  NotificationLogRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'notificationLogRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$notificationLogRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<NotificationLogRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  NotificationLogRepository create(Ref ref) {
+    return notificationLogRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(NotificationLogRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<NotificationLogRepository>(value),
+    );
+  }
+}
+
+String _$notificationLogRepositoryHash() =>
+    r'736d71bec78897bbf1a36dd625f332372ee53478';
+
 /// «Умное распознавание дат» — своё и пришедшее синхронизацией.
 
 @ProviderFor(smartDateRecognition)

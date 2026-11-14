@@ -31,6 +31,10 @@ final class LocalMetaDao {
   static const String themeIdKey = 'theme.id';
   static const String themeAppearanceKey = 'theme.appearance';
 
+  /// Журнал «Уведомления» — JSON `NotificationLog` (разбирает
+  /// `NotificationLogRepository`).
+  static const String notificationLogKey = 'notifications.log';
+
   Future<String?> read(String key) async {
     final row = await (_db.select(
       _db.localMeta,
