@@ -1328,7 +1328,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get viewFilterHeader => 'Фильтр';
 
   @override
-  String get viewFilterDate => 'Дата';
+  String get viewFilterDate => 'Срок';
 
   @override
   String get viewFilterAll => 'Все';

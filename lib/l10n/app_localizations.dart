@@ -2279,7 +2279,7 @@ abstract class AppLocalizations {
   /// Подменю фильтра «Отображения»: по дате (help «Customize views»: Date)
   ///
   /// In ru, this message translates to:
-  /// **'Дата'**
+  /// **'Срок'**
   String get viewFilterDate;
 
   /// Фильтр «Отображения»: без условия по этому полю
