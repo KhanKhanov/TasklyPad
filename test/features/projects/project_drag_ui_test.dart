@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planner/domain/workspace.dart';
 import 'package:planner/features/common/state/drag_session.dart';
+import 'package:planner/features/common/ui/app_switch.dart';
 import 'package:planner/features/common/ui/drag_layer.dart';
 import 'package:planner/features/projects/ui/project_drag.dart';
 import 'package:planner/features/projects/ui/project_parts.dart';
@@ -316,7 +317,7 @@ void main() {
       await tester.runAsync(() => app.projects.archive(old));
       await settle(tester);
       await goTo(tester, '/projects');
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(AppSwitch));
       await tester.pumpAndSettle();
       expect(
         find.descendant(

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/clock.dart';
+import '../data/repositories/notification_log_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/theme_settings_repository.dart';
 import '../data/repositories/view_options_repository.dart';
@@ -66,6 +67,11 @@ BulkTaskCommands bulkTaskCommands(Ref ref) => BulkTaskCommands(
 @Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) =>
     SettingsRepository(ref.watch(appDatabaseProvider));
+
+/// Журнал «Уведомления» этого устройства (`local_meta`).
+@Riverpod(keepAlive: true)
+NotificationLogRepository notificationLogRepository(Ref ref) =>
+    NotificationLogRepository(ref.watch(appDatabaseProvider));
 
 /// «Умное распознавание дат» — своё и пришедшее синхронизацией.
 @Riverpod(keepAlive: true)

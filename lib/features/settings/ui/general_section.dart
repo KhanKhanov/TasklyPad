@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_switch.dart';
 import 'settings_screen.dart';
 
 /// «Настройки → Основное»: «Умное распознавание дат» (help «Turn smart date
@@ -48,8 +49,7 @@ class _GeneralSectionState extends ConsumerState<GeneralSection> {
       String? hint,
       required bool value,
       required ValueChanged<bool> onChanged,
-    }) => SwitchListTile(
-      contentPadding: EdgeInsets.zero,
+    }) => AppSwitchTile(
       title: Text(
         title,
         style: TextStyle(

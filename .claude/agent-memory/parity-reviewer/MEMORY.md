@@ -3,4 +3,5 @@
 - [Help: ручная проверка 11.11](help_manual_review_nov11.md) — redo, назад/вперёд, Add section, оранжевая точка Display, виджеты, show completed sub-tasks
 - [Help: конец M4 12.11](help_m4_stage_end.md) — хоткеи Upcoming (Home, Shift+стрелки), ответы help на допущения О-69
 - [Help: M5.3 UI фильтров 14.11](m5-3-filters-ui-review.md) — фильтр в «Отображении» (ru «Срок/Дедлайн/Приоритет/Метка»), «Мои фильтры» нет в help
+- [Help: M5.3a «Уведомления» 14.11](m5-3a-notifications-review.md) — help «Notifications» = совместная работа, вкладки «Уведомления»/«Не прочитано», очистки нет
 - [Help: M5 фильтры и поиск 13.11](m5-filters-search-help.md) — язык фильтров (en+ru слова), сохранённые фильтры, поиск, Quick Find Ctrl+K, пробелы help

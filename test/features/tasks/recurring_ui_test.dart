@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/models.dart';
+import 'package:planner/features/common/ui/app_switch.dart';
 import 'package:planner/features/tasks/ui/due_ui.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_dialog_top_bar.dart';
@@ -519,14 +520,14 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
     await settle(tester);
     expect(find.text('Advanced'), findsOneWidget);
-    return find.widgetWithText(SwitchListTile, 'Reset sub-tasks');
+    return find.widgetWithText(AppSwitchTile, 'Reset sub-tasks');
   }
 
   testWidgets('компьютер: «General → Advanced → Reset sub-tasks» сохраняет '
       '«Update», одной op только этого поля', (tester) async {
     await withApp(tester, (device) async {
       final reset = await openAdvanced(tester);
-      expect(tester.widget<SwitchListTile>(reset).value, isFalse);
+      expect(tester.widget<AppSwitchTile>(reset).value, isFalse);
       await tester.tap(reset);
       await tester.pump();
       expect(await savedReset(tester, device), isFalse);

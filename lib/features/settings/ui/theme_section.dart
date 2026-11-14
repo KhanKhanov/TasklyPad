@@ -7,6 +7,7 @@ import '../../../app/theme/app_palette.dart';
 import '../../../app/theme/app_themes.dart';
 import '../../../domain/theme_settings.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_switch.dart';
 import '../logic/theme_commands.dart';
 import 'settings_screen.dart';
 import 'theme_texts.dart';
@@ -117,8 +118,7 @@ class _ThemeSectionState extends ConsumerState<ThemeSection> {
           ),
         ),
         const SizedBox(height: 12),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
+        AppSwitchTile(
           title: Text(l10n.syncTheme, style: title),
           value: sync,
           onChanged: locked ? null : (value) => change(syncTo: value),

@@ -648,6 +648,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflicts => 'Conflicts';
 
   @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get notificationsClearAll => 'Clear all';
+
+  @override
+  String get notificationsEmpty => 'No notifications';
+
+  @override
+  String get notificationDelete => 'Delete';
+
+  @override
+  String notificationsUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Notifications, $count unread',
+      one: 'Notifications, $count unread',
+      zero: 'Notifications',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get conflictsHint =>
       'The same item was changed on two devices. Until you choose, the later change applies.';
 

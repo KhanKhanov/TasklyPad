@@ -7,6 +7,7 @@ import '../../../domain/models.dart';
 import '../../../domain/rules.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../common/ui/app_switch.dart';
 import '../../common/ui/markdown_keys.dart';
 import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
@@ -218,8 +219,7 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
               onChanged: (v) => setState(() => _parent = v),
             ),
             const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
+            AppSwitchTile(
               title: Text(l10n.fieldFavorite),
               value: _favorite,
               onChanged: (v) => setState(() => _favorite = v),

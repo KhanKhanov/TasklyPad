@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/nav_history.dart';
+import '../../../app/notification_log.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../common/ui/layout.dart';
-import '../../common/ui/ui_kit.dart';
 import '../../common/ui/drag_layer.dart';
+import '../../common/ui/layout.dart';
+import '../../common/ui/toast_lamp_anchor.dart';
+import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../filters/ui/filter_dialog.dart';
+import '../../notifications/ui/notifications_tab.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
 import '../../tasks/state/selection.dart';
@@ -89,9 +92,13 @@ class _AppShellState extends ConsumerState<AppShell> {
     final selecting = ref.watch(taskSelectionProvider.select((s) => s.active));
     // История экранов ведётся с первого показа оболочки.
     ref.watch(navHistoryProvider);
+    // Журнал «Уведомления» загружается сразу, а не с первым тостом;
+    // подписка без перестройки оболочки на каждую запись.
+    ref.listen(notificationLogControllerProvider, (_, _) {});
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= wideLayoutWidth;
+        final tab = wide ? notificationsTabHeight : 0.0;
         // Уведомления о конфликтах — тоже на всё время работы приложения.
         // Системная «Назад» при выделении снимает его, а не уходит с экрана.
         return PopScope(
@@ -135,7 +142,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                         ? null
                         : Drawer(
                             width: _sidebarWidth,
-                            child: Sidebar(location: location),
+                            child: Sidebar(
+                              location: location,
+                              showNotifications: true,
+                            ),
                           ),
                     body: Row(
                       key: _bodyKey,
@@ -159,21 +169,50 @@ class _AppShellState extends ConsumerState<AppShell> {
                                       Positioned.fill(
                                         child: Padding(
                                           padding: EdgeInsets.only(
-                                            bottom: selecting ? 72 : 0,
+                                            bottom: selecting ? 72 + tab : 0,
                                           ),
                                           child: widget.child,
                                         ),
                                       ),
+                                      // Над вкладкой «Уведомления».
                                       Positioned(
                                         left: 16,
                                         right: 16,
-                                        bottom: 16,
+                                        bottom: 16 + tab,
                                         child: Center(
                                           child: SelectionToolbar(
                                             focus: _toolbarFocus,
                                           ),
                                         ),
                                       ),
+                                      // Вкладка «Уведомления» — на 78% ширины
+                                      // контента (решение 1А plans/m5
+                                      // «Решения M5.3a»); на телефоне «лампа»
+                                      // — правый нижний угол.
+                                      if (wide)
+                                        const Positioned(
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: Align(
+                                            alignment: Alignment(0.56, 1),
+                                            heightFactor: 1,
+                                            child: NotificationsTab(),
+                                          ),
+                                        )
+                                      else
+                                        const Positioned(
+                                          right: 0,
+                                          bottom: 0,
+                                          child: ToastLampAnchor(
+                                            anchor: Alignment.bottomRight,
+                                            mouth: 24,
+                                            child: SizedBox(
+                                              width: 1,
+                                              height: 1,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

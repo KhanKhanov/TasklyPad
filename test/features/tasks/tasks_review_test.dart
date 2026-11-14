@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/domain/models.dart';
 import 'package:planner/features/common/ui/ui_kit.dart';
@@ -15,6 +16,7 @@ import 'package:planner/features/tasks/ui/add_task_editor.dart';
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
 import '../support/app_commands.dart';
+import '../support/fake_notification_log.dart';
 
 // Сценарии, найденные ревью коммита 2 M2.2: на каждый — тест. Локаль — en.
 void main() {
@@ -269,15 +271,18 @@ void main() {
       'теряется', (tester) async {
     late BuildContext context;
     await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Builder(
-            builder: (c) {
-              context = c;
-              return const SizedBox.shrink();
-            },
+      ProviderScope(
+        overrides: [fakeNotificationLog()],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (c) {
+                context = c;
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       ),

@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/notification_log.dart';
+import '../../../app/toast_lamp.dart';
 import 'genie_transition.dart';
 
 /// Длительность эффекта «джин» — как сворачивание окна в macOS.
@@ -35,7 +38,10 @@ final class AppToast {
 
 /// Нижнее уведомление приложения: появляется и уходит эффектом «джин», как
 /// окно в Dock на macOS (решение пользователя 1А «Анимация уведомлений» —
-/// наше дополнение, в Todoist тост проявляется и гаснет). Вид — как у
+/// наше дополнение, в Todoist тост проявляется и гаснет), — выходит из
+/// «лампы» [ToastLamp] (вкладки «Уведомления») и втекает в неё; показанное
+/// уведомление записывается в журнал «Уведомления» (решения 1А–4А plans/m5
+/// «Решения M5.3a»). Вид — как у
 /// `SnackBar` темы; висит [duration], затем втягивается. [action] — кнопка
 /// справа. Оболочку `SnackBar` даёт `ScaffoldMessenger` (очередь и место
 /// внизу) — прозрачной: тост рисует и анимирует [_AppToast]. Свою короткую
@@ -66,6 +72,8 @@ AppToast showAppToast(
       padding: EdgeInsets.zero,
       behavior: SnackBarBehavior.floating,
       width: 360,
+      // Полоски «джина» уходят к лампе за пределы тоста.
+      clipBehavior: Clip.none,
       // Уходит сам [_AppToast]; это — запас, если анимация не закончится.
       duration: duration + toastGenieDuration * 2 + const Duration(seconds: 1),
       persist: false,
@@ -75,7 +83,7 @@ AppToast showAppToast(
   return toast = AppToast._(controller);
 }
 
-class _AppToast extends StatefulWidget {
+class _AppToast extends ConsumerStatefulWidget {
   const _AppToast({
     required this.text,
     required this.action,
@@ -91,17 +99,22 @@ class _AppToast extends StatefulWidget {
   final Widget Function(Widget toast)? wrap;
 
   @override
-  State<_AppToast> createState() => _AppToastState();
+  ConsumerState<_AppToast> createState() => _AppToastState();
 }
 
-class _AppToastState extends State<_AppToast>
+class _AppToastState extends ConsumerState<_AppToast>
     with SingleTickerProviderStateMixin {
   late final AnimationController _genie = AnimationController(
     vsync: this,
     duration: toastGenieDuration,
   );
+  final GlobalKey _bodyKey = GlobalKey(debugLabel: 'AppToast');
   Timer? _timer;
   bool _leaving = false;
+
+  /// Горлышко лампы в координатах тоста и его ширина; `null` — лампы нет.
+  Offset? _target;
+  double? _mouth;
 
   @override
   void initState() {
@@ -114,6 +127,34 @@ class _AppToastState extends State<_AppToast>
       return;
     }
     _timer = Timer(widget.duration, _dismiss);
+    // Первый кадр появления — все полоски ещё в лампе, невидимы: цель
+    // достаточно найти после него.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _aim();
+    });
+  }
+
+  bool _recorded = false;
+
+  /// В журнал — тост, который появился целиком: подавленный сразу после
+  /// показа (конфликт уже решён, `AppToast.close`) не записывается.
+  void _record() {
+    if (_recorded || !mounted) return;
+    _recorded = true;
+    ref.read(notificationLogControllerProvider.notifier).record(widget.text);
+  }
+
+  /// Найти лампу относительно тоста: окно могли растянуть, сайдбар — скрыть.
+  void _aim() {
+    final lamp = toastLampGlobal(ref.read(toastLampProvider));
+    final box = _bodyKey.currentContext?.findRenderObject();
+    if (lamp == null || box is! RenderBox || !box.hasSize) return;
+    final target = box.globalToLocal(lamp.point);
+    if (target == _target && lamp.mouth == _mouth) return;
+    setState(() {
+      _target = target;
+      _mouth = lamp.mouth;
+    });
   }
 
   @override
@@ -123,8 +164,10 @@ class _AppToastState extends State<_AppToast>
     if (_genie.isDismissed && !_leaving) {
       if (MediaQuery.disableAnimationsOf(context)) {
         _genie.value = 1;
+        // Менять провайдер во время сборки нельзя — после кадра.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _record());
       } else {
-        _genie.forward();
+        _genie.forward().then((_) => _record());
       }
     }
   }
@@ -133,6 +176,7 @@ class _AppToastState extends State<_AppToast>
     if (_leaving || !mounted) return;
     _leaving = true;
     _timer?.cancel();
+    _aim();
     final toast = widget.handle();
     if (MediaQuery.disableAnimationsOf(context)) {
       toast.close();
@@ -199,9 +243,15 @@ class _AppToastState extends State<_AppToast>
         ),
       ),
     );
-    return GenieTransition(
-      progress: _genie,
-      child: widget.wrap?.call(body) ?? body,
+    // Ключ — снаружи «джина»: внутри [child] рисуется многими полосками.
+    return KeyedSubtree(
+      key: _bodyKey,
+      child: GenieTransition(
+        progress: _genie,
+        target: _target,
+        mouthWidth: _mouth,
+        child: widget.wrap?.call(body) ?? body,
+      ),
     );
   }
 }
