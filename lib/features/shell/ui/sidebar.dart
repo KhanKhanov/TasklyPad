@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflicts_navigation.dart';
 import '../../../app/data_providers.dart';
+import '../../../app/notification_log.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../filters/ui/filter_tile.dart';
 import '../../labels/ui/label_tile.dart';
+import '../../notifications/ui/notifications_panel.dart';
 import '../../projects/ui/project_dialog.dart';
 import '../../projects/ui/project_drag.dart';
 import '../../projects/ui/project_tile.dart';
@@ -29,10 +31,18 @@ import 'sidebar_items.dart';
 /// «Добавить задачу» открывает окно быстрого добавления; «Поиск» появится
 /// вместе со своим экраном.
 class Sidebar extends ConsumerWidget {
-  const Sidebar({super.key, required this.location});
+  const Sidebar({
+    super.key,
+    required this.location,
+    this.showNotifications = false,
+  });
 
   /// Текущий путь — для выделения открытого пункта.
   final String location;
+
+  /// Пункт «Уведомления» со счётчиком — на телефоне, где вкладки внизу нет
+  /// (решение 1А plans/m5 «Решения M5.3a»).
+  final bool showNotifications;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -148,6 +158,21 @@ class Sidebar extends ConsumerWidget {
                 !favoriteFilters.any((f) => location == '/filter/${f.id}')),
         onTap: () => navigate(context, '/filters-labels'),
       ),
+      if (showNotifications)
+        SidebarNavItem(
+          icon: Icons.notifications_none,
+          label: l10n.notifications,
+          count:
+              ref.watch(notificationLogControllerProvider).value?.unread ?? 0,
+          selected: false,
+          onTap: () {
+            final scaffold = Scaffold.maybeOf(context);
+            if (scaffold != null && scaffold.isDrawerOpen) {
+              scaffold.closeDrawer();
+            }
+            showNotificationsFullscreen(context);
+          },
+        ),
       if (conflicts > 0)
         SidebarNavItem(
           icon: Icons.sync_problem_outlined,

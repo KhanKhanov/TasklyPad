@@ -1214,6 +1214,36 @@ abstract class AppLocalizations {
   /// **'Конфликты'**
   String get conflicts;
 
+  /// Вкладка и журнал нижних уведомлений этого устройства (наше дополнение)
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомления'**
+  String get notifications;
+
+  /// Журнал «Уведомления»: удалить все записи
+  ///
+  /// In ru, this message translates to:
+  /// **'Очистить всё'**
+  String get notificationsClearAll;
+
+  /// Журнал «Уведомления» пуст
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомлений нет'**
+  String get notificationsEmpty;
+
+  /// Подсказка кнопки «×» у записи журнала
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get notificationDelete;
+
+  /// Подпись вкладки для экранного диктора
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, =0{Уведомления} one{Уведомления, непрочитанных: {count}} few{Уведомления, непрочитанных: {count}} many{Уведомления, непрочитанных: {count}} other{Уведомления, непрочитанных: {count}}}'**
+  String notificationsUnread(int count);
+
   /// Пояснение на экране «Конфликты»
   ///
   /// In ru, this message translates to:

@@ -650,6 +650,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get conflicts => 'Конфликты';
 
   @override
+  String get notifications => 'Уведомления';
+
+  @override
+  String get notificationsClearAll => 'Очистить всё';
+
+  @override
+  String get notificationsEmpty => 'Уведомлений нет';
+
+  @override
+  String get notificationDelete => 'Удалить';
+
+  @override
+  String notificationsUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Уведомления, непрочитанных: $count',
+      many: 'Уведомления, непрочитанных: $count',
+      few: 'Уведомления, непрочитанных: $count',
+      one: 'Уведомления, непрочитанных: $count',
+      zero: 'Уведомления',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get conflictsHint =>
       'Одно и то же изменили на двух устройствах. Пока вы не выбрали, действует более поздняя правка.';
 
