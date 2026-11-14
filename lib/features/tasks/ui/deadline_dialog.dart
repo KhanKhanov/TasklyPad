@@ -96,11 +96,16 @@ class _DeadlineSchedulerState extends ConsumerState<_DeadlineScheduler> {
         if (typed != null)
           ListTile(
             dense: true,
-            leading: Icon(Icons.outlined_flag, size: 20, color: palette.accent),
+            leading: Icon(deadlineIcon, size: 20, color: palette.accent),
             title: Text(
               typed.date == null
                   ? l10n.noDeadline
-                  : deadlineLabel(context, typed.date!, today).text,
+                  : deadlineLabel(
+                      context,
+                      typed.date!,
+                      today,
+                      countdown: false,
+                    ).text,
             ),
             onTap: () => _done(typed.date),
           ),

@@ -698,6 +698,12 @@ abstract class AppLocalizations {
   /// **'Без дедлайна'**
   String get noDeadline;
 
+  /// Обратный отсчёт дедлайна за 1–7 дней (help «Add deadlines to tasks»: countdown)
+  ///
+  /// In ru, this message translates to:
+  /// **'{n, plural, one{остался {n} день} few{осталось {n} дня} many{осталось {n} дней} other{осталось {n} дня}}'**
+  String deadlineDaysLeft(int n);
+
   /// Убрать длительность
   ///
   /// In ru, this message translates to:

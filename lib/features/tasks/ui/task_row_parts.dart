@@ -143,11 +143,7 @@ class TaskText extends ConsumerWidget {
       ],
       if (deadline != null && deadlineShown(task, deadline, today)) ...[
         for (final label in [deadlineLabel(context, deadline, today)])
-          _Chip(
-            icon: Icons.outlined_flag,
-            text: label.text,
-            color: label.color,
-          ),
+          _Chip(icon: deadlineIcon, text: label.text, color: label.color),
       ],
       for (final id in task.labelIds)
         if (ws.taskLabel(task, id) case final label?)

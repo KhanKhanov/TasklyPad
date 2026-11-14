@@ -47,13 +47,24 @@ import '../state/today.dart';
   return dueLabel(context, due.date, time, today, timePassed: passed);
 }
 
-/// Подпись дедлайна: просрочен — красный, сегодня — зелёный, иначе без
-/// цвета. Цвета сроков на дедлайн help не переносит (допущение О-57).
+/// Значок дедлайна — мишень, как 🎯 в анонсе дедлайнов Todoist: флажок —
+/// значок приоритета, и красный флажок дедлайна читался как «Приоритет 1»
+/// (решение 2А plans/m5 «Решения проверки M5.3»; вид в help не описан —
+/// допущение О-69).
+const IconData deadlineIcon = Icons.track_changes;
+
+/// Подпись дедлайна: просрочен — дата красным, сегодня — «Сегодня» зелёным;
+/// через 1–7 дней — обратный отсчёт «осталось N дней» (help «Add deadlines to
+/// tasks»: countdown within 7 days; решение 3А plans/m5, формулировка —
+/// допущение О-69), дальше — дата без цвета. Цвета сроков на дедлайн help не
+/// переносит (допущение О-57). [countdown] — `false` там, где выбирают дату:
+/// в выборе дедлайна и в быстром добавлении видна сама дата.
 ({String text, Color color}) deadlineLabel(
   BuildContext context,
   String deadline,
-  DateTime today,
-) {
+  DateTime today, {
+  bool countdown = true,
+}) {
   final palette = AppPalette.of(context);
   final day = parseIsoDate(deadline);
   if (day == null) return (text: deadline, color: palette.textSecondary);
@@ -62,6 +73,13 @@ import '../state/today.dart';
     DueKind.today => palette.dateToday,
     _ => palette.textSecondary,
   };
+  final days = daysUntil(day, today);
+  if (countdown && days >= 1 && days <= 7) {
+    return (
+      text: AppLocalizations.of(context).deadlineDaysLeft(days),
+      color: color,
+    );
+  }
   return (text: _dayText(context, day, null, today), color: color);
 }
 

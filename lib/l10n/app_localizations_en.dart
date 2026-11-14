@@ -332,6 +332,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noDeadline => 'No deadline';
 
   @override
+  String deadlineDaysLeft(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n days left',
+      one: '$n day left',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get noDuration => 'No duration';
 
   @override
