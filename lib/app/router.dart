@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../features/conflicts/ui/conflicts_screen.dart';
+import '../features/filters/ui/filter_screen.dart';
 import '../features/labels/ui/filters_labels_screen.dart';
 import '../features/labels/ui/label_screen.dart';
 import '../features/projects/ui/project_screen.dart';
@@ -42,8 +44,13 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: '/project/:id',
             name: 'project',
-            builder: (context, state) =>
-                ProjectScreen(projectId: state.pathParameters['id']),
+            // Ключ по id: страница go_router ключуется шаблоном пути, и без
+            // него переход на другой проект оставил бы прежнее состояние
+            // экрана (открытый редактор, черновик).
+            builder: (context, state) => ProjectScreen(
+              key: ValueKey(state.pathParameters['id']),
+              projectId: state.pathParameters['id'],
+            ),
           ),
           GoRoute(
             path: '/projects',
@@ -64,8 +71,18 @@ GoRouter router(Ref ref) {
           GoRoute(
             path: '/label/:id',
             name: 'label',
-            builder: (context, state) =>
-                LabelScreen(labelId: state.pathParameters['id']!),
+            builder: (context, state) => LabelScreen(
+              key: ValueKey(state.pathParameters['id']),
+              labelId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/filter/:id',
+            name: 'filter',
+            builder: (context, state) => FilterScreen(
+              key: ValueKey(state.pathParameters['id']),
+              filterId: state.pathParameters['id']!,
+            ),
           ),
           GoRoute(
             path: '/conflicts',

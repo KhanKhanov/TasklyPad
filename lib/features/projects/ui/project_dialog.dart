@@ -97,7 +97,7 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
         if (_name.text.trim() != project.name) {
           await commands.rename(project.id, _name.text);
         }
-        if (_description.text.trim() != project.description) {
+        if (storedDescription(_description.text) != project.description) {
           await commands.setDescription(project.id, _description.text);
         }
         if (_color != project.color) {

@@ -44,6 +44,7 @@ class GroupedTaskList extends StatefulWidget {
     this.showProject = false,
     this.overdueAction,
     this.keepsInView,
+    this.editorElsewhere = false,
   });
 
   final List<TaskGroup> groups;
@@ -70,6 +71,11 @@ class GroupedTaskList extends StatefulWidget {
   /// других дней — задача с их сроком из вида сразу бы ушла).
   final bool Function(GroupValue value)? keepsInView;
 
+  /// Редактор «Добавить задачу» открыт в другом списке того же экрана (экран
+  /// фильтра — список на каждую часть запроса): открытый редактор группы
+  /// закрывается, как при [addAt].
+  final bool editorElsewhere;
+
   @override
   State<GroupedTaskList> createState() => _GroupedTaskListState();
 }
@@ -80,7 +86,10 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
   @override
   void didUpdateWidget(GroupedTaskList old) {
     super.didUpdateWidget(old);
-    if (widget.addAt != AddTaskAt.none) _adding = null;
+    if (widget.addAt != AddTaskAt.none ||
+        (widget.editorElsewhere && !old.editorElsewhere)) {
+      _adding = null;
+    }
   }
 
   void _open(TaskGroupKey? key) {

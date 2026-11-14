@@ -12,7 +12,8 @@ import '../../tasks/ui/task_actions.dart';
 /// сайдбар; `g`, затем буква — переход: `i` «Входящие», `t` «Сегодня», `u`
 /// «Предстоящее», `p` «Мои проекты», `v` и `l` «Фильтры и метки»; `o` `s` —
 /// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3/4/5` — «Входящие», «Сегодня»,
-/// «Предстоящее», «Проекты», «Фильтры и метки»; `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
+/// «Предстоящее», «Проекты», «Фильтры и метки»; `Ctrl+Shift+F` — новый фильтр;
+/// `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
 /// появится вместе с «Главной». Пока печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
@@ -20,6 +21,7 @@ class ShellKeys extends StatefulWidget {
     required this.onToggleSidebar,
     required this.onQuickAdd,
     required this.onSync,
+    required this.onAddFilter,
     required this.onBack,
     required this.onForward,
     required this.child,
@@ -30,6 +32,11 @@ class ShellKeys extends StatefulWidget {
 
   /// `Ctrl+S` — «Синхронизировать».
   final VoidCallback onSync;
+
+  /// `Ctrl+Shift+F` — «Добавить фильтр» (help «Use keyboard shortcuts»:
+  /// строка «mobile keyboard»; у нас на всех платформах, как `Ctrl+1/2/3` —
+  /// план M5 «Поиск и `Ctrl+K`»).
+  final VoidCallback onAddFilter;
 
   /// `Alt+←` и `Alt+→` — «Назад» и «Вперёд» (help «Use keyboard shortcuts»,
   /// Windows).
@@ -156,6 +163,15 @@ class _ShellKeysState extends State<ShellKeys> {
     }
     if (ctrlOnly && key == LogicalKeyboardKey.keyS) {
       widget.onSync();
+      return KeyEventResult.handled;
+    }
+    final ctrlShift =
+        keys.isControlPressed &&
+        keys.isShiftPressed &&
+        !keys.isAltPressed &&
+        !keys.isMetaPressed;
+    if (ctrlShift && key == LogicalKeyboardKey.keyF) {
+      widget.onAddFilter();
       return KeyEventResult.handled;
     }
     if (_ctrlRoutes[key] case final path? when ctrlOnly) {

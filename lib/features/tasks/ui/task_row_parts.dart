@@ -249,6 +249,10 @@ class _Chip extends StatelessWidget {
   }
 }
 
+/// Свёрнутость подзадач строки вне данных задачи: экран фильтра раскрывает
+/// их только на экране (решение 2А plans/m5 «Решения M5.3»).
+typedef RowCollapse = ({bool collapsed, VoidCallback toggle});
+
 /// Шеврон слева от кружка: свернуть или развернуть подзадачи; [onToggle]
 /// `null` — подзадач нет, место пустое, чтобы кружки стояли в столбик.
 class CollapseToggle extends StatelessWidget {

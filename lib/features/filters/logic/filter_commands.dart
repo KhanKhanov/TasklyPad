@@ -181,8 +181,6 @@ final class FilterCommands {
 
   /// Описание из одних пробелов — пустое, как у проекта; лимит — как у
   /// описания проекта (в help для фильтра не указан — допущение, О-69).
-  static String _description(String description) {
-    final text = description.trim().isEmpty ? '' : description;
-    return Limits.checkLength(text, Limits.description);
-  }
+  static String _description(String description) =>
+      Limits.checkLength(storedDescription(description), Limits.description);
 }

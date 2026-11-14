@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/features/conflicts/ui/conflict_card.dart';
+import 'package:planner/features/filters/ui/filter_screen.dart';
 import 'package:planner/features/labels/ui/filters_labels_screen.dart';
 import 'package:planner/features/projects/ui/project_screen.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
@@ -150,6 +151,32 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  testWidgets('фильтр: спор о запросе — значок в «My Filters», плашка на '
+      'экране фильтра, «Choose» снимает пометку', (tester) async {
+    await withApp(tester, (device) async {
+      final id = await makeFilterConflict(tester, device);
+      go(tester, '/filters-labels');
+      await settle(tester);
+      expect(
+        find.descendant(
+          of: find.byType(FiltersLabelsScreen),
+          matching: find.byTooltip(banner),
+        ),
+        findsOneWidget,
+      );
+
+      go(tester, '/filter/$id');
+      await settle(tester);
+      expect(find.byType(FilterScreen), findsOneWidget);
+      expect(find.text(banner), findsOneWidget);
+      await tester.tap(find.text('Choose'));
+      await settle(tester);
+      await tester.tap(find.text('Keep this version').first);
+      await settle(tester);
+      expect(find.text(banner), findsNothing);
     });
   });
 

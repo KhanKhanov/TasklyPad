@@ -9,6 +9,7 @@ import '../../common/ui/layout.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../common/ui/drag_layer.dart';
 import '../../conflicts/ui/conflict_toast.dart';
+import '../../filters/ui/filter_dialog.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../settings/state/sync_controller.dart';
 import '../../tasks/state/selection.dart';
@@ -102,6 +103,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             child: ShellKeys(
               onQuickAdd: () => openQuickAdd(context, ref, location),
               onSync: () => syncFromShell(context, ref),
+              onAddFilter: () => showFilterDialog(context),
               onBack: () => _travel((h) => h.back()),
               onForward: () => _travel((h) => h.forward()),
               onToggleSidebar: () {

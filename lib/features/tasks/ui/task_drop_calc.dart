@@ -98,6 +98,19 @@ DropPlace? _projectPlace(
     baseDepth: drop.baseDepth,
   );
   if (at == null) return null;
+  // Бросок на своё место ничего не пишет: при соседках, скрытых фильтром
+  // «Отображения», команда поставила бы задачу между ними иначе, и тост
+  // сообщил бы о перемещении, которого не видно.
+  if (payload.ids.length == 1) {
+    final id = payload.ids.single;
+    final self = items.indexWhere((i) => i.value.id == id);
+    if (self >= 0 &&
+        items.take(self).where(keeps).length == index &&
+        at.depth == items[self].depth + drop.baseDepth &&
+        (at.parentId ?? drop.parentId) == ws.taskParent(id)) {
+      return null;
+    }
+  }
   return MoveTasksPlace(
     ids: payload.ids,
     projectId: drop.projectId,
@@ -193,6 +206,11 @@ DropPlace? _dayPlace(
       : index > last
       ? last
       : index;
+  // На своё место в своём дне — ничего: при задачах, скрытых фильтром
+  // «Отображения», команда считала бы место по всем задачам дня.
+  if (sameDay && line == active.takeWhile((t) => t.id != task.id).length) {
+    return null;
+  }
   return ReorderInDayPlace(
     id: task.id,
     date: drop.date,

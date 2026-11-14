@@ -129,6 +129,30 @@ void main() {
     expect((await load()).applied, 0);
   });
 
+  test('фильтр «Отображения» — в «Display: N» по виду фильтра, «Сбросить всё» '
+      'снимает и его (решение 5А plans/m5)', () async {
+    final changed = view.copyWith(
+      sorting: Sorting.priority,
+      filteredBy: 'p1 & %дом',
+    );
+    await app.views.save(view, changed);
+    expect(changed.applied, 3);
+
+    await app.views.resetAll(changed);
+    expect((await load()).filteredBy, isNull);
+    expect((await load()).applied, 0);
+  });
+
+  test('фильтр «Отображения» не запрещает перетаскивание (решение 4А)', () {
+    expect(view.copyWith(filteredBy: 'p1').allowsDrag, isTrue);
+  });
+
+  test('у «Предстоящего» фильтра нет: пришедший импортом не считается', () {
+    const upcoming = ViewOptions(viewType: ViewType.upcoming, filteredBy: 'p1');
+    expect(upcoming.filterApplies, isFalse);
+    expect(upcoming.applied, 0);
+  });
+
   test('настройки другого вида — ArgumentError, ничего не записано', () async {
     final other = ViewOptions(viewType: ViewType.label, objectId: 'l1');
     await expectLater(
@@ -149,12 +173,27 @@ void main() {
       isNull,
     );
 
-    final grouped = view.copyWith(grouping: Grouping.priority);
+    // С фильтром «Отображения» — он копируется вместе с остальным (6А).
+    final grouped = view.copyWith(
+      grouping: Grouping.priority,
+      filteredBy: 'p1',
+    );
     await app.views.save(view, grouped);
     final copy = await app.projects.duplicate(project, name: 'Копия 2');
     expect(
       await app.viewsRepo.load(ViewType.project, objectId: copy),
       grouped.copyWith(objectId: copy),
+    );
+  });
+
+  test('дубликат фильтра копирует его фильтр «Отображения» (6А)', () async {
+    final filter = await app.filters.add(name: 'Срочное', query: 'today');
+    final own = ViewOptions(viewType: ViewType.filter, objectId: filter);
+    await app.views.save(own, own.copyWith(filteredBy: 'p2'));
+    final copy = await app.filters.duplicate(filter, name: 'Копия');
+    expect(
+      (await app.viewsRepo.load(ViewType.filter, objectId: copy)).filteredBy,
+      'p2',
     );
   });
 }

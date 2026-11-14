@@ -24,6 +24,7 @@ import '../../views/ui/view_groups.dart';
 import '../../views/ui/view_options_button.dart';
 import '../../views/ui/view_sort_keys.dart';
 import 'label_menu.dart';
+import '../../views/logic/view_filter_apply.dart';
 
 /// Экран метки: активные задачи с ней из всех проектов (у каждой — проект и
 /// раздел), «Добавить задачу» — во «Входящие» с этой меткой; `a` / `Shift+A`,
@@ -46,11 +47,20 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
     return watch ? ref.watch(provider) : ref.read(provider);
   }
 
-  List<Task> _tasks(Workspace ws, ViewOptions options) => ws.labelTasks(
-    widget.labelId,
-    showCompleted: options.showCompletedTasks,
-    order: _taskOrder(ws, options),
-  );
+  List<Task> _tasks(Workspace ws, ViewOptions options) {
+    final tasks = ws.labelTasks(
+      widget.labelId,
+      showCompleted: options.showCompletedTasks,
+      order: _taskOrder(ws, options),
+    );
+    // Фильтр «Отображения» (решение 3А plans/m5).
+    final test = viewFilterTest(
+      ws,
+      options,
+      now: ref.read(clockProvider).nowWall(),
+    );
+    return test == null ? tasks : tasks.where(test).toList();
+  }
 
   TaskOrder _taskOrder(Workspace ws, ViewOptions options) => ws.taskOrder(
     DefaultOrder.label,

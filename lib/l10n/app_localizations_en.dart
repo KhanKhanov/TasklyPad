@@ -1264,4 +1264,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeLink => 'Remove link';
+
+  @override
+  String get myFilters => 'My Filters';
+
+  @override
+  String get addFilter => 'Add filter';
+
+  @override
+  String get editFilter => 'Edit filter';
+
+  @override
+  String get deleteFilter => 'Delete filter';
+
+  @override
+  String get deleteFilterTitle => 'Delete filter?';
+
+  @override
+  String deleteFilterBody(String name) {
+    return 'The filter “$name” will be deleted.';
+  }
+
+  @override
+  String get noFilters => 'No filters yet';
+
+  @override
+  String get filterErrorEmpty => 'A condition is needed here';
+
+  @override
+  String filterErrorUnexpected(String text) {
+    return 'Unexpected “$text”';
+  }
+
+  @override
+  String get filterErrorUnclosed => 'Unclosed parenthesis';
+
+  @override
+  String get filterErrorCommaInGroup =>
+      'Comma inside parentheses: separate lists only outside parentheses';
+
+  @override
+  String filterErrorUnknown(String text) {
+    return 'Unknown condition “$text”';
+  }
+
+  @override
+  String filterErrorBadDate(String text) {
+    return 'Unrecognized date “$text”';
+  }
+
+  @override
+  String filterErrorUnsupported(String text) {
+    return '“$text” is a shared-projects condition and isn’t supported';
+  }
+
+  @override
+  String filterPreview(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+      zero: 'No tasks',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get filterBroken => 'The filter query has an error';
+
+  @override
+  String get viewFilterHeader => 'Filter';
+
+  @override
+  String get viewFilterDate => 'Date';
+
+  @override
+  String get viewFilterAll => 'All';
+
+  @override
+  String get viewFilterThisWeek => 'This week';
+
+  @override
+  String get viewFilterNext7Days => 'Next 7 days';
+
+  @override
+  String get viewFilterThisMonth => 'This month';
+
+  @override
+  String get viewFilterNext30Days => 'Next 30 days';
+
+  @override
+  String get viewFilterNoDate => 'No date';
+
+  @override
+  String get viewFilterNoDeadline => 'No deadline';
 }

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'view_filter.dart';
+
 part 'view_options.freezed.dart';
 
 // Настройки вида («Отображение») — help «Sort or group tasks», значения
@@ -110,7 +112,7 @@ abstract class ViewOptions with _$ViewOptions {
     @Default(false) bool showCompletedTasks,
 
     /// Запрос фильтра «Отображения» (`filtered_by` Todoist API); `null` —
-    /// без фильтра. Применение и выбор — M5.3.
+    /// без фильтра. Выбор — [ViewFilter].
     String? filteredBy,
   }) = _ViewOptions;
 
@@ -127,14 +129,26 @@ abstract class ViewOptions with _$ViewOptions {
       (grouping == Grouping.none || viewType == ViewType.upcoming) &&
       !sorting.hasDirection;
 
-  /// Сколько выбрано сортировок и группировок — «Отображение: N» (help «Sort
-  /// or group tasks»: выбранное показывается вверху вида); «Выполненные
-  /// задачи» не считаются — «Сбросить всё» их не снимает. У «Предстоящего»
-  /// группировки нет (help «Customize views»): пришедшая импортом не
-  /// действует и не считается.
+  /// Сколько выбрано сортировок, группировок и видов фильтра — «Отображение:
+  /// N» (help «Sort or group tasks»: выбранное показывается вверху вида;
+  /// фильтр — решение 5А plans/m5); «Выполненные задачи» не считаются —
+  /// «Сбросить всё» их не снимает. У «Предстоящего» группировки и фильтра нет
+  /// (help «Customize views»): пришедшие импортом не действуют и не считаются.
   int get applied =>
       (grouping == Grouping.none || viewType == ViewType.upcoming ? 0 : 1) +
-      (sortingChosen ? 1 : 0);
+      (sortingChosen ? 1 : 0) +
+      (filterApplies ? ViewFilter.parse(filteredBy).count : 0);
+
+  /// Фильтр «Отображения» у вида есть: проект и «Входящие», метка, фильтр,
+  /// «Сегодня» (help «Customize views»: «filter the tasks in a project, label,
+  /// filter, Inbox, or your Today view»).
+  bool get filterApplies => switch (viewType) {
+    ViewType.project ||
+    ViewType.label ||
+    ViewType.filter ||
+    ViewType.today => true,
+    ViewType.upcoming || ViewType.task => false,
+  };
 
   /// Выбрана сортировка, отличная от порядка вида по умолчанию. «Вручную» —
   /// выбор только в «Сегодня» и «Предстоящем», где по умолчанию умный порядок

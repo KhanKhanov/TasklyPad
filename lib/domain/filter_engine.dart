@@ -14,11 +14,14 @@ import 'workspace.dart';
 
 /// Список одной части запроса.
 final class FilterList {
-  const FilterList(this.title, this.tasks);
+  const FilterList(this.title, this.tasks, this.order);
 
   /// Текст части запроса — заголовок списка (допущение, О-69).
   final String title;
   final List<Task> tasks;
+
+  /// Порядок списка — им же упорядочены задачи в группах «Отображения».
+  final TaskOrder order;
 }
 
 /// Задачи снимка [ws] по запросу [query]: по списку на каждую часть через
@@ -39,24 +42,36 @@ List<FilterList> evaluateFilter(
   final tasks = ws.activeTasks;
   return [
     for (final part in query.parts)
-      FilterList(
-        part.text,
-        [
-          for (final t in tasks)
-            if (matcher.matches(part.node, t)) t,
-        ]..sort(
-          ws
-              .taskOrder(
-                _hasDates(part.node)
-                    ? DefaultOrder.filterDated
-                    : DefaultOrder.label,
-                sorting: sorting,
-                sortOrder: sortOrder,
-              )
-              .compare,
+      if (ws.taskOrder(
+            _hasDates(part.node)
+                ? DefaultOrder.filterDated
+                : DefaultOrder.label,
+            sorting: sorting,
+            sortOrder: sortOrder,
+          )
+          case final order)
+        FilterList(
+          part.text,
+          [
+            for (final t in tasks)
+              if (matcher.matches(part.node, t)) t,
+          ]..sort(order.compare),
+          order,
         ),
-      ),
   ];
+}
+
+/// Проверка задачи запросом [query] (фильтр «Отображения», решение 3А
+/// plans/m5): подходит хотя бы под одну часть. [now] и [wallOf] — как у
+/// [evaluateFilter].
+bool Function(Task) filterTest(
+  Workspace ws,
+  FilterQuery query, {
+  required DateTime now,
+  DateTime? Function(String utc)? wallOf,
+}) {
+  final matcher = _Matcher(ws, now, wallOf ?? _deviceWall);
+  return (t) => query.parts.any((p) => matcher.matches(p.node, t));
 }
 
 /// В условии есть дата или дедлайн задачи — порядок «с датами» (О-85):

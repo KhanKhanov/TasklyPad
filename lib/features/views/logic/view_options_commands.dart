@@ -55,15 +55,17 @@ final class ViewOptionsCommands {
     );
   }
 
-  /// «Сбросить всё» — без сортировки и группировки (help «Sort or group
-  /// tasks»: «To remove all sorting and grouping options … select Reset
-  /// all»); «Выполненные задачи» остаются как были.
+  /// «Сбросить всё» — без сортировки, группировки и фильтра (help «Sort or
+  /// group tasks»: «To remove all sorting and grouping options … select Reset
+  /// all»; фильтр — решение 5А plans/m5: точка «вид отличается» гаснет после
+  /// «Reset all»); «Выполненные задачи» остаются как были.
   Future<void> resetAll(ViewOptions from) => save(
     from,
     from.copyWith(
       grouping: Grouping.none,
       sorting: Sorting.byDefault,
       sortOrder: SortOrder.asc,
+      filteredBy: null,
     ),
   );
 

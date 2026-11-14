@@ -153,3 +153,21 @@ Future<String> makeLabelColorConflict(WidgetTester tester, TestDevice device) =>
         {LabelFields.color: 'green'},
       ],
     );
+
+/// Фильтр «Mine» с запросом `p1`, запрос которого параллельно изменён
+/// (решение 4А plans/m5: спор о запросе помечает фильтр).
+Future<String> makeFilterConflict(WidgetTester tester, TestDevice device) =>
+    makeEntityConflict(
+      tester,
+      device,
+      type: EntityTypes.filter,
+      create: (m) => m.create(EntityTypes.filter, {
+        FilterFields.name: 'Mine',
+        FilterFields.query: 'p1',
+        FilterFields.orderKey: 'a0',
+      }),
+      mine: {FilterFields.query: 'p2'},
+      theirs: [
+        {FilterFields.query: 'p3'},
+      ],
+    );

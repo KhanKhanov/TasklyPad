@@ -1253,4 +1253,101 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get removeLink => 'Убрать ссылку';
+
+  @override
+  String get myFilters => 'Мои фильтры';
+
+  @override
+  String get addFilter => 'Добавить фильтр';
+
+  @override
+  String get editFilter => 'Изменить фильтр';
+
+  @override
+  String get deleteFilter => 'Удалить фильтр';
+
+  @override
+  String get deleteFilterTitle => 'Удалить фильтр?';
+
+  @override
+  String deleteFilterBody(String name) {
+    return 'Фильтр «$name» будет удалён.';
+  }
+
+  @override
+  String get noFilters => 'Пока нет фильтров';
+
+  @override
+  String get filterErrorEmpty => 'Здесь нужно условие';
+
+  @override
+  String filterErrorUnexpected(String text) {
+    return 'Лишнее «$text»';
+  }
+
+  @override
+  String get filterErrorUnclosed => 'Скобка не закрыта';
+
+  @override
+  String get filterErrorCommaInGroup =>
+      'Запятая внутри скобок: отдельные списки — только вне скобок';
+
+  @override
+  String filterErrorUnknown(String text) {
+    return 'Непонятное условие «$text»';
+  }
+
+  @override
+  String filterErrorBadDate(String text) {
+    return 'Непонятная дата «$text»';
+  }
+
+  @override
+  String filterErrorUnsupported(String text) {
+    return '«$text» — условие совместной работы, его здесь нет';
+  }
+
+  @override
+  String filterPreview(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count задачи',
+      many: '$count задач',
+      few: '$count задачи',
+      one: '$count задача',
+      zero: 'Задач нет',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get filterBroken => 'В запросе фильтра ошибка';
+
+  @override
+  String get viewFilterHeader => 'Фильтр';
+
+  @override
+  String get viewFilterDate => 'Дата';
+
+  @override
+  String get viewFilterAll => 'Все';
+
+  @override
+  String get viewFilterThisWeek => 'Эта неделя';
+
+  @override
+  String get viewFilterNext7Days => 'Следующие 7 дней';
+
+  @override
+  String get viewFilterThisMonth => 'Этот месяц';
+
+  @override
+  String get viewFilterNext30Days => 'Следующие 30 дней';
+
+  @override
+  String get viewFilterNoDate => 'Без даты';
+
+  @override
+  String get viewFilterNoDeadline => 'Без дедлайна';
 }

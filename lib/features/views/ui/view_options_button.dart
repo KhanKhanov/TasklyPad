@@ -8,17 +8,19 @@ import '../../../l10n/app_localizations.dart';
 import '../../common/ui/shielded_menu_anchor.dart';
 import '../../common/ui/ui_kit.dart';
 import '../state/view_options.dart';
+import 'view_filter_menus.dart';
 
 /// Кнопка «Отображение» в заголовке вида: группировка, сортировка с
-/// направлением, «Выполненные задачи», «Сбросить всё» (help «Sort or group
-/// tasks», решение 2 плана M4). Выбранные сортировка и группировка — числом
+/// направлением, фильтр (у проекта, метки, фильтра, «Сегодня» — решение 3А
+/// plans/m5), «Выполненные задачи», «Сбросить всё» (help «Sort or group
+/// tasks», «Customize views», решение 2 плана M4). Выбранные сортировка и группировка — числом
 /// в кружке рядом с названием кнопки (решение 10Б M4.10a).
 class ViewOptionsButton extends ConsumerWidget {
   const ViewOptionsButton({super.key, required this.viewType, this.objectId});
 
   final ViewType viewType;
 
-  /// Проект или метка; у «Сегодня» и «Предстоящего» — `null`.
+  /// Проект, метка или фильтр; у «Сегодня» и «Предстоящего» — `null`.
   final String? objectId;
 
   @override
@@ -94,12 +96,17 @@ class ViewOptionsButton extends ConsumerWidget {
                 (o) => save(options.copyWith(sortOrder: o)),
               ),
           ]),
-        CheckboxMenuButton(
-          value: options.showCompletedTasks,
-          onChanged: (v) =>
-              save(options.copyWith(showCompletedTasks: v ?? false)),
-          child: Text(l10n.completedTasks),
-        ),
+        if (options.filterApplies)
+          ...viewFilterMenus(context, options: options, save: save),
+        // Фильтр показывает только активные задачи (help «Introduction to
+        // filters»: «Completed tasks aren't visible in filter views»).
+        if (viewType != ViewType.filter)
+          CheckboxMenuButton(
+            value: options.showCompletedTasks,
+            onChanged: (v) =>
+                save(options.copyWith(showCompletedTasks: v ?? false)),
+            child: Text(l10n.completedTasks),
+          ),
         const Divider(height: 1),
         MenuItemButton(
           onPressed: options.applied == 0

@@ -98,6 +98,12 @@ abstract final class Limits {
   }
 }
 
+/// Описание проекта или фильтра так, как его хранят команды: как введено
+/// (пробелы по краям — часть markdown, блок кода отступом), текст из одних
+/// пробелов — пустое описание. Окна сравнивают введённое в этом виде со
+/// значением при открытии, чтобы не записать описание без правки.
+String storedDescription(String text) => text.trim().isEmpty ? '' : text;
+
 /// Длительность в минутах; у `day` — сутки на единицу (поле API Todoist).
 int durationInMinutes(TaskDuration d) =>
     d.unit == 'day' ? d.amount * 24 * 60 : d.amount;
