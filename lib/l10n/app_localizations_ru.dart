@@ -1323,4 +1323,31 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get filterBroken => 'В запросе фильтра ошибка';
+
+  @override
+  String get viewFilterHeader => 'Фильтр';
+
+  @override
+  String get viewFilterDate => 'Дата';
+
+  @override
+  String get viewFilterAll => 'Все';
+
+  @override
+  String get viewFilterThisWeek => 'Эта неделя';
+
+  @override
+  String get viewFilterNext7Days => 'Следующие 7 дней';
+
+  @override
+  String get viewFilterThisMonth => 'Этот месяц';
+
+  @override
+  String get viewFilterNext30Days => 'Следующие 30 дней';
+
+  @override
+  String get viewFilterNoDate => 'Без даты';
+
+  @override
+  String get viewFilterNoDeadline => 'Без дедлайна';
 }

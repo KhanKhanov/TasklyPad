@@ -2269,6 +2269,60 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В запросе фильтра ошибка'**
   String get filterBroken;
+
+  /// Заголовок подменю фильтра в «Отображении» (help «Customize views»: Filter)
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтр'**
+  String get viewFilterHeader;
+
+  /// Подменю фильтра «Отображения»: по дате (help «Customize views»: Date)
+  ///
+  /// In ru, this message translates to:
+  /// **'Дата'**
+  String get viewFilterDate;
+
+  /// Фильтр «Отображения»: без условия по этому полю
+  ///
+  /// In ru, this message translates to:
+  /// **'Все'**
+  String get viewFilterAll;
+
+  /// Фильтр «Отображения»: с сегодня до конца недели (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта неделя'**
+  String get viewFilterThisWeek;
+
+  /// Фильтр «Отображения»: сегодня и 6 дней после (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующие 7 дней'**
+  String get viewFilterNext7Days;
+
+  /// Фильтр «Отображения»: с сегодня до конца месяца (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот месяц'**
+  String get viewFilterThisMonth;
+
+  /// Фильтр «Отображения»: сегодня и 29 дней после (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Следующие 30 дней'**
+  String get viewFilterNext30Days;
+
+  /// Фильтр «Отображения»: задачи без срока
+  ///
+  /// In ru, this message translates to:
+  /// **'Без даты'**
+  String get viewFilterNoDate;
+
+  /// Фильтр «Отображения»: задачи без дедлайна
+  ///
+  /// In ru, this message translates to:
+  /// **'Без дедлайна'**
+  String get viewFilterNoDeadline;
 }
 
 class _AppLocalizationsDelegate

@@ -403,14 +403,26 @@ final class Workspace {
   /// turn on Completed tasks under Display»). Подзадачи свёрнутой задачи не
   /// выводятся. [order] — сортировка «Отображения»: внутри раздела и среди
   /// соседей одного родителя (help «Sort or group tasks»), по умолчанию —
-  /// ручной порядок.
+  /// ручной порядок. [where] — фильтр «Отображения» (решение 3А plans/m5):
+  /// видны подходящие задачи и их предки — дерево настоящее, и перетаскивание
+  /// и `Ctrl+]` / `Ctrl+[` работают по видимым соседям; неподходящая задача
+  /// без подходящих потомков не видна (в help не описано — допущение, О-69).
   ProjectView projectView(
     String projectId, {
     bool showCompleted = false,
     TaskOrder? order,
+    bool Function(Task)? where,
   }) {
-    List<Task> visible(List<Task> tasks) =>
-        _visible(tasks, showCompleted, order);
+    final kept = <String, bool>{};
+    // Задача подходит сама или через видимого потомка.
+    bool keeps(Task t) => kept[t.id] ??=
+        where!(t) ||
+        _visible(_taskChildren[t.id] ?? const [], showCompleted).any(keeps);
+    List<Task> visible(List<Task> tasks) {
+      final shown = _visible(tasks, showCompleted, order);
+      return where == null ? shown : shown.where(keeps).toList();
+    }
+
     List<TreeItem<Task>> tree(String? sectionId) => flattenTree(
       visible(_roots[(projectId, sectionId)] ?? const []),
       (t) => visible(_taskChildren[t.id] ?? const []),
@@ -430,11 +442,15 @@ final class Workspace {
 
   /// Задачи проекта одним списком, с подзадачами (свёрнутость не важна), —
   /// для группировки: подзадача уходит в группу своих значений. Состав — как
-  /// у [projectView].
-  List<Task> projectTasks(String projectId, {bool showCompleted = false}) {
+  /// у [projectView]; [where] — фильтр «Отображения».
+  List<Task> projectTasks(
+    String projectId, {
+    bool showCompleted = false,
+    bool Function(Task)? where,
+  }) {
     final out = <Task>[];
     void visit(Task t) {
-      out.add(t);
+      if (where == null || where(t)) out.add(t);
       _visible(_taskChildren[t.id] ?? const [], showCompleted).forEach(visit);
     }
 

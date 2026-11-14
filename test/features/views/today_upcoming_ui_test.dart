@@ -265,7 +265,15 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Grouping'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text(by).last);
+        // Пункт группировки, а не подменю фильтра с тем же текстом.
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(MenuItemButton),
+                matching: find.text(by),
+              )
+              .last,
+        );
         await settle(tester);
       }
 
@@ -409,7 +417,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Grouping'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Date').last);
+      // Пункт группировки, а не подменю фильтра «Date».
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Date'),
+            )
+            .last,
+      );
       await settle(tester);
       expect(find.text('Oct 26 · Monday'), findsOneWidget);
       expect(find.byType(AddTaskButton), findsOneWidget);

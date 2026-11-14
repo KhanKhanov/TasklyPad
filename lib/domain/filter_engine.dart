@@ -61,6 +61,19 @@ List<FilterList> evaluateFilter(
   ];
 }
 
+/// Проверка задачи запросом [query] (фильтр «Отображения», решение 3А
+/// plans/m5): подходит хотя бы под одну часть. [now] и [wallOf] — как у
+/// [evaluateFilter].
+bool Function(Task) filterTest(
+  Workspace ws,
+  FilterQuery query, {
+  required DateTime now,
+  DateTime? Function(String utc)? wallOf,
+}) {
+  final matcher = _Matcher(ws, now, wallOf ?? _deviceWall);
+  return (t) => query.parts.any((p) => matcher.matches(p.node, t));
+}
+
 /// В условии есть дата или дедлайн задачи — порядок «с датами» (О-85):
 /// `date:`, `due:`, `deadline:` (не `created:`), дата без слова,
 /// `overdue`, `N days`. «Без даты» и подобные — не даты (допущение, О-69).

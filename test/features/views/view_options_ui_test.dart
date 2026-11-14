@@ -34,7 +34,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(submenu));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(item).last);
+    // Пункт подменю, а не заголовок другого подменю с тем же текстом
+    // («Priority» — и группировка, и подменю фильтра, как в Todoist).
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(MenuItemButton),
+            matching: find.text(item),
+          )
+          .last,
+    );
     await settle(tester);
   }
 
@@ -201,7 +210,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Grouping'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Deadline').last);
+      // Пункт группировки, а не подменю фильтра «Deadline».
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Deadline'),
+            )
+            .last,
+      );
       await settle(tester);
       await tester.runAsync(
         () => app.tasks.add(content: 'File taxes', deadline: '2026-10-30'),
@@ -342,6 +359,52 @@ void main() {
       await settle(tester);
 
       expect(rowsInOrder(tester, ['Done', 'Open']), ['Open', 'Done']);
+    });
+  });
+
+  testWidgets('фильтр «Отображения»: «Priority 1» прячет остальные задачи, '
+      '«Display: 1»; «Reset all» снимает фильтр (решения 3А, 5А plans/m5)', (
+    tester,
+  ) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      await tester.runAsync(() => app.tasks.add(content: 'Red', priority: 1));
+      await settle(tester);
+      await tester.runAsync(() => app.tasks.add(content: 'Plain'));
+      await settle(tester);
+
+      await pick(tester, 'Priority', 'Priority 1');
+      expect(row('Red'), findsOneWidget);
+      expect(row('Plain'), findsNothing);
+      expect((await inboxView(tester, app)).filteredBy, 'p1');
+      expect(
+        tester.getSemantics(find.byType(ViewOptionsButton)).label,
+        contains('Display: 1'),
+      );
+
+      await tester.tap(find.textContaining('Display'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Reset all'));
+      await settle(tester);
+      expect(row('Plain'), findsOneWidget);
+      expect((await inboxView(tester, app)).filteredBy, isNull);
+    });
+  });
+
+  testWidgets('у «Предстоящего» фильтра в «Отображении» нет (help «Customize '
+      'views»)', (tester) async {
+    await withApp(tester, (device) async {
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Sidebar),
+          matching: find.text('Upcoming'),
+        ),
+      );
+      await settle(tester);
+      await tester.tap(find.textContaining('Display'));
+      await tester.pumpAndSettle();
+      expect(find.text('Sorting'), findsOneWidget);
+      expect(find.text('Filter'), findsNothing);
     });
   });
 }

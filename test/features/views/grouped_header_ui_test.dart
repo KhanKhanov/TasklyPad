@@ -29,7 +29,15 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Grouping'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Date').last);
+      // Пункт группировки, а не подменю фильтра «Date».
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(MenuItemButton),
+              matching: find.text('Date'),
+            )
+            .last,
+      );
       await settle(tester);
 
       final header = find

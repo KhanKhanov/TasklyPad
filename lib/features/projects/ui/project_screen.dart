@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../domain/models.dart';
 import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';
@@ -21,6 +22,7 @@ import '../../views/ui/view_sort_keys.dart';
 import '../../views/ui/scroll_edge_keys.dart';
 import 'project_parts.dart';
 import 'project_sections.dart';
+import '../../views/logic/view_filter_apply.dart';
 
 /// Экран проекта (и «Входящих»): заголовок с «Отображение» и меню, задачи без
 /// раздела, разделы со своими задачами и «Добавить раздел». Сортировка
@@ -72,7 +74,12 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     options.objectId!,
     showCompleted: options.showCompletedTasks,
     order: _taskOrder(ws, options),
+    where: _filter(ws, options),
   );
+
+  /// Фильтр «Отображения» (решение 3А plans/m5).
+  bool Function(Task)? _filter(Workspace ws, ViewOptions options) =>
+      viewFilterTest(ws, options, now: ref.read(clockProvider).nowWall());
 
   /// Группы проекта: подзадача — в группе своих значений.
   List<TaskGroup> _groups(Workspace ws, ViewOptions options) => groupsFor(
@@ -80,6 +87,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
     ws.projectTasks(
       options.objectId!,
       showCompleted: options.showCompletedTasks,
+      where: _filter(ws, options),
     ),
     options.grouping,
     order: _taskOrder(ws, options),

@@ -1332,4 +1332,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filterBroken => 'The filter query has an error';
+
+  @override
+  String get viewFilterHeader => 'Filter';
+
+  @override
+  String get viewFilterDate => 'Date';
+
+  @override
+  String get viewFilterAll => 'All';
+
+  @override
+  String get viewFilterThisWeek => 'This week';
+
+  @override
+  String get viewFilterNext7Days => 'Next 7 days';
+
+  @override
+  String get viewFilterThisMonth => 'This month';
+
+  @override
+  String get viewFilterNext30Days => 'Next 30 days';
+
+  @override
+  String get viewFilterNoDate => 'No date';
+
+  @override
+  String get viewFilterNoDeadline => 'No deadline';
 }

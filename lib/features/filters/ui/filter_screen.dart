@@ -28,6 +28,7 @@ import 'filter_dialog.dart';
 import 'filter_lists.dart';
 import 'filter_menu.dart';
 import 'filter_query_field.dart';
+import '../../views/logic/view_filter_apply.dart';
 
 /// Экран фильтра (help «Introduction to filters»): название, описание под ним
 /// над результатами, списки по частям запроса — только активные задачи, у
@@ -182,7 +183,15 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
         sortOrder: options.sortOrder,
       );
       final values = [for (final p in query.parts) filterAddValues(ws, p.node)];
-      return ((lists: lists, values: values), null);
+      // Фильтр «Отображения» поверх запроса (решение 3А plans/m5).
+      final test = viewFilterTest(ws, options, now: now);
+      final shown = test == null
+          ? lists
+          : [
+              for (final l in lists)
+                FilterList(l.title, l.tasks.where(test).toList(), l.order),
+            ];
+      return ((lists: shown, values: values), null);
     } on FilterSyntaxError catch (e) {
       return (null, e);
     }

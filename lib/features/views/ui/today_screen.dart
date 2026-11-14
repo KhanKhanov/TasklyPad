@@ -27,6 +27,7 @@ import 'tomorrow_drop_zone.dart';
 import 'view_groups.dart';
 import 'view_parts.dart';
 import 'view_sort_keys.dart';
+import '../logic/view_filter_apply.dart';
 
 /// «Сегодня» (help «Plan your day with the Today view»): задачи со сроком на
 /// сегодня из всех проектов, сверху — «Просрочено» с «Перенести»; новая
@@ -53,12 +54,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final iso = isoDate(today);
     final clock = ref.read(clockProvider);
     TaskOrder order(DefaultOrder fallback) => _taskOrder(ws, options, fallback);
-    final overdue = ws.overdueTasks(iso, order: order(DefaultOrder.overdue));
-    final tasks = ws.todayTasks(
-      iso,
-      order: order(DefaultOrder.smart),
-      completedDay: options.showCompletedTasks ? localDayBy(clock) : null,
-    );
+    // Фильтр «Отображения» (решение 3А plans/m5).
+    final test =
+        viewFilterTest(ws, options, now: clock.nowWall()) ?? (_) => true;
+    final overdue = ws
+        .overdueTasks(iso, order: order(DefaultOrder.overdue))
+        .where(test)
+        .toList();
+    final tasks = ws
+        .todayTasks(
+          iso,
+          order: order(DefaultOrder.smart),
+          completedDay: options.showCompletedTasks ? localDayBy(clock) : null,
+        )
+        .where(test)
+        .toList();
     if (options.grouping == Grouping.none) {
       return (overdue: overdue, today: tasks, groups: const []);
     }
