@@ -48,16 +48,20 @@ DateTime quickDueDate(QuickDue option, DateTime today) {
   };
 }
 
+/// Календарных дней от [today] до [day]: завтра — 1, вчера — −1. Через UTC,
+/// где в сутках всегда 24 часа, — переход на летнее время не сдвигает счёт.
+int daysUntil(DateTime day, DateTime today) {
+  DateTime utc(DateTime t) => DateTime.utc(t.year, t.month, t.day);
+  return utc(day).difference(utc(today)).inDays;
+}
+
 /// Как подписать дату в строке задачи.
 enum DueKind { overdueYesterday, overdue, today, tomorrow, thisWeek, later }
 
 /// Вид даты [due] относительно [today]: вчера и раньше — просрочено,
 /// ближайшие 6 дней — день недели, дальше — дата.
 DueKind dueKind(DateTime due, DateTime today) {
-  // Разница календарных дней — через UTC, где в сутках всегда 24 часа.
-  DateTime utc(DateTime t) => DateTime.utc(t.year, t.month, t.day);
-  final days = utc(due).difference(utc(today)).inDays;
-  return switch (days) {
+  return switch (daysUntil(due, today)) {
     -1 => DueKind.overdueYesterday,
     < 0 => DueKind.overdue,
     0 => DueKind.today,
@@ -74,9 +78,7 @@ enum DueTone { overdue, today, tomorrow, nextWeek, none }
 /// сегодня, когда время срока [timePassed] прошло; сегодня — зелёный;
 /// завтра — коричневый; через 2–7 дней — фиолетовый; дальше — без цвета.
 DueTone dueTone(DateTime due, DateTime today, {bool timePassed = false}) {
-  DateTime utc(DateTime t) => DateTime.utc(t.year, t.month, t.day);
-  final days = utc(due).difference(utc(today)).inDays;
-  return switch (days) {
+  return switch (daysUntil(due, today)) {
     < 0 => DueTone.overdue,
     0 => timePassed ? DueTone.overdue : DueTone.today,
     1 => DueTone.tomorrow,

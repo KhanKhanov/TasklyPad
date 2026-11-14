@@ -453,6 +453,11 @@
   "@noDeadline": {
     "description": "Убрать дедлайн"
   },
+  "deadlineDaysLeft": "{n, plural, one{остался {n} день} few{осталось {n} дня} many{осталось {n} дней} other{осталось {n} дня}}",
+  "@deadlineDaysLeft": {
+    "description": "Обратный отсчёт дедлайна за 1–7 дней (help «Add deadlines to tasks»: countdown)",
+    "placeholders": {"n": {"type": "int"}}
+  },
   "noDuration": "Без длительности",
   "@noDuration": {
     "description": "Убрать длительность"

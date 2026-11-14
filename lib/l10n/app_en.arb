@@ -100,6 +100,7 @@
   "fieldLabels": "Labels",
   "fieldDuration": "Duration",
   "noDeadline": "No deadline",
+  "deadlineDaysLeft": "{n, plural, one{{n} day left} other{{n} days left}}",
   "noDuration": "No duration",
   "durationMinutes": "{minutes} min",
   "priorityN": "Priority {n}",

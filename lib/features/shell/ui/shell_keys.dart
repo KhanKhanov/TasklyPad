@@ -140,6 +140,16 @@ class _ShellKeysState extends State<ShellKeys> {
         focus.descendants.isNotEmpty;
   }
 
+  /// Есть что закрыть по `Esc`: от элемента в фокусе вверх найдено включённое
+  /// действие «закрыть» ([DismissIntent]). Меню регистрирует его, только пока
+  /// открыто; у экрана оно выключено. Поиск — как у [ShortcutManager].
+  static bool get _canDismiss {
+    final context = FocusManager.instance.primaryFocus?.context;
+    if (context == null) return false;
+    final action = Actions.maybeFind<DismissIntent>(context);
+    return action != null && action.isEnabled(const DismissIntent());
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final prefix = _pending ? _prefix : null;
@@ -205,6 +215,16 @@ class _ShellKeysState extends State<ShellKeys> {
       case LogicalKeyboardKey.keyG || LogicalKeyboardKey.keyO:
         _prefix = key;
         _sinceGo.start();
+      // `Esc` — «назад», как `Alt+←`, когда закрывать нечего (отступление от
+      // Todoist, где `Esc` только отменяет, — решение 1Б plans/m5 «Решения
+      // проверки M5.3»). Поля, окна и меню «Отображение» обрабатывают `Esc`
+      // раньше, выделение задач снимает [SelectionKeys]. Меню строки и
+      // раздела, выдвижной сайдбар закрывает общее сочетание приложения выше
+      // по дереву ([_canDismiss]) — ему `Esc` и уходит; видимую подсказку
+      // `Esc` прячет.
+      case LogicalKeyboardKey.escape:
+        if (_canDismiss) return KeyEventResult.ignored;
+        if (!Tooltip.dismissAllToolTips()) widget.onBack();
       case LogicalKeyboardKey.keyM:
         widget.onToggleSidebar();
       case LogicalKeyboardKey.keyQ:

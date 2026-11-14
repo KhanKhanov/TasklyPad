@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:planner/domain/models.dart';
 import 'package:planner/domain/view_options.dart';
+import 'package:planner/features/quick_add/ui/quick_add_composer.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/shell/ui/sidebar_items.dart';
 import 'package:planner/features/tasks/ui/add_task_editor.dart';
@@ -322,8 +323,9 @@ void main() {
       // заголовок у края или уже над ним, заголовок следующего дня — ниже.
       final due = (await taskNamed(tester, app, 'Scrolled')).due!.date;
       expect(due.compareTo('2026-10-24') > 0, isTrue, reason: due);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
+      // Окно быстрого добавления закрылось само; `Esc` здесь увёл бы назад
+      // (решение 1Б plans/m5 «Решения проверки M5.3»).
+      expect(find.byType(QuickAddComposer), findsNothing);
       Finder header(DateTime day) =>
           find.textContaining('${DateFormat.MMMd('en').format(day)} · ');
       final day = DateTime.parse(due);

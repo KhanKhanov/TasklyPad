@@ -93,10 +93,10 @@ class QuickAddChips extends ConsumerWidget {
           },
         ),
         _Chip(
-          icon: Icons.outlined_flag,
+          icon: deadlineIcon,
           text: deadline == null
               ? l10n.fieldDeadline
-              : deadlineLabel(context, deadline, today).text,
+              : deadlineLabel(context, deadline, today, countdown: false).text,
           onTap: () async {
             final picked = await pickDeadline(context, ref, deadline);
             if (picked != null) controller.pickDeadline(picked.date);

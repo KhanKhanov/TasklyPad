@@ -332,6 +332,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get noDeadline => 'Без дедлайна';
 
   @override
+  String deadlineDaysLeft(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'осталось $n дня',
+      many: 'осталось $n дней',
+      few: 'осталось $n дня',
+      one: 'остался $n день',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get noDuration => 'Без длительности';
 
   @override
@@ -1328,7 +1341,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get viewFilterHeader => 'Фильтр';
 
   @override
-  String get viewFilterDate => 'Дата';
+  String get viewFilterDate => 'Срок';
 
   @override
   String get viewFilterAll => 'Все';

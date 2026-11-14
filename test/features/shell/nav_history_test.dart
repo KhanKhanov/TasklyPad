@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:planner/app/nav_history.dart';
 import 'package:planner/features/shell/ui/app_shell.dart';
+import 'package:planner/features/tasks/ui/task_dialog.dart';
 
 import '../../app/support/pump_app.dart';
+import '../support/app_commands.dart';
 
 // «Назад» и «Вперёд» по экранам: `Alt+←` / `Alt+→` и боковые кнопки мыши
-// (help «Use keyboard shortcuts»; решение 13А «M4.10a» plans/m4).
+// (help «Use keyboard shortcuts»; решение 13А «M4.10a» plans/m4); `Esc` —
+// «назад», когда закрывать нечего (решение 1Б plans/m5 «Решения проверки
+// M5.3»).
 void main() {
   group('NavHistory', () {
     test('три перехода, назад дважды → первый; вперёд → второй', () {
@@ -142,6 +146,155 @@ void main() {
       expect(location(tester), '/');
       await click(kForwardMouseButton);
       expect(location(tester), '/today');
+    });
+  });
+
+  group('Esc', () {
+    Future<void> esc(WidgetTester tester) async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+    }
+
+    /// «Сегодня», затем «Входящие»: шаг назад ведёт в «Сегодня».
+    Future<void> todayThenInbox(WidgetTester tester) async {
+      final ctrl = LogicalKeyboardKey.controlLeft;
+      await chord(tester, ctrl, LogicalKeyboardKey.digit2);
+      await chord(tester, ctrl, LogicalKeyboardKey.digit1);
+      expect(location(tester), '/');
+    }
+
+    Future<void> addTask(WidgetTester tester, AppCommands app, String name) =>
+        tester.runAsync(() => app.tasks.add(content: name)).then((_) {});
+
+    testWidgets('закрывать нечего → назад, как Alt+←', (tester) async {
+      await withApp(tester, (device) async {
+        await todayThenInbox(tester);
+        await esc(tester);
+        expect(location(tester), '/today');
+      });
+    });
+
+    testWidgets('история пуста → экран не меняется', (tester) async {
+      await withApp(tester, (device) async {
+        final start = location(tester);
+        await esc(tester);
+        expect(location(tester), start);
+      });
+    });
+
+    testWidgets('открыто меню «Display» → первый Esc закрывает его, второй — '
+        'назад', (tester) async {
+      await withApp(tester, (device) async {
+        await todayThenInbox(tester);
+        await tester.tap(find.textContaining('Display'));
+        await tester.pumpAndSettle();
+        expect(find.text('Grouping'), findsOneWidget);
+
+        await esc(tester);
+        expect(find.text('Grouping'), findsNothing);
+        expect(location(tester), '/');
+        await esc(tester);
+        expect(location(tester), '/today');
+      });
+    });
+
+    testWidgets('меню строки открыто клавишей «.» (фокус — на строке) → Esc '
+        'закрывает меню, второй — назад', (tester) async {
+      await withApp(tester, (device) async {
+        final app = AppCommands(device);
+        await todayThenInbox(tester);
+        await addTask(tester, app, 'Milk');
+        await settle(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.period);
+        await tester.pumpAndSettle();
+        expect(find.text('Move to…'), findsOneWidget);
+
+        await esc(tester);
+        expect(find.text('Move to…'), findsNothing);
+        expect(location(tester), '/');
+        await esc(tester);
+        expect(location(tester), '/today');
+      });
+    });
+
+    testWidgets('узкое окно, сайдбар выдвинут клавишей «m» → Esc закрывает '
+        'его, экран тот же', (tester) async {
+      await withApp(tester, size: const Size(400, 800), (device) async {
+        await todayThenInbox(tester);
+        ScaffoldState scaffold() =>
+            tester.state<ScaffoldState>(find.byType(Scaffold).first);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
+        await tester.pumpAndSettle();
+        expect(scaffold().isDrawerOpen, isTrue);
+
+        await esc(tester);
+        expect(scaffold().isDrawerOpen, isFalse);
+        expect(location(tester), '/');
+      });
+    });
+
+    testWidgets('открыта панель задачи → Esc закрывает её, экран тот же', (
+      tester,
+    ) async {
+      await withApp(tester, (device) async {
+        final app = AppCommands(device);
+        await todayThenInbox(tester);
+        await addTask(tester, app, 'Milk');
+        await settle(tester);
+        await tester.tap(find.text('Milk'));
+        await tester.pumpAndSettle();
+        expect(find.byType(TaskDialog), findsOneWidget);
+
+        await esc(tester);
+        expect(find.byType(TaskDialog), findsNothing);
+        expect(location(tester), '/');
+      });
+    }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+
+    testWidgets('выделены задачи → первый Esc снимает выделение, второй — '
+        'назад', (tester) async {
+      await withApp(tester, (device) async {
+        final app = AppCommands(device);
+        await todayThenInbox(tester);
+        await addTask(tester, app, 'Milk');
+        await settle(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyX);
+        await tester.pumpAndSettle();
+        expect(find.text('1 selected'), findsOneWidget);
+
+        await esc(tester);
+        expect(find.text('1 selected'), findsNothing);
+        expect(location(tester), '/');
+        await esc(tester);
+        expect(location(tester), '/today');
+      });
+    });
+
+    testWidgets('в редакторе «Add task» → Esc закрывает редактор, экран тот '
+        'же', (tester) async {
+      await withApp(tester, (device) async {
+        await todayThenInbox(tester);
+        await tester.tap(find.text('Add task').last);
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).first, 'Milk');
+        await esc(tester);
+        expect(location(tester), '/');
+      });
+    });
+
+    testWidgets('после «g» Esc отменяет сочетание и назад не ведёт', (
+      tester,
+    ) async {
+      await withApp(tester, (device) async {
+        await todayThenInbox(tester);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyG);
+        await esc(tester);
+        expect(location(tester), '/');
+      });
     });
   });
 }

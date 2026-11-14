@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/data/projection/entity_fields.dart';
 import 'package:planner/domain/models.dart';
+import 'package:planner/features/tasks/ui/due_ui.dart';
 import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_dialog_top_bar.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
@@ -489,7 +490,7 @@ void main() {
       await addTask(tester, app, 'Plain', deadline: '2026-10-20');
       Finder flag(String content) => find.descendant(
         of: row(content),
-        matching: find.byIcon(Icons.outlined_flag),
+        matching: find.byIcon(deadlineIcon),
       );
       expect(flag('Gym'), findsNothing);
       expect(flag('Plain'), findsOneWidget);
