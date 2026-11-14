@@ -76,7 +76,9 @@ class _DescriptionLineState extends State<DescriptionLine> {
     // с текущим: иначе правка, пришедшая с другого устройства, пока редактор
     // был открыт, отличалась бы от текста редактора, и старое значение
     // затёрло бы её по LWW.
-    if (text.trim() != _initial) {
+    // В том виде, в каком хранит команда: описание с переводом строки в конце
+    // иначе записалось бы снова без правки, а пробел в пустом — пустым.
+    if (storedDescription(text) != _initial) {
       final saved = await runGuarded(
         ScaffoldMessenger.of(context),
         AppLocalizations.of(context),

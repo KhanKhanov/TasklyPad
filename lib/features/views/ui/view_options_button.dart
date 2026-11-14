@@ -97,14 +97,7 @@ class ViewOptionsButton extends ConsumerWidget {
               ),
           ]),
         if (options.filterApplies)
-          ...viewFilterMenus(
-            context,
-            options: options,
-            labels:
-                ref.watch(workspaceProvider.select((ws) => ws.value?.labels)) ??
-                const [],
-            save: save,
-          ),
+          ...viewFilterMenus(context, options: options, save: save),
         // Фильтр показывает только активные задачи (help «Introduction to
         // filters»: «Completed tasks aren't visible in filter views»).
         if (viewType != ViewType.filter)

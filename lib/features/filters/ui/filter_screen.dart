@@ -66,16 +66,6 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
   );
 
   @override
-  void didUpdateWidget(FilterScreen old) {
-    super.didUpdateWidget(old);
-    // Другой фильтр на том же экране — раскрытое и редактор не переносятся.
-    if (old.filterId != widget.filterId) {
-      _adding = (list: 0, at: AddTaskAt.none);
-      _expanded.clear();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) => WorkspaceView(builder: _build);
 
   Widget _build(BuildContext context, Workspace ws) {
@@ -129,10 +119,7 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
                         id: filter.id,
                         margin: const EdgeInsets.only(bottom: 8),
                       ),
-                      // Ключ по фильтру: экран тот же при переходе на другой
-                      // фильтр, черновик не должен уйти в него.
                       DescriptionLine(
-                        key: ValueKey(filter.id),
                         text: filter.description,
                         readOnly: false,
                         placeholder: l10n.addProjectDescription,
@@ -142,6 +129,9 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
                       ),
                       if (shown != null)
                         FilterLists(
+                          // Другой запрос — другие списки: редактор группы
+                          // (состояние списка) в них не переходит.
+                          key: ValueKey(filter.query),
                           lists: shown.lists,
                           values: shown.values,
                           ws: ws,

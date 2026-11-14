@@ -1046,7 +1046,7 @@
   "@filterBroken": {"description": "Экран фильтра, запрос которого не разбирается (пришёл с другого устройства)"},
   "viewFilterHeader": "Фильтр",
   "@viewFilterHeader": {"description": "Заголовок подменю фильтра в «Отображении» (help «Customize views»: Filter)"},
-  "viewFilterDate": "Дата",
+  "viewFilterDate": "Срок",
   "@viewFilterDate": {"description": "Подменю фильтра «Отображения»: по дате (help «Customize views»: Date)"},
   "viewFilterAll": "Все",
   "@viewFilterAll": {"description": "Фильтр «Отображения»: без условия по этому полю"},

@@ -63,7 +63,7 @@ final class ProjectCommands {
   /// введено, как у задачи: пробелы по краям — часть markdown (блок кода
   /// отступом); текст только из пробелов — пустое описание.
   Future<void> setDescription(String id, String description) async {
-    final text = description.trim().isEmpty ? '' : description;
+    final text = storedDescription(description);
     Limits.checkLength(text, Limits.description);
     await _update(id, {ProjectFields.description: text}, protectInbox: true);
   }

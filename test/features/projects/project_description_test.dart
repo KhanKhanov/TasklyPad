@@ -139,6 +139,64 @@ void main() {
       });
     });
 
+    testWidgets('«Save» без правки описания с переводом строки в конце и '
+        'пробелы в пустом — без записи: пришедшее не затирается', (
+      tester,
+    ) async {
+      await withApp(tester, (device) async {
+        final id = await open(tester, device);
+        final app = AppCommands(device);
+        await tester.runAsync(() => app.projects.setDescription(id, 'A\n'));
+        await settle(tester);
+        await tester.tap(find.text('A'));
+        await tester.pumpAndSettle();
+        await tester.runAsync(() => app.projects.setDescription(id, 'B'));
+        await settle(tester);
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        expect(
+          (await tester.runAsync(app.read))!.project(id)!.description,
+          'B',
+        );
+
+        await tester.runAsync(() => app.projects.setDescription(id, ''));
+        await settle(tester);
+        await tester.tap(find.text('Add a description'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).last, '   ');
+        await tester.runAsync(() => app.projects.setDescription(id, 'C'));
+        await settle(tester);
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        expect(
+          (await tester.runAsync(app.read))!.project(id)!.description,
+          'C',
+        );
+      });
+    });
+
+    testWidgets('«Edit» проекта: правка только имени при описании с переводом '
+        'строки в конце — описание не пишется', (tester) async {
+      await withApp(tester, (device) async {
+        final id = await open(tester, device);
+        final app = AppCommands(device);
+        await tester.runAsync(() => app.projects.setDescription(id, 'A\n'));
+        await settle(tester);
+        await tester.tap(screenMenu());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Edit').last);
+        await settle(tester);
+        await tester.enterText(find.widgetWithText(TextField, 'Work'), 'Job');
+        await tester.runAsync(() => app.projects.setDescription(id, 'B'));
+        await settle(tester);
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        final project = (await tester.runAsync(app.read))!.project(id)!;
+        expect(project.name, 'Job');
+        expect(project.description, 'B');
+      });
+    });
+
     testWidgets('«Cancel» и Esc ничего не пишут', (tester) async {
       await withApp(tester, (device) async {
         final id = await open(tester, device);

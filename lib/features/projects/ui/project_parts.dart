@@ -85,14 +85,7 @@ class ProjectHeader extends StatelessWidget {
                   id: project.id,
                   margin: const EdgeInsets.only(bottom: 8),
                 ),
-                // Ключ по проекту: go_router оставляет экран тем же при
-                // переходе на другой проект, и открытый редактор с черновиком
-                // сохранил бы его в новый проект.
-                ProjectDescription(
-                  key: ValueKey(project.id),
-                  project: project,
-                  readOnly: archived,
-                ),
+                ProjectDescription(project: project, readOnly: archived),
               ],
             ),
     );

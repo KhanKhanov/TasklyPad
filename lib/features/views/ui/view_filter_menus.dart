@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../domain/models.dart';
 import '../../../domain/text_fold.dart';
@@ -14,7 +16,6 @@ import '../../../l10n/app_localizations.dart';
 List<Widget> viewFilterMenus(
   BuildContext context, {
   required ViewOptions options,
-  required List<Label> labels,
   required ValueChanged<ViewOptions> save,
 }) {
   final l10n = AppLocalizations.of(context);
@@ -71,11 +72,7 @@ List<Widget> viewFilterMenus(
       ),
   ];
 
-  // Метка из запроса, которой уже нет (переименована), — тоже в списке,
-  // отмеченной: иначе выбор было бы не увидеть.
   final label = filter.label;
-  final known =
-      label == null || labels.any((l) => foldText(l.name) == foldText(label));
   return [
     Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
@@ -108,19 +105,33 @@ List<Widget> viewFilterMenus(
           ),
       ],
     ),
-    submenu(l10n.viewByLabel, label ?? l10n.viewFilterAll, [
-      choice(
-        label == null,
-        l10n.viewFilterAll,
-        () => pick(filter.withLabel(null)),
-      ),
-      if (!known) choice(true, label, () {}),
-      for (final l in labels)
-        choice(
-          label != null && foldText(l.name) == foldText(label),
-          l.name,
-          () => pick(filter.withLabel(l.name)),
-        ),
-    ]),
+    // Метки читаются здесь, а не в кнопке «Отображение»: подменю есть, только
+    // пока меню открыто, и кнопка не перестраивается на каждый снимок данных.
+    Consumer(
+      builder: (context, ref, _) {
+        final labels =
+            ref.watch(workspaceProvider.select((ws) => ws.value?.labels)) ??
+            const <Label>[];
+        // Метка из запроса, которой уже нет (переименована), — тоже в списке,
+        // отмеченной: иначе выбор было бы не увидеть.
+        final known =
+            label == null ||
+            labels.any((l) => foldText(l.name) == foldText(label));
+        return submenu(l10n.viewByLabel, label ?? l10n.viewFilterAll, [
+          choice(
+            label == null,
+            l10n.viewFilterAll,
+            () => pick(filter.withLabel(null)),
+          ),
+          if (!known) choice(true, label, () {}),
+          for (final l in labels)
+            choice(
+              label != null && foldText(l.name) == foldText(label),
+              l.name,
+              () => pick(filter.withLabel(l.name)),
+            ),
+        ]);
+      },
+    ),
   ];
 }
