@@ -55,7 +55,7 @@ final class NotificationLogControllerProvider
 }
 
 String _$notificationLogControllerHash() =>
-    r'0eebe47add574ae7036b660603c8f80341ee1385';
+    r'c521c62eac48e3375d371da36675aa10be50d66d';
 
 /// Журнал «Уведомления» этого устройства (решения 2А–4А plans/m5 «Решения
 /// M5.3a»): загружается при запуске, каждое нижнее уведомление дописывается

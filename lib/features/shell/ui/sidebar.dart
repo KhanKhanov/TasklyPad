@@ -19,8 +19,10 @@ import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_drop_places.dart';
+import '../logic/shell_commands.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
+import 'shell_command_scope.dart';
 import 'sidebar_items.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Сегодня» (со счётчиком
@@ -28,8 +30,8 @@ import 'sidebar_items.dart';
 /// метки», «Избранное» (проекты, метки, фильтры — help «Add a project,
 /// label, or filter to favorites»), «Мои проекты» деревом.
 /// «Конфликты» (нашего дополнения) видны, только пока есть нерешённые.
-/// «Добавить задачу» открывает окно быстрого добавления; «Поиск» появится
-/// вместе со своим экраном.
+/// «Добавить задачу» открывает окно быстрого добавления, «Поиск» — окно
+/// поиска (help «Introduction to search»: «click Search in the sidebar»).
 class Sidebar extends ConsumerWidget {
   const Sidebar({
     super.key,
@@ -117,6 +119,17 @@ class Sidebar extends ConsumerWidget {
           final scaffold = Scaffold.maybeOf(context);
           if (scaffold != null && scaffold.isDrawerOpen) scaffold.closeDrawer();
           openQuickAdd(context, ref, location);
+        },
+      ),
+      SidebarNavItem(
+        icon: Icons.search,
+        label: l10n.search,
+        count: 0,
+        selected: false,
+        onTap: () {
+          final scaffold = Scaffold.maybeOf(context);
+          if (scaffold != null && scaffold.isDrawerOpen) scaffold.closeDrawer();
+          ShellCommandScope.of(context)(ShellCommandId.search);
         },
       ),
       // Бросок задач на проект — в конец его задач без раздела.

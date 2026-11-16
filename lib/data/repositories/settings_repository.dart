@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../../domain/recent_searches.dart';
 import '../app_database.dart';
 import '../projection/entity_fields.dart';
 
@@ -32,13 +33,35 @@ final class SettingsRepository {
   /// [resetRecurringSubtasks] — так же, как [watchSmartDateRecognition].
   Stream<bool> watchResetRecurringSubtasks() => _watch(resetRecurringSubtasks);
 
-  Stream<bool> _watch(Future<bool> Function() read) => _db
+  /// Недавние поисковые запросы, новые первыми; поля нет или оно битое —
+  /// пусто ([recentSearchesOf]).
+  Future<List<String>> recentSearches() async =>
+      recentSearchesOf(await _value(SettingsFields.recentSearches));
+
+  /// [recentSearches] сейчас и после каждой правки; одинаковые списки
+  /// отбрасываются.
+  Stream<List<String>> watchRecentSearches() =>
+      _watch(recentSearches, equals: _sameList);
+
+  Stream<T> _watch<T>(
+    Future<T> Function() read, {
+    bool Function(T, T)? equals,
+  }) => _db
       .customSelect('SELECT 1', readsFrom: {_db.fieldVersions})
       .watch()
       .asyncMap((_) => read())
-      .distinct();
+      .distinct(equals);
+
+  static bool _sameList(List<String> a, List<String> b) =>
+      a.length == b.length &&
+      [for (var i = 0; i < a.length; i++) a[i] == b[i]].every((same) => same);
 
   Future<bool?> _bool(String field) async {
+    final value = await _value(field);
+    return value is bool ? value : null;
+  }
+
+  Future<Object?> _value(String field) async {
     final row =
         await (_db.select(_db.fieldVersions)..where(
               (t) =>
@@ -47,7 +70,6 @@ final class SettingsRepository {
                   t.field.equals(field),
             ))
             .getSingleOrNull();
-    final value = row == null ? null : jsonDecode(row.valueJson);
-    return value is bool ? value : null;
+    return row == null ? null : jsonDecode(row.valueJson);
   }
 }

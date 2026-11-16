@@ -7,6 +7,7 @@ import 'package:planner/features/filters/logic/filter_commands.dart';
 import 'package:planner/features/labels/logic/label_commands.dart';
 import 'package:planner/features/projects/logic/project_commands.dart';
 import 'package:planner/features/quick_add/logic/quick_add_commands.dart';
+import 'package:planner/features/search/logic/recent_search_commands.dart';
 import 'package:planner/features/sections/logic/section_commands.dart';
 import 'package:planner/features/settings/logic/general_settings_commands.dart';
 import 'package:planner/features/settings/logic/theme_commands.dart';
@@ -48,6 +49,10 @@ final class AppCommands {
     );
     settings = SettingsRepository(device.db);
     general = GeneralSettingsCommands(mutator: mutator);
+    recentSearches = RecentSearchCommands(
+      mutator: mutator,
+      read: settings.recentSearches,
+    );
     themeRepo = ThemeSettingsRepository(device.db);
     theme = ThemeCommands(
       mutator: mutator,
@@ -70,6 +75,7 @@ final class AppCommands {
   late final QuickAddCommands quickAdd;
   late final SettingsRepository settings;
   late final GeneralSettingsCommands general;
+  late final RecentSearchCommands recentSearches;
 
   Future<Workspace> read() => repo.load();
 }

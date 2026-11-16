@@ -739,4 +739,25 @@ void main() {
       [(const TaskGroupKey.day('2026-10-30'), 'a,a1,b')],
     );
   });
+
+  test('completedTasks — выполненные в активном месте, без архива; позже '
+      'выполненные выше', () {
+    final ws = Workspace(
+      projects: [inbox, _project('p'), _project('old', archived: true)],
+      sections: const [],
+      labels: const [],
+      tasks: [
+        _task('early', completed: true, completedAt: '2026-11-01T10:00:00Z'),
+        _task('late', completed: true, completedAt: '2026-11-02T10:00:00Z'),
+        _task('open'),
+        _task(
+          'archived',
+          project: 'old',
+          completed: true,
+          completedAt: '2026-11-03T10:00:00Z',
+        ),
+      ],
+    );
+    expect(_plain(ws.completedTasks), ['late', 'early']);
+  });
 }

@@ -102,14 +102,17 @@ const Map<String, Object?> inboxProjectFields = {
 /// свёрнутость, дата выполнения (задачу завершили на двух устройствах —
 /// спорить о минуте незачем) и имена меток на момент завершения (пишутся
 /// вместе с выполнением, спор о нём виден в `is_completed`) пользователю
-/// выбирать незачем, LWW решает сам. Имена полей общие для всех типов
-/// сущностей. Правило — SYNC_DESIGN «Конфликты».
+/// выбирать незачем, LWW решает сам; недавние поиски — потеря слова,
+/// введённого одновременно на другом устройстве, безвредна (решение 4А
+/// plans/m5). Имена полей общие для всех типов сущностей. Правило —
+/// SYNC_DESIGN «Конфликты».
 const Set<String> silentFields = {
   TaskFields.orderKey,
   TaskFields.dayOrderKey,
   TaskFields.isCollapsed,
   TaskFields.completedAt,
   TaskFields.completedLabelNames,
+  SettingsFields.recentSearches,
 };
 
 /// Поля-объекты и ключи, которые знает эта версия приложения. При правке
@@ -288,6 +291,12 @@ abstract final class SettingsFields {
   /// `reset_recurring_subtasks` в Todoist API (импорт M11); поля нет —
   /// выключено (решение 1А «Ход M3.4», О-57).
   static const String resetRecurringSubtasks = 'reset_recurring_subtasks';
+
+  /// Недавние поисковые запросы — JSON-список строк, новые первыми, до пяти
+  /// (help «Introduction to search»; решения 5А, 4А plans/m5). Молчащее
+  /// поле ([silentFields]): параллельные добавления сводит LWW без карточки.
+  /// Имени в Todoist API нет — своё.
+  static const String recentSearches = 'recent_searches';
 }
 
 /// Поля настроек вида — имена и значения как у `view_options` Todoist API.

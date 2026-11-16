@@ -4,24 +4,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/nav_history.dart';
 import '../../../app/notification_log.dart';
+import '../../../app/recently_viewed.dart';
 import '../../../app/theme/app_palette.dart';
-import '../../../l10n/app_localizations.dart';
 import '../../common/ui/drag_layer.dart';
 import '../../common/ui/layout.dart';
 import '../../common/ui/toast_lamp_anchor.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../conflicts/ui/conflict_toast.dart';
 import '../../filters/ui/filter_dialog.dart';
+import '../../labels/ui/label_dialog.dart';
 import '../../notifications/ui/notifications_tab.dart';
+import '../../projects/ui/project_dialog.dart';
 import '../../quick_add/ui/quick_add_dialog.dart';
+import '../../search/ui/search_window.dart';
 import '../../settings/state/sync_controller.dart';
 import '../../tasks/state/selection.dart';
 import '../../tasks/ui/selection_keys.dart';
 import '../../tasks/ui/selection_toolbar.dart';
+import '../logic/shell_commands.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
+import 'shell_command_scope.dart';
 import 'shell_keys.dart';
 import 'sidebar.dart';
+import 'top_bar.dart';
 
 const double _sidebarWidth = 280;
 
@@ -81,6 +87,50 @@ class _AppShellState extends ConsumerState<AppShell> {
     }
   }
 
+  /// Окно шире раскладки телефона — сайдбар рядом, а не выдвижной.
+  bool _wide = true;
+
+  /// Команда оболочки ([shellCommands]) — от клавиш, сайдбара и окна «Поиск».
+  void _run(ShellCommandId id) {
+    if (!mounted) return;
+    if (shellCommand(id).path case final path?) {
+      navigate(context, path);
+      return;
+    }
+    switch (id) {
+      case ShellCommandId.addTask:
+        openQuickAdd(context, ref, widget.location);
+      case ShellCommandId.addProject:
+        showProjectDialog(context).ignore();
+      case ShellCommandId.addLabel:
+        showLabelDialog(context).ignore();
+      case ShellCommandId.addFilter:
+        showFilterDialog(context).ignore();
+      case ShellCommandId.sync:
+        syncFromShell(context, ref);
+      case ShellCommandId.toggleSidebar:
+        _toggleSidebar();
+      case ShellCommandId.search:
+        showSearchWindow(context, run: _run).ignore();
+      default:
+        // Переходы — по пути выше.
+        break;
+    }
+  }
+
+  void _toggleSidebar() {
+    final scaffold = _scaffold.currentState;
+    if (_wide) {
+      ref.read(sidebarOpenProvider.notifier).toggle();
+    } else if (scaffold == null) {
+      return;
+    } else if (scaffold.isDrawerOpen) {
+      scaffold.closeDrawer();
+    } else {
+      scaffold.openDrawer();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -95,9 +145,11 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Журнал «Уведомления» загружается сразу, а не с первым тостом;
     // подписка без перестройки оболочки на каждую запись.
     ref.listen(notificationLogControllerProvider, (_, _) {});
+    // «Недавно просмотренное» окна поиска следит за адресом с первого экрана.
+    ref.listen(recentlyViewedControllerProvider, (_, _) {});
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= wideLayoutWidth;
+        final wide = _wide = constraints.maxWidth >= wideLayoutWidth;
         final tab = wide ? notificationsTabHeight : 0.0;
         // Уведомления о конфликтах — тоже на всё время работы приложения.
         // Системная «Назад» при выделении снимает его, а не уходит с экрана.
@@ -108,119 +160,108 @@ class _AppShellState extends ConsumerState<AppShell> {
           },
           child: ConflictNoticeListener(
             child: ShellKeys(
-              onQuickAdd: () => openQuickAdd(context, ref, location),
-              onSync: () => syncFromShell(context, ref),
-              onAddFilter: () => showFilterDialog(context),
+              onCommand: _run,
               onBack: () => _travel((h) => h.back()),
               onForward: () => _travel((h) => h.forward()),
-              onToggleSidebar: () {
-                final scaffold = _scaffold.currentState;
-                if (wide) {
-                  ref.read(sidebarOpenProvider.notifier).toggle();
-                } else if (scaffold == null) {
-                  return;
-                } else if (scaffold.isDrawerOpen) {
-                  scaffold.closeDrawer();
-                } else {
-                  scaffold.openDrawer();
-                }
-              },
-              child: Listener(
-                onPointerDown: _onPointerDown,
-                // Один приёмник перетаскивания на всё окно: списки, сайдбар.
-                child: DragLayer(
-                  // Слоты ищутся в теле `Scaffold`, а не во всём окне: нижнее
-                  // уведомление непрозрачно для попадания, и на узком экране бросок
-                  // под ним пропадал бы. Выдвижная панель сайдбара на узком экране
-                  // вне тела: пока она открыта, затемнение закрывает её по касанию,
-                  // и перетаскивание не начать — бросать в неё нечего.
-                  hitRoot: _bodyKey,
-                  child: Scaffold(
-                    key: _scaffold,
-                    backgroundColor: palette.background,
-                    drawer: wide
-                        ? null
-                        : Drawer(
-                            width: _sidebarWidth,
-                            child: Sidebar(
-                              location: location,
-                              showNotifications: true,
+              child: ShellCommandScope(
+                run: _run,
+                child: Listener(
+                  onPointerDown: _onPointerDown,
+                  // Один приёмник перетаскивания на всё окно: списки, сайдбар.
+                  child: DragLayer(
+                    // Слоты ищутся в теле `Scaffold`, а не во всём окне: нижнее
+                    // уведомление непрозрачно для попадания, и на узком экране бросок
+                    // под ним пропадал бы. Выдвижная панель сайдбара на узком экране
+                    // вне тела: пока она открыта, затемнение закрывает её по касанию,
+                    // и перетаскивание не начать — бросать в неё нечего.
+                    hitRoot: _bodyKey,
+                    child: Scaffold(
+                      key: _scaffold,
+                      backgroundColor: palette.background,
+                      drawer: wide
+                          ? null
+                          : Drawer(
+                              width: _sidebarWidth,
+                              child: Sidebar(
+                                location: location,
+                                showNotifications: true,
+                              ),
                             ),
-                          ),
-                    body: Row(
-                      key: _bodyKey,
-                      children: [
-                        if (wide && open)
-                          SizedBox(
-                            width: _sidebarWidth,
-                            child: Sidebar(location: location),
-                          ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              _TopBar(showToggle: !wide || !open),
-                              Expanded(
-                                child: SelectionKeys(
-                                  toolbarFocus: _toolbarFocus,
-                                  child: Stack(
-                                    children: [
-                                      // Панель выделения не закрывает конец
-                                      // списка.
-                                      Positioned.fill(
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                            bottom: selecting ? 72 + tab : 0,
-                                          ),
-                                          child: widget.child,
-                                        ),
-                                      ),
-                                      // Над вкладкой «Уведомления».
-                                      Positioned(
-                                        left: 16,
-                                        right: 16,
-                                        bottom: 16 + tab,
-                                        child: Center(
-                                          child: SelectionToolbar(
-                                            focus: _toolbarFocus,
+                      body: Row(
+                        key: _bodyKey,
+                        children: [
+                          if (wide && open)
+                            SizedBox(
+                              width: _sidebarWidth,
+                              child: Sidebar(location: location),
+                            ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                TopBar(showToggle: !wide || !open),
+                                Expanded(
+                                  child: SelectionKeys(
+                                    toolbarFocus: _toolbarFocus,
+                                    child: Stack(
+                                      children: [
+                                        // Панель выделения не закрывает конец
+                                        // списка.
+                                        Positioned.fill(
+                                          child: Padding(
+                                            padding: EdgeInsets.only(
+                                              bottom: selecting ? 72 + tab : 0,
+                                            ),
+                                            child: widget.child,
                                           ),
                                         ),
-                                      ),
-                                      // Вкладка «Уведомления» — на 78% ширины
-                                      // контента (решение 1А plans/m5
-                                      // «Решения M5.3a»); на телефоне «лампа»
-                                      // — правый нижний угол.
-                                      if (wide)
-                                        const Positioned(
-                                          left: 0,
-                                          right: 0,
-                                          bottom: 0,
-                                          child: Align(
-                                            alignment: Alignment(0.56, 1),
-                                            heightFactor: 1,
-                                            child: NotificationsTab(),
-                                          ),
-                                        )
-                                      else
-                                        const Positioned(
-                                          right: 0,
-                                          bottom: 0,
-                                          child: ToastLampAnchor(
-                                            anchor: Alignment.bottomRight,
-                                            mouth: 24,
-                                            child: SizedBox(
-                                              width: 1,
-                                              height: 1,
+                                        // Над вкладкой «Уведомления».
+                                        Positioned(
+                                          left: 16,
+                                          right: 16,
+                                          bottom: 16 + tab,
+                                          child: Center(
+                                            child: SelectionToolbar(
+                                              focus: _toolbarFocus,
                                             ),
                                           ),
                                         ),
-                                    ],
+                                        // Вкладка «Уведомления» — на 78% ширины
+                                        // контента (решение 1А plans/m5
+                                        // «Решения M5.3a»); на телефоне «лампа»
+                                        // — правый нижний угол.
+                                        if (wide)
+                                          const Positioned(
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            child: Align(
+                                              alignment: Alignment(0.56, 1),
+                                              heightFactor: 1,
+                                              child: NotificationsTab(),
+                                            ),
+                                          )
+                                        else
+                                          const Positioned(
+                                            right: 0,
+                                            bottom: 0,
+                                            child: ToastLampAnchor(
+                                              anchor: Alignment.bottomRight,
+                                              mouth: 24,
+                                              child: SizedBox(
+                                                width: 1,
+                                                height: 1,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -229,53 +270,6 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         );
       },
-    );
-  }
-}
-
-/// Верхняя строка контента: кнопка открыть сайдбар, когда он скрыт; справа —
-/// «Настройки», как в шапке Todoist (решение пользователя 2А «Ход M3.8»).
-class _TopBar extends ConsumerWidget {
-  const _TopBar({required this.showToggle});
-
-  final bool showToggle;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final palette = AppPalette.of(context);
-    return SizedBox(
-      height: 48,
-      child: Row(
-        children: [
-          if (showToggle)
-            IconButton(
-              tooltip: l10n.toggleSidebar,
-              icon: const Icon(Icons.view_sidebar_outlined, size: 20),
-              color: palette.textSecondary,
-              onPressed: () {
-                final scaffold = Scaffold.of(context);
-                if (scaffold.hasDrawer) {
-                  scaffold.openDrawer();
-                } else {
-                  ref.read(sidebarOpenProvider.notifier).toggle();
-                }
-              },
-            ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: palette.textSecondary,
-              ),
-              icon: const Icon(Icons.settings_outlined, size: 20),
-              label: Text(l10n.settings),
-              onPressed: () => navigate(context, '/settings'),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

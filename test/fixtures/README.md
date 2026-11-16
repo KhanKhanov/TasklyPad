@@ -11,6 +11,7 @@ recurrence.json    "каждый 3-й пт", "every! 3 days"                 →
 recurrence_next.json  срок с правилом + момент выполнения          → следующий срок
 durations.json     "1ч 30м", "90", "1:30"                           → минуты своей длительности
 filters.json       "today & p1 | overdue"                          → AST / список задач
+search_input.json  "%работа", "купить молоко"                       → запрос фильтра или слова поиска
 ```
 
 Каждая запись несёт `source`: страница help Todoist или `"допущение О-57"`, если help молчит
@@ -59,6 +60,9 @@ filters.json       "today & p1 | overdue"                          → AST / с�
   узлов каждой части через `,` (`toString` узлов lib/domain/filter_query.dart), `titles` — заголовки списков,
   `tasks` — видимые названия задач каждого списка по порядку (lib/domain/filter_engine.dart), `error` —
   `{kind, start, end}` (`FilterErrorKind`, участок запроса).
+- `search_input.json` — строка поиска (lib/features/search/logic/search_input.dart): `expect.kind` — `filter`
+  (язык фильтров разобрал без ошибки), `words` или `empty`; `words` — слова поиска; `save` — запрос «Сохранить
+  как фильтр». `lang` не нужен.
 - `filter_workspace.json` — снимок для `filters.json`: проекты, разделы, метки и задачи с полями по умолчанию
   (порядок `a0`, P4, без срока); выполненная задача и задача архивного проекта не должны попадать ни в один список.
 - Каждое правило из `recurrence.json` проходит `nextOccurrence` (lib/domain/recurrence.dart), а текст

@@ -81,6 +81,11 @@ KeyEventResult taskRowEditKey({
     case LogicalKeyboardKey.keyY:
       editPriority(context, ref, task);
     case LogicalKeyboardKey.period:
+      // Клавиша `/` в русской раскладке печатает `.` — это поиск (его
+      // открывает оболочка), а не «ещё действия».
+      if (keys.physicalKeysPressed.contains(PhysicalKeyboardKey.slash)) {
+        return KeyEventResult.ignored;
+      }
       openMenu();
     case LogicalKeyboardKey.keyX:
       toggleSelected();

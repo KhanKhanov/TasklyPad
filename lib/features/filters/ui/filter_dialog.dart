@@ -19,17 +19,22 @@ import 'filter_query_field.dart';
 /// filters»): название, запрос, цвет, «Добавить в избранное». Описания здесь
 /// нет — оно у существующего фильтра, под именем на его экране (help). Запрос
 /// разбирается при вводе: ошибка подсвечена, сохранить нельзя (решение
-/// M5.2: синтаксис проверяет окно, а не команда).
-Future<void> showFilterDialog(BuildContext context, {SavedFilter? filter}) =>
-    showDialog<void>(
-      context: context,
-      builder: (_) => _FilterDialog(filter: filter),
-    );
+/// M5.2: синтаксис проверяет окно, а не команда). [query] — запрос нового
+/// фильтра: «Сохранить как фильтр» окна «Поиск».
+Future<void> showFilterDialog(
+  BuildContext context, {
+  SavedFilter? filter,
+  String query = '',
+}) => showDialog<void>(
+  context: context,
+  builder: (_) => _FilterDialog(filter: filter, query: query),
+);
 
 class _FilterDialog extends ConsumerStatefulWidget {
-  const _FilterDialog({this.filter});
+  const _FilterDialog({this.filter, this.query = ''});
 
   final SavedFilter? filter;
+  final String query;
 
   @override
   ConsumerState<_FilterDialog> createState() => _FilterDialogState();
@@ -40,7 +45,7 @@ class _FilterDialogState extends ConsumerState<_FilterDialog> {
     text: widget.filter?.name ?? '',
   );
   late final FilterQueryController _query = FilterQueryController(
-    text: widget.filter?.query ?? '',
+    text: widget.filter?.query ?? widget.query,
   );
   late String _color = widget.filter?.color ?? 'charcoal';
   late bool _favorite = widget.filter?.isFavorite ?? false;
