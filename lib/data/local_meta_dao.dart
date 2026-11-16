@@ -35,6 +35,10 @@ final class LocalMetaDao {
   /// `NotificationLogRepository`).
   static const String notificationLogKey = 'notifications.log';
 
+  /// «Недавно просмотренное» окна поиска — JSON `RecentlyViewed` (разбирает
+  /// `RecentlyViewedRepository`; решение 1А plans/m5 «Решения M5.4»).
+  static const String recentlyViewedKey = 'search.recently_viewed';
+
   Future<String?> read(String key) async {
     final row = await (_db.select(
       _db.localMeta,
