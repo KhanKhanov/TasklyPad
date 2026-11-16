@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../app/recently_viewed.dart';
 import '../../../domain/workspace.dart';
 import '../../common/ui/drag_layer.dart';
 import 'task_actions.dart';
@@ -77,10 +78,23 @@ class _TaskPanelState extends ConsumerState<TaskPanel> {
   late String _id = widget.taskId;
 
   @override
+  void initState() {
+    super.initState();
+    _viewed(_id);
+  }
+
+  @override
   void dispose() {
     _keys.dispose();
     super.dispose();
   }
+
+  /// Задача открыта — в «Недавно просмотренное» окна поиска (решение 1А
+  /// plans/m5 «Решения M5.4»).
+  void _viewed(String id) => ref
+      .read(recentlyViewedControllerProvider.notifier)
+      .recordTask(id)
+      .ignore();
 
   /// Задачи списка по порядку; пусто — порядок неизвестен.
   List<String> _ids(Workspace? ws) {
@@ -99,6 +113,7 @@ class _TaskPanelState extends ConsumerState<TaskPanel> {
     // Фокус уходит из полей окна — их правка сохраняется для прежней задачи.
     _keys.requestFocus();
     setState(() => _id = id);
+    _viewed(id);
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {

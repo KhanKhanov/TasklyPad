@@ -3,40 +3,27 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../common/ui/ui_kit.dart';
 import '../../tasks/ui/task_actions.dart';
+import '../logic/shell_commands.dart';
 
-/// Хоткеи оболочки, как в Todoist: `q` и `Ctrl+N` — быстрое добавление;
-/// `Ctrl+S` — синхронизация; `j`/`↓` и `k`/`↑` без задачи в фокусе — к
-/// первой и последней задаче списка; `m` —
-/// сайдбар; `g`, затем буква — переход: `i` «Входящие», `t` «Сегодня», `u`
-/// «Предстоящее», `p` «Мои проекты», `v` и `l` «Фильтры и метки»; `o` `s` —
-/// «Настройки», `o` `t` — «Тема»; `Ctrl+1/2/3/4/5` — «Входящие», «Сегодня»,
-/// «Предстоящее», «Проекты», «Фильтры и метки»; `Ctrl+Shift+F` — новый фильтр;
-/// `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h`
-/// появится вместе с «Главной». Пока печатают в поле — клавиши уходят в поле.
+/// Хоткеи оболочки, как в Todoist: команды — таблица [shellCommands]
+/// (переходы `g`, `o`, `Ctrl+1…5`, быстрое добавление `q` и `Ctrl+N`,
+/// `Ctrl+S`, `m`, `Ctrl+Shift+F`, поиск `/`, `f`, `Ctrl+F`, `Ctrl+K`) —
+/// уходят в [onCommand]; `j`/`↓` и `k`/`↑` без задачи в фокусе — к первой
+/// и последней задаче списка; `Esc` — «назад», когда закрывать нечего;
+/// `Alt+←` / `Alt+→` — назад и вперёд по экранам. Переход `h` появится
+/// вместе с «Главной». Пока печатают в поле — клавиши уходят в поле.
 class ShellKeys extends StatefulWidget {
   const ShellKeys({
     super.key,
-    required this.onToggleSidebar,
-    required this.onQuickAdd,
-    required this.onSync,
-    required this.onAddFilter,
+    required this.onCommand,
     required this.onBack,
     required this.onForward,
     required this.child,
   });
 
-  final VoidCallback onToggleSidebar;
-  final VoidCallback onQuickAdd;
-
-  /// `Ctrl+S` — «Синхронизировать».
-  final VoidCallback onSync;
-
-  /// `Ctrl+Shift+F` — «Добавить фильтр» (help «Use keyboard shortcuts»:
-  /// строка «mobile keyboard»; у нас на всех платформах, как `Ctrl+1/2/3` —
-  /// план M5 «Поиск и `Ctrl+K`»).
-  final VoidCallback onAddFilter;
+  /// Команда таблицы [shellCommands] по её клавише.
+  final ValueChanged<ShellCommandId> onCommand;
 
   /// `Alt+←` и `Alt+→` — «Назад» и «Вперёд» (help «Use keyboard shortcuts»,
   /// Windows).
@@ -67,35 +54,6 @@ class _ShellKeysState extends State<ShellKeys> {
   LogicalKeyboardKey? _prefix;
 
   static const Duration _goWindow = Duration(milliseconds: 1500);
-
-  static final Map<LogicalKeyboardKey, Map<LogicalKeyboardKey, String>>
-  _routes = {
-    LogicalKeyboardKey.keyG: {
-      LogicalKeyboardKey.keyI: '/',
-      LogicalKeyboardKey.keyT: '/today',
-      LogicalKeyboardKey.keyU: '/upcoming',
-      LogicalKeyboardKey.keyP: '/projects',
-      LogicalKeyboardKey.keyV: '/filters-labels',
-      LogicalKeyboardKey.keyL: '/filters-labels',
-    },
-    // `o t` — «Настройки», открытые на «Теме».
-    LogicalKeyboardKey.keyO: {
-      LogicalKeyboardKey.keyS: '/settings',
-      LogicalKeyboardKey.keyT: '/settings?section=theme',
-    },
-  };
-
-  /// `Ctrl+1/2/3` — «Перейти во Входящие / Сегодня / Предстоящее», `Ctrl+4/5` —
-  /// «Проекты» и «Фильтры и метки» (help «Use keyboard shortcuts»: строки
-  /// таблицы «mobile keyboard»; у нас на всех платформах, как `Ctrl+1/2/3`;
-  /// решение 2А «Ход M4.13»).
-  static final Map<LogicalKeyboardKey, String> _ctrlRoutes = {
-    LogicalKeyboardKey.digit1: '/',
-    LogicalKeyboardKey.digit2: '/today',
-    LogicalKeyboardKey.digit3: '/upcoming',
-    LogicalKeyboardKey.digit4: '/projects',
-    LogicalKeyboardKey.digit5: '/filters-labels',
-  };
 
   bool get _pending => _sinceGo.isRunning && _sinceGo.elapsed <= _goWindow;
 
@@ -160,39 +118,17 @@ class _ShellKeysState extends State<ShellKeys> {
     if (isTypingInTextField()) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
     final key = event.logicalKey;
-    // `Ctrl+N` — «Открыть быстрое добавление задачи», `Ctrl+S` —
-    // «Синхронизировать» (help «Use keyboard shortcuts», Windows).
-    final ctrlOnly =
-        keys.isControlPressed &&
-        !keys.isShiftPressed &&
-        !keys.isAltPressed &&
-        !keys.isMetaPressed;
-    if (ctrlOnly && key == LogicalKeyboardKey.keyN) {
-      widget.onQuickAdd();
+    final ctrl = keys.isControlPressed;
+    final shift = keys.isShiftPressed;
+    final alt = keys.isAltPressed;
+    final meta = keys.isMetaPressed;
+    if (ctrl && !alt && !meta) {
+      final command = shellCommandFor(key: key, ctrl: true, shift: shift);
+      if (command == null) return KeyEventResult.ignored;
+      widget.onCommand(command.id);
       return KeyEventResult.handled;
     }
-    if (ctrlOnly && key == LogicalKeyboardKey.keyS) {
-      widget.onSync();
-      return KeyEventResult.handled;
-    }
-    final ctrlShift =
-        keys.isControlPressed &&
-        keys.isShiftPressed &&
-        !keys.isAltPressed &&
-        !keys.isMetaPressed;
-    if (ctrlShift && key == LogicalKeyboardKey.keyF) {
-      widget.onAddFilter();
-      return KeyEventResult.handled;
-    }
-    if (_ctrlRoutes[key] case final path? when ctrlOnly) {
-      navigate(context, path);
-      return KeyEventResult.handled;
-    }
-    final altOnly =
-        keys.isAltPressed &&
-        !keys.isControlPressed &&
-        !keys.isShiftPressed &&
-        !keys.isMetaPressed;
+    final altOnly = alt && !ctrl && !shift && !meta;
     if (altOnly && key == LogicalKeyboardKey.arrowLeft) {
       widget.onBack();
       return KeyEventResult.handled;
@@ -201,20 +137,33 @@ class _ShellKeysState extends State<ShellKeys> {
       widget.onForward();
       return KeyEventResult.handled;
     }
-    if (keys.isControlPressed || keys.isAltPressed || keys.isMetaPressed) {
-      return KeyEventResult.ignored;
-    }
+    if (ctrl || alt || meta) return KeyEventResult.ignored;
     if (prefix != null) {
-      final path = _routes[prefix]?[key];
-      if (path == null) return KeyEventResult.ignored;
-      navigate(context, path);
+      final command = shellCommandFor(prefix: prefix, key: key);
+      if (command == null) return KeyEventResult.ignored;
+      widget.onCommand(command.id);
       return KeyEventResult.handled;
     }
-    if (keys.isShiftPressed) return KeyEventResult.ignored;
+    // Клавиша без модификаторов или символ. `/` — и по положению клавиши
+    // (в русской раскладке она печатает `.`, как буквы сочетаний — по
+    // положению), и по символу (в русской раскладке `/` — Shift+`\`).
+    final slashKey = !shift && event.physicalKey == PhysicalKeyboardKey.slash;
+    final command = shellCommandFor(
+      key: key,
+      character: slashKey ? '/' : event.character,
+      shift: shift,
+    );
+    if (command != null) {
+      widget.onCommand(command.id);
+      return KeyEventResult.handled;
+    }
+    if (shift) return KeyEventResult.ignored;
+    if (shellPrefixes.contains(key)) {
+      _prefix = key;
+      _sinceGo.start();
+      return KeyEventResult.handled;
+    }
     switch (key) {
-      case LogicalKeyboardKey.keyG || LogicalKeyboardKey.keyO:
-        _prefix = key;
-        _sinceGo.start();
       // `Esc` — «назад», как `Alt+←`, когда закрывать нечего (отступление от
       // Todoist, где `Esc` только отменяет, — решение 1Б plans/m5 «Решения
       // проверки M5.3»). Поля, окна и меню «Отображение» обрабатывают `Esc`
@@ -225,10 +174,6 @@ class _ShellKeysState extends State<ShellKeys> {
       case LogicalKeyboardKey.escape:
         if (_canDismiss) return KeyEventResult.ignored;
         if (!Tooltip.dismissAllToolTips()) widget.onBack();
-      case LogicalKeyboardKey.keyM:
-        widget.onToggleSidebar();
-      case LogicalKeyboardKey.keyQ:
-        widget.onQuickAdd();
       case LogicalKeyboardKey.keyJ:
         if (!_focusRow(node, first: true)) return KeyEventResult.ignored;
       case LogicalKeyboardKey.keyK:

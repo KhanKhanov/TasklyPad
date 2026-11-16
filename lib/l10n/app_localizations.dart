@@ -2359,6 +2359,114 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Без дедлайна'**
   String get viewFilterNoDeadline;
+
+  /// Окно и пункт сайдбара «Поиск» (help «Introduction to search»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск'**
+  String get search;
+
+  /// Подсказка в строке окна «Поиск» (допущение, О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Поиск или команда'**
+  String get searchHint;
+
+  /// Вкладка лучших совпадений (help: «Top»; в ru help без названия — допущение О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Лучшие совпадения'**
+  String get searchTop;
+
+  /// Вкладка результатов поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Задачи'**
+  String get searchTabTasks;
+
+  /// Вкладка результатов поиска (ru help)
+  ///
+  /// In ru, this message translates to:
+  /// **'Описания задач'**
+  String get searchTabDescriptions;
+
+  /// Вкладка результатов поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Проекты'**
+  String get searchTabProjects;
+
+  /// Вкладка результатов поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Разделы'**
+  String get searchTabSections;
+
+  /// Вкладка результатов поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Метки'**
+  String get searchTabLabels;
+
+  /// Вкладка результатов поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтры'**
+  String get searchTabFilters;
+
+  /// Заголовок до ввода (ru help «Introduction to search»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Недавние поисковые запросы'**
+  String get recentSearches;
+
+  /// Убрать все недавние запросы (ru help: «Удалить»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить'**
+  String get recentSearchesClear;
+
+  /// Подсказка крестика у недавнего запроса
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать запрос'**
+  String get recentSearchRemove;
+
+  /// Заголовок до ввода (ru help «Introduction to search»)
+  ///
+  /// In ru, this message translates to:
+  /// **'Недавно просмотренные'**
+  String get recentlyViewed;
+
+  /// Группа переходов и действий окна «Поиск» (решение 3А plans/m5)
+  ///
+  /// In ru, this message translates to:
+  /// **'Команды'**
+  String get searchCommands;
+
+  /// Кнопка внизу результатов (ru help, компьютер)
+  ///
+  /// In ru, this message translates to:
+  /// **'Искать в выполненных задачах'**
+  String get searchCompleted;
+
+  /// Кнопка внизу результатов (в help без названия — допущение О-69)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить как фильтр'**
+  String get saveAsFilter;
+
+  /// Поиск без результатов
+  ///
+  /// In ru, this message translates to:
+  /// **'Ничего не найдено'**
+  String get searchNothing;
+
+  /// Подсказка сочетания из двух клавиш по очереди: «G, затем I»
+  ///
+  /// In ru, this message translates to:
+  /// **'{first}, затем {second}'**
+  String keyThen(String first, String second);
 }
 
 class _AppLocalizationsDelegate

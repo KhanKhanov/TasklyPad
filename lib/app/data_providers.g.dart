@@ -341,6 +341,151 @@ final class NotificationLogRepositoryProvider
 String _$notificationLogRepositoryHash() =>
     r'736d71bec78897bbf1a36dd625f332372ee53478';
 
+/// «Недавно просмотренное» окна поиска этого устройства (`local_meta`).
+
+@ProviderFor(recentlyViewedRepository)
+final recentlyViewedRepositoryProvider = RecentlyViewedRepositoryProvider._();
+
+/// «Недавно просмотренное» окна поиска этого устройства (`local_meta`).
+
+final class RecentlyViewedRepositoryProvider
+    extends
+        $FunctionalProvider<
+          RecentlyViewedRepository,
+          RecentlyViewedRepository,
+          RecentlyViewedRepository
+        >
+    with $Provider<RecentlyViewedRepository> {
+  /// «Недавно просмотренное» окна поиска этого устройства (`local_meta`).
+  RecentlyViewedRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recentlyViewedRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recentlyViewedRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RecentlyViewedRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RecentlyViewedRepository create(Ref ref) {
+    return recentlyViewedRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RecentlyViewedRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RecentlyViewedRepository>(value),
+    );
+  }
+}
+
+String _$recentlyViewedRepositoryHash() =>
+    r'ca4c0f1de6905534f3f54e1bfed7f244c289160a';
+
+/// Недавние поисковые запросы — свои и пришедшие синхронизацией.
+
+@ProviderFor(recentSearches)
+final recentSearchesProvider = RecentSearchesProvider._();
+
+/// Недавние поисковые запросы — свои и пришедшие синхронизацией.
+
+final class RecentSearchesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<String>>,
+          List<String>,
+          Stream<List<String>>
+        >
+    with $FutureModifier<List<String>>, $StreamProvider<List<String>> {
+  /// Недавние поисковые запросы — свои и пришедшие синхронизацией.
+  RecentSearchesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recentSearchesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recentSearchesHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<String>> $createElement(
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<String>> create(Ref ref) {
+    return recentSearches(ref);
+  }
+}
+
+String _$recentSearchesHash() => r'13b91511df6029108967d2d5e741506e57b57afc';
+
+@ProviderFor(recentSearchCommands)
+final recentSearchCommandsProvider = RecentSearchCommandsProvider._();
+
+final class RecentSearchCommandsProvider
+    extends
+        $FunctionalProvider<
+          RecentSearchCommands,
+          RecentSearchCommands,
+          RecentSearchCommands
+        >
+    with $Provider<RecentSearchCommands> {
+  RecentSearchCommandsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recentSearchCommandsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recentSearchCommandsHash();
+
+  @$internal
+  @override
+  $ProviderElement<RecentSearchCommands> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RecentSearchCommands create(Ref ref) {
+    return recentSearchCommands(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RecentSearchCommands value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RecentSearchCommands>(value),
+    );
+  }
+}
+
+String _$recentSearchCommandsHash() =>
+    r'5c532633ce74cea886a151c66152211ed4a52ec7';
+
 /// «Умное распознавание дат» — своё и пришедшее синхронизацией.
 
 @ProviderFor(smartDateRecognition)

@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/clock.dart';
 import '../data/repositories/notification_log_repository.dart';
+import '../data/repositories/recently_viewed_repository.dart';
 import '../data/repositories/settings_repository.dart';
 import '../data/repositories/theme_settings_repository.dart';
 import '../data/repositories/view_options_repository.dart';
@@ -14,6 +15,7 @@ import '../features/filters/logic/filter_commands.dart';
 import '../features/labels/logic/label_commands.dart';
 import '../features/projects/logic/project_commands.dart';
 import '../features/quick_add/logic/quick_add_commands.dart';
+import '../features/search/logic/recent_search_commands.dart';
 import '../features/sections/logic/section_commands.dart';
 import '../features/settings/logic/general_settings_commands.dart';
 import '../features/settings/logic/theme_commands.dart';
@@ -72,6 +74,22 @@ SettingsRepository settingsRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 NotificationLogRepository notificationLogRepository(Ref ref) =>
     NotificationLogRepository(ref.watch(appDatabaseProvider));
+
+/// «Недавно просмотренное» окна поиска этого устройства (`local_meta`).
+@Riverpod(keepAlive: true)
+RecentlyViewedRepository recentlyViewedRepository(Ref ref) =>
+    RecentlyViewedRepository(ref.watch(appDatabaseProvider));
+
+/// Недавние поисковые запросы — свои и пришедшие синхронизацией.
+@Riverpod(keepAlive: true)
+Stream<List<String>> recentSearches(Ref ref) =>
+    ref.watch(settingsRepositoryProvider).watchRecentSearches();
+
+@Riverpod(keepAlive: true)
+RecentSearchCommands recentSearchCommands(Ref ref) => RecentSearchCommands(
+  mutator: ref.watch(mutatorProvider),
+  read: ref.watch(settingsRepositoryProvider).recentSearches,
+);
 
 /// «Умное распознавание дат» — своё и пришедшее синхронизацией.
 @Riverpod(keepAlive: true)

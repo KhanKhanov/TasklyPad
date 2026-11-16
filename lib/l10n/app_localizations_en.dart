@@ -1394,4 +1394,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewFilterNoDeadline => 'No deadline';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get searchHint => 'Search or command';
+
+  @override
+  String get searchTop => 'Top';
+
+  @override
+  String get searchTabTasks => 'Tasks';
+
+  @override
+  String get searchTabDescriptions => 'Task descriptions';
+
+  @override
+  String get searchTabProjects => 'Projects';
+
+  @override
+  String get searchTabSections => 'Sections';
+
+  @override
+  String get searchTabLabels => 'Labels';
+
+  @override
+  String get searchTabFilters => 'Filters';
+
+  @override
+  String get recentSearches => 'Recent searches';
+
+  @override
+  String get recentSearchesClear => 'Clear';
+
+  @override
+  String get recentSearchRemove => 'Remove search';
+
+  @override
+  String get recentlyViewed => 'Recently viewed';
+
+  @override
+  String get searchCommands => 'Commands';
+
+  @override
+  String get searchCompleted => 'Search completed tasks';
+
+  @override
+  String get saveAsFilter => 'Save as filter';
+
+  @override
+  String get searchNothing => 'No results';
+
+  @override
+  String keyThen(String first, String second) {
+    return '$first, then $second';
+  }
 }

@@ -1389,4 +1389,60 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get viewFilterNoDeadline => 'Без дедлайна';
+
+  @override
+  String get search => 'Поиск';
+
+  @override
+  String get searchHint => 'Поиск или команда';
+
+  @override
+  String get searchTop => 'Лучшие совпадения';
+
+  @override
+  String get searchTabTasks => 'Задачи';
+
+  @override
+  String get searchTabDescriptions => 'Описания задач';
+
+  @override
+  String get searchTabProjects => 'Проекты';
+
+  @override
+  String get searchTabSections => 'Разделы';
+
+  @override
+  String get searchTabLabels => 'Метки';
+
+  @override
+  String get searchTabFilters => 'Фильтры';
+
+  @override
+  String get recentSearches => 'Недавние поисковые запросы';
+
+  @override
+  String get recentSearchesClear => 'Удалить';
+
+  @override
+  String get recentSearchRemove => 'Убрать запрос';
+
+  @override
+  String get recentlyViewed => 'Недавно просмотренные';
+
+  @override
+  String get searchCommands => 'Команды';
+
+  @override
+  String get searchCompleted => 'Искать в выполненных задачах';
+
+  @override
+  String get saveAsFilter => 'Сохранить как фильтр';
+
+  @override
+  String get searchNothing => 'Ничего не найдено';
+
+  @override
+  String keyThen(String first, String second) {
+    return '$first, затем $second';
+  }
 }
