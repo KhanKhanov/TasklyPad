@@ -31,6 +31,14 @@ updates:
           - "flutter_riverpod"
           - "riverpod_annotation"
           - "riverpod_lint"
+      # Остальные патч-версии — одним PR (docs/VERSIONS.md). Группа последняя:
+      # пакет попадает в первую подходящую группу, кодогенерация и riverpod
+      # остаются в своих. Минорные и крупные обновления — отдельными PR.
+      patches:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
 
   # Зависимости пакета синхронизации
   - package-ecosystem: "pub"
@@ -44,6 +52,12 @@ updates:
       prefix: "chore(deps)"
     cooldown:
       default-days: 7
+    groups:
+      patches:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
 
   # Сами GitHub Actions в .github/workflows
   - package-ecosystem: "github-actions"
