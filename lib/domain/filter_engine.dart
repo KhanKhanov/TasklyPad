@@ -1,6 +1,7 @@
 import 'filter_query.dart';
 import 'markdown_text.dart';
 import 'models.dart';
+import 'search.dart';
 import 'text_fold.dart';
 import 'view_options.dart';
 import 'view_order.dart';
@@ -165,11 +166,18 @@ final class _Matcher {
     return false;
   }
 
-  /// Все слова — в видимом тексте названия, в любом порядке (help).
+  /// Все слова — в видимом тексте названия, в любом порядке; `*` — любые
+  /// буквы внутри слова (help «Introduction to search»: «search: sky*»), как
+  /// в строке поиска.
   bool _search(Task t, List<String> words) {
     final text = foldText(plainText(t.content));
-    return words.every((w) => text.contains(foldText(w)));
+    final compiled = _words[words] ??= [for (final w in words) SearchWord(w)];
+    return compiled.every((w) => w.inText(text));
   }
+
+  /// Слова узла `search:` — регулярные выражения один раз на запрос, а не на
+  /// каждую задачу.
+  final Map<List<String>, List<SearchWord>> _words = Map.identity();
 
   /// Дата от сегодня на [days] дней вперёд, сегодня включительно.
   bool _within(String? date, int days) {

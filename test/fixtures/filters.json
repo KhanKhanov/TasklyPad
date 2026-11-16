@@ -33,6 +33,7 @@
   {"input":"без меток","source":"help «Introduction to filters» (ru)","expect":{"ast":["no_labels"]}},
   {"input":"search: email send","source":"help «Introduction to filters»: все слова в любом порядке; markdown не мешает","expect":{"ast":["search(email, send)"],"tasks":[["Send email to Ann"]]}},
   {"input":"поиск: отчет","source":"допущение О-69 (ё = е)","expect":{"ast":["search(отчет)"],"tasks":[["Отчёт"]]}},
+  {"input":"search: от*т","source":"help «Introduction to search»: «search: sky*» — * внутри слова, как в строке поиска","expect":{"ast":["search(от*т)"],"tasks":[["Отчёт"]]}},
   {"input":"subtask","source":"help «Introduction to filters»","expect":{"ast":["subtask"],"tasks":[["Протокол"]]}},
   {"input":"!subtask","source":"help «Introduction to filters»","expect":{"ast":["not(subtask)"]}},
   {"input":"подзадача","source":"help «Introduction to filters» (ru)","expect":{"ast":["subtask"]}},
