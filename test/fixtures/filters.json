@@ -152,5 +152,20 @@
   {"input":"p1 & date: abc","source":"допущение О-69 (ошибка с местом)","expect":{"error":{"kind":"badDate","start":5,"end":14}}},
   {"input":"#","source":"допущение О-69 (ошибка с местом)","expect":{"error":{"kind":"unknown","start":0,"end":1}}},
   {"input":"assigned to: me","source":"TODOIST_PARITY §11: совместная работа вне scope","expect":{"error":{"kind":"unsupported","start":0,"end":15}}},
-  {"input":"shared","source":"TODOIST_PARITY §11","expect":{"error":{"kind":"unsupported","start":0,"end":6}}}
+  {"input":"shared","source":"TODOIST_PARITY §11","expect":{"error":{"kind":"unsupported","start":0,"end":6}}},
+  {"input":"date: yesterday, today","source":"help «Search for tasks by date»: «,» в значении — отдельные списки (сверка конца M5)","expect":{"ast":["date(on, 2026-11-12)","date(on, 2026-11-13)"]}},
+  {"input":"due: yesterday, today","source":"help «Search for tasks by date» (сверка конца M5)","expect":{"ast":["due(on, 2026-11-12)","date(on, 2026-11-13)"]}},
+  {"input":"due before: May 5","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["due(before, 2027-05-05)"]}},
+  {"input":"due after: May 5","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["due(after, 2027-05-05)"]}},
+  {"input":"!no time","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["not(no_time)"]}},
+  {"input":"overdue & !no time","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["and(overdue, not(no_time))"]}},
+  {"input":"no time & !recurring","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["and(no_time, not(recurring))"]}},
+  {"input":"!no deadline","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["not(no_deadline)"]}},
+  {"input":"deadline after: yesterday & deadline before: in 7 days","source":"help «Introduction to filters»: диапазон дедлайнов (сверка конца M5)","expect":{"ast":["and(deadline(after, 2026-11-12), deadline(before, 2026-11-20))"]}},
+  {"input":"date: today & date before: today at 2pm","source":"help «Search for tasks by date» (сверка конца M5)","expect":{"ast":["and(date(on, 2026-11-13), date(before, 2026-11-13 14:00))"]}},
+  {"input":"search: Meeting & today","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["and(search(Meeting), date(on, 2026-11-13))"]}},
+  {"input":"search: http","source":"help «Introduction to filters»: задачи со ссылками — подстрока адреса (сверка конца M5)","expect":{"ast":["search(http)"]}},
+  {"input":"!/* & !#Inbox","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["and(not(/*), not(#Inbox))"]}},
+  {"input":"(today | overdue) & #Work","source":"help «Introduction to filters» (сверка конца M5)","expect":{"ast":["and(or(date(on, 2026-11-13), overdue), #Work)"]}},
+  {"input":"(сегодня | просрочено) & #Работа","source":"help «Introduction to filters» (ru) (сверка конца M5)","expect":{"ast":["and(or(date(on, 2026-11-13), overdue), #Работа)"]}}
 ]
