@@ -96,6 +96,7 @@ class FilterLists extends ConsumerWidget {
               ws: ws,
               place: (
                 projectId: values[i].projectId ?? inboxId,
+                sectionId: values[i].sectionId,
                 labelIds: values[i].labelIds,
                 due: values[i].due,
                 priority: values[i].priority,

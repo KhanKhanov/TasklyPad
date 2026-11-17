@@ -167,6 +167,7 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
                           ws: ws,
                           place: (
                             projectId: inbox.id,
+                            sectionId: null,
                             labelIds: {label.id},
                             due: null,
                             priority: null,

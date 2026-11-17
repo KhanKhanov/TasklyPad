@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:planner/domain/view_options.dart';
 import 'package:planner/features/filters/ui/filter_screen.dart';
 import 'package:planner/features/labels/ui/filters_labels_screen.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
@@ -173,6 +174,60 @@ void main() {
       expect(added.labelIds, [home]);
       expect(added.priority, 2);
       expect(row('Paint fence'), findsOneWidget);
+    });
+  });
+
+  testWidgets('«Add task» в группе сгруппированного фильтра с разделом в '
+      'запросе — задача в этом разделе и видна в списке', (tester) async {
+    await withApp(tester, (device) async {
+      final app = AppCommands(device);
+      final work = (await tester.runAsync(
+        () => app.projects.add(name: 'Work'),
+      ))!;
+      await settle(tester);
+      final meetings = (await tester.runAsync(
+        () => app.sections.add(work, name: 'Meetings'),
+      ))!;
+      await settle(tester);
+      final plan = (await tester.runAsync(
+        () => app.tasks.add(
+          content: 'Plan',
+          projectId: work,
+          sectionId: meetings,
+        ),
+      ))!;
+      await settle(tester);
+      await tester.runAsync(() => app.tasks.setPriority(plan, 1));
+      await settle(tester);
+      final id = await addFilter(
+        tester,
+        app,
+        name: 'Mtg',
+        query: '#Work & /Meetings',
+      );
+      await tester.runAsync(() async {
+        final view = ViewOptions(viewType: ViewType.filter, objectId: id);
+        await app.views.save(view, view.copyWith(grouping: Grouping.priority));
+      });
+      await settle(tester);
+      await openFiltersLabels(tester);
+      await tester.tap(onScreen(find.text('Mtg')));
+      await settle(tester);
+
+      await tester.tap(onScreen(find.text('Add task')).last);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Task name'),
+        'Agenda',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await settle(tester);
+
+      final ws = (await tester.runAsync(app.read))!;
+      final added = ws.activeTasks.singleWhere((t) => t.content == 'Agenda');
+      expect(added.sectionId, meetings);
+      expect(added.priority, 1);
+      expect(row('Agenda'), findsOneWidget);
     });
   });
 

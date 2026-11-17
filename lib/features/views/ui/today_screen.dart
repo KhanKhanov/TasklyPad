@@ -180,6 +180,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                                   ws: ws,
                                   place: (
                                     projectId: inbox.id,
+                                    sectionId: null,
                                     labelIds: const {},
                                     due: due,
                                     priority: null,
