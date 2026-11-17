@@ -32,6 +32,11 @@ List<String> pushRecentSearch(List<String> list, String text) {
   ].take(recentSearchLimit).toList();
 }
 
+/// Одни и те же запросы в том же порядке.
+bool sameRecentSearches(List<String> a, List<String> b) =>
+    a.length == b.length &&
+    [for (var i = 0; i < a.length; i++) a[i] == b[i]].every((same) => same);
+
 /// [list] без [text] (точное совпадение — строка из самого списка).
 List<String> removeRecentSearch(List<String> list, String text) => [
   for (final item in list)

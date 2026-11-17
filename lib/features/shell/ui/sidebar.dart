@@ -19,10 +19,8 @@ import '../../quick_add/ui/quick_add_dialog.dart';
 import '../../tasks/logic/due_dates.dart';
 import '../../tasks/state/today.dart';
 import '../../tasks/ui/task_drop_places.dart';
-import '../logic/shell_commands.dart';
 import '../state/sidebar_state.dart';
 import 'account_menu.dart';
-import 'shell_command_scope.dart';
 import 'sidebar_items.dart';
 
 /// Боковая панель, как в Todoist: «Входящие», «Сегодня» (со счётчиком
@@ -36,11 +34,15 @@ class Sidebar extends ConsumerWidget {
   const Sidebar({
     super.key,
     required this.location,
+    required this.onSearch,
     this.showNotifications = false,
   });
 
   /// Текущий путь — для выделения открытого пункта.
   final String location;
+
+  /// «Поиск» — окно поиска открывает оболочка.
+  final VoidCallback onSearch;
 
   /// Пункт «Уведомления» со счётчиком — на телефоне, где вкладки внизу нет
   /// (решение 1А plans/m5 «Решения M5.3a»).
@@ -129,7 +131,7 @@ class Sidebar extends ConsumerWidget {
         onTap: () {
           final scaffold = Scaffold.maybeOf(context);
           if (scaffold != null && scaffold.isDrawerOpen) scaffold.closeDrawer();
-          ShellCommandScope.of(context)(ShellCommandId.search);
+          onSearch();
         },
       ),
       // Бросок задач на проект — в конец его задач без раздела.

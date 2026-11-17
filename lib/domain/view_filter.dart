@@ -4,6 +4,8 @@
 // галочек меню. Условия запроса, которых меню не знает (импорт из Todoist),
 // сохраняются как есть. Варианты дат в help не перечислены — допущение, О-69.
 
+import 'filter_query.dart';
+
 /// Вариант подменю «Срок» или «Дедлайн».
 enum ViewDateChoice { today, thisWeek, next7Days, thisMonth, next30Days, none }
 
@@ -48,7 +50,7 @@ final class ViewFilter {
       } else if (p != null && priority == null) {
         priority = int.parse(p[1]!);
       } else if (term.startsWith('%') && term.length > 1 && label == null) {
-        label = _unescape(term.substring(1));
+        label = unescapeFilterText(term.substring(1));
       } else {
         extra.add(term);
       }
@@ -90,7 +92,7 @@ final class ViewFilter {
       if (date != null) _dateTerms[date]!,
       if (deadline != null) _deadlineTerms[deadline]!,
       if (priority != null) 'p$priority',
-      if (label != null) '%${_escape(label)}',
+      if (label != null) '%${escapeFilterText(label, star: true)}',
       // `|` слабее `&`: незнакомое условие с ним — в скобках, иначе
       // соседний выбор связался бы только с его половиной.
       // Условие с `,` (несколько списков) к выбору не присоединить: запятая
@@ -159,15 +161,6 @@ const Map<ViewDateChoice, String> _deadlineTerms = {
       '(deadline after: yesterday & deadline before: in 30 days)',
   ViewDateChoice.none: 'no deadline',
 };
-
-/// Знаки языка фильтров, которые в имени метки экранируются `\`.
-final RegExp _special = RegExp(r'[\\&|!(),*]');
-
-String _escape(String name) =>
-    name.replaceAllMapped(_special, (m) => '\\${m[0]}');
-
-String _unescape(String text) =>
-    text.replaceAllMapped(RegExp(r'\\(.)'), (m) => m[1]!);
 
 /// Условие [term] для сравнения с пунктами меню: строчными буквами, пробелы
 /// — по одному.

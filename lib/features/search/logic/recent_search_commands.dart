@@ -31,7 +31,7 @@ final class RecentSearchCommands {
       final next = edit(list);
       // `Mutator` и сам не пишет одинаковое значение; без перемен не
       // начинаем и транзакцию.
-      if (_same(list, next)) return;
+      if (sameRecentSearches(list, next)) return;
       await _mutator.update(EntityTypes.settings, settingsEntityId, {
         SettingsFields.recentSearches: next,
       });
@@ -40,8 +40,4 @@ final class RecentSearchCommands {
     _tail = step.then<void>((_) {}, onError: (Object _) {});
     return step;
   }
-
-  static bool _same(List<String> a, List<String> b) =>
-      a.length == b.length &&
-      [for (var i = 0; i < a.length; i++) a[i] == b[i]].every((same) => same);
 }

@@ -155,10 +155,7 @@ final class _Matcher {
     for (String? id = ws.rootProjectOf(t.id); id != null;) {
       final project = ws.project(id);
       if (project == null) return false;
-      final names = [
-        project.name,
-        if (project.isInbox) ...['Inbox', 'Входящие'],
-      ];
+      final names = [project.name, if (project.isInbox) ...inboxAliases];
       if (names.any(name.matches)) return true;
       if (!withSubprojects) return false;
       id = ws.projectParent(id);

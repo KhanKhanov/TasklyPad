@@ -157,14 +157,14 @@ final class _Parser {
       return build(name);
     }
 
-    final text = _words(_unescape(raw));
+    final text = _words(unescapeFilterText(raw));
     if (_unsupported.hasMatch(text) || _unsupportedWords.contains(text)) {
       throw error(FilterErrorKind.unsupported);
     }
     final search = _search.firstMatch(text);
     if (search != null) {
-      final colon = _unescape(raw).indexOf(':');
-      final words = _unescape(raw)
+      final colon = unescapeFilterText(raw).indexOf(':');
+      final words = unescapeFilterText(raw)
           .substring(colon + 1)
           .split(RegExp(r'\s+'))
           .where((w) => w.isNotEmpty)
@@ -246,9 +246,6 @@ final class _Parser {
     if (parts.every((p) => p.isEmpty) && parts.length == 1) return null;
     return NamePattern(parts);
   }
-
-  static String _unescape(String raw) =>
-      raw.replaceAllMapped(RegExp(r'\\(.)'), (m) => m[1]!);
 
   /// Свёртка регистра и «ё», пробелы — по одному.
   static String _words(String text) =>
