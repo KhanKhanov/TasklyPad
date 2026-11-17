@@ -155,6 +155,26 @@ void main() {
         ['в разделе'],
       );
     });
+
+    test('дубликат между соседями с одним ключом (добавлены офлайн на двух '
+        'устройствах) — сразу после исходного (О-89)', () async {
+      Future<String> raw(String name) => device.services.mutator.create(
+        EntityTypes.project,
+        {ProjectFields.name: name, ProjectFields.orderKey: 'a0'},
+      );
+      await raw('x');
+      await raw('y');
+      final before = [
+        for (final i in (await app.read()).projectTree()) i.value.id,
+      ];
+
+      final copy = await app.projects.duplicate(before[0], name: 'Копия');
+
+      expect(
+        [for (final i in (await app.read()).projectTree()) i.value.id],
+        [before[0], copy, before[1]],
+      );
+    });
   });
 
   group('разделы', () {

@@ -237,14 +237,25 @@ final class ProjectCommands {
       final parentId = ws.projectParent(id);
       final siblings = ws.childProjects(parentId);
       final index = siblings.indexWhere((p) => p.id == id);
-      final keys = [for (final p in siblings) p.orderKey];
+      // Соседи с тем же ключом (два устройства добавили офлайн) получают
+      // новые ключи — иначе копия встала бы после них (О-89), как у
+      // дубликата фильтра.
+      final keys = insertionKeys(
+        [for (final p in siblings) p.orderKey],
+        index < 0 ? siblings.length : index + 1,
+        1,
+      );
+      for (final (i, key) in keys.rekeyed.indexed) {
+        if (key == null) continue;
+        await _mutator.update(EntityTypes.project, siblings[i].id, {
+          ProjectFields.orderKey: key,
+        });
+      }
       final copy = await _mutator.create(EntityTypes.project, {
         ProjectFields.name: _name(Limits.clip(name.trim(), Limits.projectName)),
         ProjectFields.color: source.color,
         ProjectFields.parentId: ?parentId,
-        ProjectFields.orderKey: index < 0
-            ? keyAtEnd(keys)
-            : keyForInsert(keys, index + 1),
+        ProjectFields.orderKey: keys.inserted.single,
         ProjectFields.viewStyle: source.viewStyle,
         // Описание копируется (help «Introduction to projects»: «Project
         // description» — в списке «Included»).
