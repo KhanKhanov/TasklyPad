@@ -13,6 +13,7 @@ import '../../../domain/search.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/layout.dart';
+import '../../common/ui/text_limit.dart';
 import '../../common/ui/ui_kit.dart';
 import '../../shell/logic/shell_commands.dart';
 import '../../shell/ui/shell_command_texts.dart';
@@ -214,6 +215,9 @@ class _SearchWindowState extends ConsumerState<SearchWindow> {
               controller: _text,
               autofocus: true,
               maxLength: Limits.filterQuery,
+              // Лимит — в кодовых точках, как у `Limits` (решение 14А
+              // plans/m4): `maxLength` считает графемы.
+              inputFormatters: const [TextLimit(Limits.filterQuery)],
               decoration: InputDecoration(
                 hintText: l10n.searchHint,
                 prefixIcon: const Icon(Icons.search),

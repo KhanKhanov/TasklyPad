@@ -238,7 +238,11 @@ _viewedLook(AppLocalizations l10n, Workspace ws, ViewedItem item) {
 
 /// Просмотренное ещё есть в снимке: удалённое и архивное не показывается.
 bool viewedAlive(Workspace ws, ViewedItem item) => switch (item.kind) {
-  ViewedKind.task => ws.task(item.id!) != null,
+  // Задача архивного проекта не показывается, как и сам проект: архив не
+  // ищется (help «Introduction to search»).
+  ViewedKind.task =>
+    ws.task(item.id!) != null &&
+        !ws.isProjectArchived(ws.rootProjectOf(item.id!)),
   ViewedKind.project =>
     ws.project(item.id!) != null && !ws.isProjectArchived(item.id!),
   ViewedKind.label => ws.label(item.id!) != null,
