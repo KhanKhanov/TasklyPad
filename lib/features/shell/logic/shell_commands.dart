@@ -31,25 +31,32 @@ final class ShellChord {
   const ShellChord.sequence(LogicalKeyboardKey this.prefix, this.key)
     : ctrl = false,
       shift = false,
+      alt = false,
       character = null;
 
   /// Клавиша; без модификаторов — только когда не печатают в поле.
-  const ShellChord.key(this.key, {this.ctrl = false, this.shift = false})
-    : prefix = null,
-      character = null;
+  const ShellChord.key(
+    this.key, {
+    this.ctrl = false,
+    this.shift = false,
+    this.alt = false,
+  }) : prefix = null,
+       character = null;
 
   /// Набранный символ без Ctrl и Alt.
   const ShellChord.character(String this.character)
     : prefix = null,
       key = null,
       ctrl = false,
-      shift = false;
+      shift = false,
+      alt = false;
 
   final LogicalKeyboardKey? prefix;
   final LogicalKeyboardKey? key;
   final String? character;
   final bool ctrl;
   final bool shift;
+  final bool alt;
 }
 
 /// Команда: [path] — у перехода; [chords] — её клавиши; [inPalette] — видна
@@ -74,8 +81,9 @@ const LogicalKeyboardKey _o = LogicalKeyboardKey.keyO;
 /// Все команды в порядке окна «Поиск». `Ctrl+1…5` и `Ctrl+Shift+F` — в help
 /// строки «mobile keyboard», у нас на всех платформах (решение 2А «Ход
 /// M4.13», план M5 «Поиск и `Ctrl+K`»); `Ctrl+F` и `Ctrl+K` — «Open Search» и
-/// «Open Quick Find» — одно окно (решение 2А «Решения M5.4»). У «Нового
-/// проекта» и «Новой метки» клавиш пока нет (решение 6А).
+/// «Open Quick Find» — одно окно (решение 2А «Решения M5.4»). «Новый проект» —
+/// `Alt+P` и `Ctrl+Shift+P`, «Новая метка» — `Ctrl+Shift+L` (help; О-97,
+/// решение 6А).
 const List<ShellCommand> shellCommands = [
   ShellCommand(
     ShellCommandId.inbox,
@@ -136,8 +144,17 @@ const List<ShellCommand> shellCommands = [
       ShellChord.key(LogicalKeyboardKey.keyN, ctrl: true),
     ],
   ),
-  ShellCommand(ShellCommandId.addProject),
-  ShellCommand(ShellCommandId.addLabel),
+  ShellCommand(
+    ShellCommandId.addProject,
+    chords: [
+      ShellChord.key(LogicalKeyboardKey.keyP, alt: true),
+      ShellChord.key(LogicalKeyboardKey.keyP, ctrl: true, shift: true),
+    ],
+  ),
+  ShellCommand(
+    ShellCommandId.addLabel,
+    chords: [ShellChord.key(LogicalKeyboardKey.keyL, ctrl: true, shift: true)],
+  ),
   ShellCommand(
     ShellCommandId.addFilter,
     chords: [ShellChord.key(LogicalKeyboardKey.keyF, ctrl: true, shift: true)],
@@ -169,25 +186,28 @@ final Set<LogicalKeyboardKey> shellPrefixes = {
 };
 
 /// Команда по сочетанию: [prefix] — нажатая перед этим `g` или `o`; [key]
-/// с [ctrl] и [shift]; [character] — набранный символ. `null` — не команда.
+/// с [ctrl], [shift] и [alt]; [character] — набранный символ. `null` — не
+/// команда.
 ShellCommand? shellCommandFor({
   LogicalKeyboardKey? prefix,
   required LogicalKeyboardKey key,
   String? character,
   bool ctrl = false,
   bool shift = false,
+  bool alt = false,
 }) {
   for (final command in shellCommands) {
     for (final chord in command.chords) {
       final match = switch (chord) {
         ShellChord(character: final c?) =>
-          prefix == null && !ctrl && c == character,
+          prefix == null && !ctrl && !alt && c == character,
         ShellChord(prefix: final p?) => p == prefix && chord.key == key,
         _ =>
           prefix == null &&
               chord.key == key &&
               chord.ctrl == ctrl &&
-              chord.shift == shift,
+              chord.shift == shift &&
+              chord.alt == alt,
       };
       if (match) return command;
     }

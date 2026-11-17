@@ -133,8 +133,10 @@ void main() {
     });
   });
 
-  testWidgets('до ввода — команды с клавишами; «Ctrl+Shift+F» у нового '
-      'фильтра, у нового проекта клавиши нет', (tester) async {
+  testWidgets('до ввода — команды с клавишами: «Ctrl+Shift+F» у нового '
+      'фильтра, «Alt+P» у нового проекта, «Ctrl+Shift+L» у новой метки', (
+    tester,
+  ) async {
     await withApp(tester, (device) async {
       await key(
         tester,
@@ -145,6 +147,8 @@ void main() {
       expect(find.text('G, then T'), findsOneWidget);
       expect(find.text('Ctrl+Shift+F'), findsOneWidget);
       expect(find.text('Add project'), findsOneWidget);
+      expect(find.text('Alt+P'), findsOneWidget);
+      expect(find.text('Ctrl+Shift+L'), findsOneWidget);
     });
   });
 
