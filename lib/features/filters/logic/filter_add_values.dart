@@ -107,7 +107,7 @@ String? _project(Workspace ws, NamePattern name) {
   if (!name.exact) return null;
   final inbox = ws.inbox;
   return _single([
-    if (inbox != null && [inbox.name, 'Inbox', 'Входящие'].any(name.matches))
+    if (inbox != null && [inbox.name, ...inboxAliases].any(name.matches))
       inbox.id,
     for (final item in ws.projectTree(expandCollapsed: true))
       if (name.matches(item.value.name)) item.value.id,

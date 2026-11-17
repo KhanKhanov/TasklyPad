@@ -50,11 +50,7 @@ SearchInput classifySearch(String text, {required DateTime now}) {
 String filterQueryToSave(SearchInput input) => switch (input) {
   EmptySearch() => '',
   WordSearch(:final query) =>
-    'search: ${[for (final w in query.words) _escape(w.text)].join(' ')}',
+    // `*` в слове — подстановка (help), не экранируется.
+    'search: ${[for (final w in query.words) escapeFilterText(w.text)].join(' ')}',
   FilterSearch(:final text) => text,
 };
-
-final RegExp _operator = RegExp(r'[\\&|!(),]');
-
-String _escape(String word) =>
-    word.replaceAllMapped(_operator, (m) => '\\${m[0]}');

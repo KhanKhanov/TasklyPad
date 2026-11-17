@@ -46,7 +46,12 @@ String chordLabel(AppLocalizations l10n, ShellChord chord) {
   if (chord.character case final c?) return c;
   final key = _keyName(chord.key!);
   if (chord.prefix case final p?) return l10n.keyThen(_keyName(p), key);
-  return [if (chord.ctrl) 'Ctrl', if (chord.shift) 'Shift', key].join('+');
+  return [
+    if (chord.ctrl) 'Ctrl',
+    if (chord.alt) 'Alt',
+    if (chord.shift) 'Shift',
+    key,
+  ].join('+');
 }
 
 String _keyName(LogicalKeyboardKey key) => key.keyLabel.toUpperCase();

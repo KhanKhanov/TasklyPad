@@ -150,10 +150,7 @@ final class SearchIndex {
     for (final p in projects) {
       _projects.add((
         p,
-        [
-          foldText(p.name),
-          if (p.isInbox) ...['inbox', 'входящие'],
-        ],
+        [foldText(p.name), if (p.isInbox) ...inboxAliases.map(foldText)],
       ));
       for (final s in ws.sectionsOf(p.id)) {
         _sections.add((SectionHit(s, p), foldText(s.name)));

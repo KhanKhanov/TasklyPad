@@ -137,6 +137,13 @@ class _ShellKeysState extends State<ShellKeys> {
       widget.onForward();
       return KeyEventResult.handled;
     }
+    // `Alt+P` — новый проект (help). `Alt` с `Ctrl` — это AltGr, не сюда.
+    if (altOnly) {
+      final command = shellCommandFor(key: key, alt: true);
+      if (command == null) return KeyEventResult.ignored;
+      widget.onCommand(command.id);
+      return KeyEventResult.handled;
+    }
     if (ctrl || alt || meta) return KeyEventResult.ignored;
     if (prefix != null) {
       final command = shellCommandFor(prefix: prefix, key: key);

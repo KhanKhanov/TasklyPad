@@ -41,7 +41,7 @@ final class SettingsRepository {
   /// [recentSearches] сейчас и после каждой правки; одинаковые списки
   /// отбрасываются.
   Stream<List<String>> watchRecentSearches() =>
-      _watch(recentSearches, equals: _sameList);
+      _watch(recentSearches, equals: sameRecentSearches);
 
   Stream<T> _watch<T>(
     Future<T> Function() read, {
@@ -51,10 +51,6 @@ final class SettingsRepository {
       .watch()
       .asyncMap((_) => read())
       .distinct(equals);
-
-  static bool _sameList(List<String> a, List<String> b) =>
-      a.length == b.length &&
-      [for (var i = 0; i < a.length; i++) a[i] == b[i]].every((same) => same);
 
   Future<bool?> _bool(String field) async {
     final value = await _value(field);

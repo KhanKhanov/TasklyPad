@@ -6,6 +6,10 @@ part 'models.freezed.dart';
 // полей журнала. Удалённые сущности сюда не попадают — их отсеивает
 // [Workspace] (lib/domain/workspace.dart).
 
+/// Другие имена «Входящих» в запросе фильтра (`#Inbox` = `#Входящие`) и в
+/// поиске — на обоих языках при любом интерфейсе (допущение, О-69).
+const List<String> inboxAliases = ['Inbox', 'Входящие'];
+
 /// Проект. «Входящие» — проект с [isInbox].
 @freezed
 abstract class Project with _$Project {

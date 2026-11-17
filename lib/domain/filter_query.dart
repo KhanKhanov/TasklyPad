@@ -310,3 +310,21 @@ final class UncompletableNode extends FilterNode {
   @override
   String toString() => 'uncompletable';
 }
+
+/// Знаки языка фильтров, которые в именах и словах экранируются `\`
+/// (TODOIST_SYNTAX §4); `*` — отдельно: в имени метки это буква, в слове
+/// поиска — подстановка.
+final RegExp _filterSpecial = RegExp(r'[\\&|!(),]');
+final RegExp _filterSpecialOrStar = RegExp(r'[\\&|!(),*]');
+
+/// [text] для запроса фильтра: знаки операторов и `\` — с `\` перед ними, и
+/// `*` — при [star] (имя метки, где звёздочка — часть имени).
+String escapeFilterText(String text, {bool star = false}) =>
+    text.replaceAllMapped(
+      star ? _filterSpecialOrStar : _filterSpecial,
+      (m) => '\\${m[0]}',
+    );
+
+/// Обратное [escapeFilterText]: `\x` → `x`.
+String unescapeFilterText(String text) =>
+    text.replaceAllMapped(RegExp(r'\\(.)'), (m) => m[1]!);

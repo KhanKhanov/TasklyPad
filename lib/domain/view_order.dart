@@ -127,6 +127,9 @@ final class TaskOrder {
         if (fallback == DefaultOrder.smart)
           () => _nullsLast(_orNull(a.dayOrderKey), _orNull(b.dayOrderKey)),
         () => _nullsLast(a.addedAt, b.addedAt),
+        // Последний признак — порядок дерева: при равных остальных (вставка
+        // нескольких строк в одну миллисекунду) порядок не зависит от сортировки.
+        () => _tree(a, b),
       ]),
       DefaultOrder.label => first([
         () => _byPriority(a, b),
@@ -140,6 +143,7 @@ final class TaskOrder {
         () => _nullsLast(a.deadline, b.deadline),
         () => _nullsLast(_orNull(a.dayOrderKey), _orNull(b.dayOrderKey)),
         () => _nullsLast(a.addedAt, b.addedAt),
+        () => _tree(a, b),
       ]),
     };
   }

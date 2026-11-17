@@ -228,6 +228,7 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
           ws: ws,
           place: (
             projectId: options.objectId!,
+            sectionId: null,
             labelIds: const {},
             due: null,
             priority: null,

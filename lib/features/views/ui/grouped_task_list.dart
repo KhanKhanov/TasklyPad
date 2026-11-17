@@ -18,6 +18,7 @@ import 'day_titles.dart';
 /// Значение группы, которое получает добавленная в неё задача.
 typedef GroupValue = ({
   String projectId,
+  String? sectionId,
   Set<String> labelIds,
   Due? due,
   int? priority,
@@ -105,6 +106,7 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
     return switch ((key, widget.grouping)) {
       (DayGroup(:final date), Grouping.dueDate) => (
         projectId: p.projectId,
+        sectionId: p.sectionId,
         labelIds: p.labelIds,
         due: Due(date: date),
         priority: p.priority,
@@ -112,6 +114,7 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
       ),
       (DayGroup(:final date), Grouping.deadline) => (
         projectId: p.projectId,
+        sectionId: p.sectionId,
         labelIds: p.labelIds,
         due: p.due,
         priority: p.priority,
@@ -119,6 +122,7 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
       ),
       (PriorityGroup(:final priority), _) => (
         projectId: p.projectId,
+        sectionId: p.sectionId,
         labelIds: p.labelIds,
         due: p.due,
         priority: priority,
@@ -128,6 +132,7 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
       // задаче её не поставить.
       (LabelGroup(:final labelId), _) when widget.ws.label(labelId) != null => (
         projectId: p.projectId,
+        sectionId: p.sectionId,
         labelIds: {...p.labelIds, labelId},
         due: p.due,
         priority: p.priority,
@@ -135,6 +140,8 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
       ),
       (ProjectGroup(:final projectId), _) => (
         projectId: projectId,
+        // Раздел — исходного проекта, в другом проекте его нет.
+        sectionId: null,
         labelIds: p.labelIds,
         due: p.due,
         priority: p.priority,
@@ -146,6 +153,7 @@ class _GroupedTaskListState extends State<GroupedTaskList> {
 
   Widget _editor(GroupValue value, {bool atTop = false}) => AddTaskEditor(
     projectId: value.projectId,
+    sectionId: value.sectionId,
     labelIds: value.labelIds,
     due: value.due,
     priority: value.priority,

@@ -113,6 +113,29 @@ void main() {
     await expectStableAndSame();
   });
 
+  test(
+    'разные поля одного фильтра правят на двух устройствах офлайн — оба '
+    'изменения на месте, карточки нет (SYNC_DESIGN «Инварианты реализации»)',
+    () async {
+      final filter = await onPc.filters.add(name: 'Срочное', query: 'p1');
+      await syncBoth();
+
+      await onPc.filters.edit(filter, query: 'p1 & today');
+      await onPhone.filters.edit(filter, name: 'Горит');
+      await syncBoth();
+
+      for (final dev in [pc, phone]) {
+        expect(await dev.conflicts(), isEmpty, reason: dev.nodeId);
+      }
+      for (final dev in [onPc, onPhone]) {
+        final f = (await dev.read()).filter(filter)!;
+        expect((f.name, f.query), ('Горит', 'p1 & today'));
+      }
+      expect(await cards(phone), isEmpty);
+      await expectStableAndSame();
+    },
+  );
+
   test('описание и избранное фильтра правят на двух устройствах офлайн — '
       'карточка без пометки; порядок — молча', () async {
     final filter = await onPc.filters.add(name: 'Срочное', query: 'p1');
