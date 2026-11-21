@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Цвета интерфейса одной темы — токены, а не цвета в виджетах: виджет берёт
 /// `AppPalette.of(context).accent`, и смена темы не требует правок экранов.

@@ -39,14 +39,16 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
-          flutter-version: 3.47.8
+          flutter-version: 3.50.0
           cache: true
 
       - name: Версии
         run: flutter --version
 
+      # --enforce-lockfile: pubspec.lock не переписывается, а несогласованный lock роняет шаг —
+      # иначе PR, собранный другим Flutter, проходит с молча исправленным файлом (О-95).
       - name: Зависимости приложения
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       # Анализ из корня захватывает и packages/oplog_sync, поэтому его зависимости
       # должны быть разрешены до flutter analyze, а не только перед его тестами.
@@ -97,9 +99,9 @@ jobs:
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
-          flutter-version: 3.47.8
+          flutter-version: 3.50.0
           cache: true
 
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
       - run: dart run build_runner build -d
       - run: flutter build windows --release

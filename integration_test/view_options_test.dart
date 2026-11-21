@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +16,7 @@ import 'package:planner/domain/models.dart';
 import 'package:planner/domain/view_options.dart';
 import 'package:planner/features/shell/ui/sidebar.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
+import 'package:planner/features/views/ui/view_options_button.dart';
 
 // Сквозной сценарий M4.5 на настоящей платформе: «Отображение» проекта —
 // группировка по приоритету с меню и подменю, затем перезапуск: настройка
@@ -129,10 +130,25 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(ru ? 'Группировка' : 'Grouping'));
     await shot(tester, 'm45-2-menu');
-    await tester.tap(find.text(ru ? 'Приоритет' : 'Priority').last);
+    // Вариант группировки — пункт `MenuItemButton`; «Приоритет» раздела
+    // «Фильтр» — подменю.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.text(ru ? 'Приоритет' : 'Priority'),
+      ),
+    );
     final header = find.text(ru ? 'Приоритет 1' : 'Priority 1');
     await until('группы', () => header.evaluate().isNotEmpty);
-    expect(find.text('$display: 1'), findsOneWidget);
+    // На экране — «Отображение» и число в кружке, «Отображение: 1» — в
+    // подписи для экранного чтеца (решение 10Б plans/m4 «M4.10a»).
+    final semantics = tester.ensureSemantics();
+    await tester.pump(); // дерево семантики строится в следующем кадре
+    expect(
+      tester.getSemantics(find.byType(ViewOptionsButton)).label,
+      contains('$display: 1'),
+    );
+    semantics.dispose();
     await shot(tester, 'm45-3-grouped');
 
     await tester.pumpWidget(const SizedBox.shrink());

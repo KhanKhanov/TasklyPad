@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/db_backup.dart';
 import '../l10n/app_localizations.dart';
 import 'profile.dart';
+import 'localization_delegates.dart';
 
 /// Приложение вместо основного, если данные не открылись при запуске.
 ///
@@ -17,7 +18,7 @@ class StartupErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(colorSchemeSeed: const Color(0xFFDC4C3E)),
       home: Builder(

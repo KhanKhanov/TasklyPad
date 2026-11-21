@@ -1,3 +1,4 @@
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/app/startup_error_app.dart';
 import 'package:planner/data/db_backup.dart';
@@ -21,5 +22,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Details: Bad state: диск'), findsOneWidget);
+  });
+
+  testWidgets('русский язык системы → строки Material-виджетов по-русски', (
+    tester,
+  ) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('ru')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await tester.pumpWidget(StartupErrorApp(error: StateError('диск')));
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.byType(Scaffold));
+    expect(MaterialLocalizations.of(context).cancelButtonLabel, 'Отмена');
   });
 }

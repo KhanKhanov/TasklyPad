@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/pump_app.dart';
@@ -38,6 +38,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('My Projects'), findsOneWidget);
       expect(find.byType(Drawer), findsNothing);
+    });
+  });
+
+  testWidgets('русский язык системы → строки Material-виджетов по-русски', (
+    tester,
+  ) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('ru')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await withApp(tester, (_) async {
+      final context = tester.element(find.byType(Scaffold).first);
+      expect(MaterialLocalizations.of(context).cancelButtonLabel, 'Отмена');
     });
   });
 }

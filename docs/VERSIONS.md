@@ -7,10 +7,11 @@
 
 | Что | Версия | Где закреплено | Почему так |
 |---|---|---|---|
-| Flutter / Dart | 3.47.8 / 3.13.7 | `C:\src\flutter` и `flutter-version` в `.github/workflows/ci.yml` | CI с «последним stable» сам сменил анализатор и дал предупреждение, которого локально не было. 3.47.8 — исправление безопасности (23.10.2026); 3.47.9 (29.10.2026, исправления инструментов Windows) — при следующей проверке актуальности, решение 15А plans/m4 |
-| build_runner | 2.16.x | `pubspec.yaml` | 2.17 несовместим с riverpod_generator 4.0.9 |
+| Flutter / Dart | 3.50.0 / 3.14.0 | `C:\src\flutter` (метка версии: `git -C C:\src\flutter checkout 3.50.0`) и `flutter-version` в `.github/workflows/ci.yml` | CI с «последним stable» сам сменил анализатор и дал предупреждение, которого локально не было. 3.50.0 — решение 1А plans/m5 «M5.1a»; 3.50.1 (20.11.2026) — не раньше 27.11.2026 (О-106) |
+| build_runner | ^2.17 | `pubspec.yaml` | 2.17 работает с riverpod_generator от 4.0.10; с 4.0.9 был несовместим |
 | riverpod_lint | ^3.1.9 | `plugins:` в `analysis_options.yaml` | плагин анализатора ставится вне `pubspec.lock` — версия может смениться сама; следить при проверке актуальности (ниже) |
 | GitHub Actions | по SHA коммита | `.github/workflows/*.yml`, рядом версия в комментарии | тег (`@v2`) автор может переписать, SHA — нет; обновляет Dependabot |
+| Visual Studio (Windows) | 2026, набор «Desktop development with C++» с рекомендуемыми компонентами (Windows SDK, CMake) | установщик Visual Studio | без них не собирается приложение и не идут даже widget-тесты: cnativeapi собирает C++ при `flutter test` (GLOSSARY «Native assets»); обновление Visual Studio 17.11.2026 убрало Windows SDK — после обновления сначала `flutter doctor` (plans/m5 «Ход M5.1a») |
 
 ## Правила обновления
 - Только стабильные версии с живым сопровождением; пакет, помеченный на pub.dev как discontinued, —
@@ -37,7 +38,7 @@ API, плагины анализатора, версии Actions, рекомен
 Уязвимости зависимостей — OSV-Scanner еженедельно (`.github/workflows/osv-weekly.yml`).
 
 Последняя проверка: 25.10.2026 — Flutter 3.47.8 вышел (О-5), Actions закреплены по SHA. 02.11.2026 — только
-Flutter: стоит 3.47.8, вышел 3.47.9.
+Flutter: стоит 3.47.8, вышел 3.47.9. 21.11.2026 — переход на Flutter 3.50.0 (plans/m5 «M5.1a»).
 
 ## Официальные источники
 Сверяться с официальной документацией, а не с памятью: docs.flutter.dev, api.flutter.dev, dart.dev,
