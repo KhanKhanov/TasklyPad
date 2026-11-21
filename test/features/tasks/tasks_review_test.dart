@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +12,7 @@ import 'package:planner/features/tasks/ui/task_dialog.dart';
 import 'package:planner/features/tasks/ui/task_row.dart';
 import 'package:planner/l10n/app_localizations.dart';
 import 'package:planner/features/tasks/ui/add_task_editor.dart';
+import 'package:planner/app/localization_delegates.dart';
 
 import '../../app/support/pump_app.dart';
 import '../../sync/support/devices.dart';
@@ -274,7 +275,7 @@ void main() {
       ProviderScope(
         overrides: [fakeNotificationLog()],
         child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Builder(

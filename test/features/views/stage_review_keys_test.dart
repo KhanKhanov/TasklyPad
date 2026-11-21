@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -279,10 +279,16 @@ void main() {
         await openMenu(tester);
         await press(tester, LogicalKeyboardKey.arrowDown);
         expect(find.text('Grouping'), findsOneWidget);
+        // Фокус — на первом пункте меню, подменю «Группировка».
+        final item = FocusManager.instance.primaryFocus?.context
+            ?.findAncestorWidgetOfExactType<SubmenuButton>();
+        expect(item, isNotNull);
         expect(
-          FocusManager.instance.primaryFocus?.context
-              ?.findAncestorWidgetOfExactType<MenuItemButton>(),
-          isNotNull,
+          find.descendant(
+            of: find.byWidget(item!),
+            matching: find.text('Grouping'),
+          ),
+          findsOneWidget,
         );
         await press(tester, LogicalKeyboardKey.escape);
         expect(find.text('Grouping'), findsNothing);
@@ -305,5 +311,26 @@ void main() {
         expect(options.sorting, Sorting.dueDate);
       });
     });
+
+    testWidgets(
+      '`↓` в меню, затем `Esc` — фокус возвращается, `d` снова меняет '
+      'сортировку',
+      (tester) async {
+        await withApp(tester, (device) async {
+          final app = AppCommands(device);
+          await openMenu(tester);
+          await press(tester, LogicalKeyboardKey.arrowDown);
+          await press(tester, LogicalKeyboardKey.escape);
+          expect(find.text('Grouping'), findsNothing);
+          await press(tester, LogicalKeyboardKey.keyD);
+          await settle(tester);
+          final inbox = (await tester.runAsync(app.read))!.inbox!.id;
+          final options = (await tester.runAsync(
+            () => app.viewsRepo.load(ViewType.project, objectId: inbox),
+          ))!;
+          expect(options.sorting, Sorting.dueDate);
+        });
+      },
+    );
   });
 }

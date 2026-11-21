@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Поле с markdown по решению 7А плана M4: пока поле в работе — исходный
 /// текст со знаками разметки ([editor]), вне работы — отрисованный

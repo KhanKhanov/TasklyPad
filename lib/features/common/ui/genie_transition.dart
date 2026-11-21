@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Эффект «джин», как сворачивание окна в Dock на macOS (решение
 /// пользователя 1А — наше дополнение, в Todoist тост просто проявляется):

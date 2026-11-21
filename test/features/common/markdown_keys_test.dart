@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:planner/app/theme/app_themes.dart';
@@ -7,6 +7,7 @@ import 'package:planner/features/common/logic/markdown_edits.dart';
 import 'package:planner/features/common/ui/markdown_keys.dart';
 import 'package:planner/features/common/ui/markdown_toolbar.dart';
 import 'package:planner/l10n/app_localizations.dart';
+import 'package:planner/app/localization_delegates.dart';
 
 // `Ctrl+B` / `Ctrl+I` в поле с markdown (решение 7А плана M4; в help клавиши
 // не найдены — допущение О-69).
@@ -159,7 +160,7 @@ void main() {
       addTearDown(focus.dispose);
       await tester.pumpWidget(
         MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: appLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           theme: buildThemeData(tasklyTheme.light, Brightness.light),

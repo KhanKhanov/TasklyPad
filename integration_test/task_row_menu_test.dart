@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,12 +135,15 @@ void main() {
     await saved('срок «Завтра»', (t) => t?.due != null);
     await shot(tester, 'm47-2-tomorrow');
 
+    // Щелчок по строке закрывает меню и ставит фокус на строку; `Esc` здесь
+    // был бы «назад» (решение 1Б plans/m5 «Решения проверки M5.3»).
     await tester.tap(find.text(paint));
     await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
+    final tomorrow = find.byTooltip(ru ? 'Завтра' : 'Tomorrow');
+    expect(tomorrow, findsNothing); // меню правого клика закрыто
     await tester.sendKeyEvent(LogicalKeyboardKey.period);
     await tester.pumpAndSettle();
+    expect(tomorrow, findsOneWidget); // `.` открыл меню снова
     await tester.tap(find.byTooltip(ru ? 'Приоритет 1' : 'Priority 1'));
     await saved('приоритет 1', (t) => t?.priority == 1);
     await shot(tester, 'm47-3-priority');

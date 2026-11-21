@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import 'data_providers.dart';
 import 'router.dart';
 import 'theme/app_themes.dart';
+import 'localization_delegates.dart';
 
 /// Корневой виджет приложения: тема, локализация, роутер.
 ///
@@ -35,7 +36,7 @@ class PlannerApp extends ConsumerWidget {
     final theme = appThemeById(choice.themeId);
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: buildThemeData(theme.light, Brightness.light),
       darkTheme: buildThemeData(theme.dark, Brightness.dark),
