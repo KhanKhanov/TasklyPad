@@ -105,3 +105,29 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart run build_runner build -d
       - run: flutter build windows --release
+
+  # Сборка Android (plans/m6, шаг M6.1): проверяет, что APK собирается. Debug — без ключа подписи;
+  # как build-windows, только на push в main. JDK 17 и Android SDK уже есть в образе раннера.
+  build-android:
+    name: build apk
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: JDK 17 из образа раннера
+        run: echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.50.0
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+      - run: dart run build_runner build -d
+      - run: flutter build apk --debug
