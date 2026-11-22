@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/notification_log.dart';
-import '../../../app/toast_lamp.dart';
+import '../state/toast_lamp.dart';
 import 'genie_transition.dart';
 
 /// Длительность эффекта «джин» — как сворачивание окна в macOS.
