@@ -7,19 +7,26 @@ import '../../../nlp/filter_parser.dart';
 
 /// Проверка задачи фильтром «Отображения» вида [options] (`filtered_by`,
 /// решение 3А plans/m5) на момент [now] — стенное время устройства
-/// (`AppClock.nowWall`). `null` — фильтра нет, у вида его не бывает
+/// (`AppClock.nowWall`); [wallOf] — стенное время для момента UTC
+/// (`AppClock.wallOf`, дата создания в `created:`). `null` — фильтра нет, у вида его не бывает
 /// («Предстоящее») или запрос не разбирается (импорт): задачи не прячутся.
 bool Function(Task)? viewFilterTest(
   Workspace ws,
   ViewOptions options, {
   required DateTime now,
+  required DateTime Function(DateTime utc) wallOf,
 }) {
   final query = options.filteredBy;
   if (!options.filterApplies || query == null || query.trim().isEmpty) {
     return null;
   }
   try {
-    return filterTest(ws, parseFilterQuery(query, now: now), now: now);
+    return filterTest(
+      ws,
+      parseFilterQuery(query, now: now),
+      now: now,
+      wallOf: wallOf,
+    );
   } on FilterSyntaxError {
     return null;
   }

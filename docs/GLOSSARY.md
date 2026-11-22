@@ -461,3 +461,20 @@
   ставит его ровно на выпуск 3.50.0, а не на ветку `stable`, которая уехала бы к 3.50.1 при `flutter upgrade`. Git
   называет это состояние «detached HEAD» (указатель на коммит, а не на ветку) — для SDK так и нужно; `flutter
   --version` показывает «channel [user-branch]».
+
+## Шаг M6.1 — сборка Android
+- **Gradle, AGP и Kotlin Gradle Plugin** — Gradle — система сборки Android-части; AGP (Android Gradle Plugin) учит её
+  собирать APK, KGP — компилировать Kotlin. Версии — в android/settings.gradle.kts и
+  android/gradle/wrapper/gradle-wrapper.properties; Flutter 3.50 предупреждает, если они ниже Gradle 9.5.0, AGP 9.3.1,
+  Kotlin 2.4.20 (О-108).
+- **Core library desugaring** — при сборке новые классы Java (например, `java.time`, который использует
+  flutter_local_notifications) заменяются копией из библиотеки `desugar_jdk_libs`, чтобы они работали и на старых
+  Android. Включается `isCoreLibraryDesugaringEnabled` в android/app/build.gradle.kts (О-109).
+- **`applicationId`** — имя приложения для Android и Google Play (`dev.local.tasklypad`). По нему система отличает
+  одно приложение от другого: смена идентификатора — уже другое приложение, со своей пустой базой.
+- **Ключ подписи (keystore)** — файл с закрытым ключом, которым подписывается APK. Android ставит обновление, только
+  если оно подписано тем же ключом, что и установленное приложение; ключ и файл с его паролями хранятся вне git
+  (решение 6А plans/m6), потеря ключа — только переустановка.
+- **`allowBackup` и `dataExtractionRules`** — настройки манифеста, что Android копирует в облачную резервную копию и
+  при переносе на новый телефон. У нас — ничего (О-12): восстановленная копия базы на другом телефоне стала бы
+  вторым узлом с тем же `node_id`; данные новый телефон берёт из папки синхронизации.

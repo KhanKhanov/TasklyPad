@@ -1,4 +1,4 @@
-package dev.local.planner
+package dev.local.tasklypad
 
 import io.flutter.embedding.android.FlutterActivity
 

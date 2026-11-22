@@ -59,7 +59,7 @@ final class ConflictNoticesProvider
   }
 }
 
-String _$conflictNoticesHash() => r'86bd4c12408a17d9b97c7209e83224aec3e35e87';
+String _$conflictNoticesHash() => r'b3d5fd052b54df921203cdd1b631f8ae0c555d22';
 
 /// Ищет новые конфликты по таблице конфликтов, а не по отчёту прохода (О-9):
 /// после каждого прохода и смены папки — удачных или нет; при запуске —

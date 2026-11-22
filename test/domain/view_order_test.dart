@@ -306,6 +306,7 @@ void main() {
           order: of(DefaultOrder.smart),
           overdueOrder: of(DefaultOrder.overdue),
           today: today,
+          localDay: (utc) => utc.substring(0, 10),
         ))
           (g.key, _ids(g.tasks).join(',')),
       ];

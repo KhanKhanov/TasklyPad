@@ -133,9 +133,15 @@ class _FilterDialogState extends ConsumerState<_FilterDialog> {
     ref.listen(todayProvider, (_, _) => setState(_parse));
     final ws = ref.watch(workspaceProvider).value;
     final parsed = _parsed;
+    final clock = ref.read(clockProvider);
     final lists = parsed == null || ws == null
         ? null
-        : evaluateFilter(ws, parsed, now: ref.read(clockProvider).nowWall());
+        : evaluateFilter(
+            ws,
+            parsed,
+            now: clock.nowWall(),
+            wallOf: clock.wallOf,
+          );
     return AlertDialog(
       title: Text(editing ? l10n.editFilter : l10n.addFilter),
       content: SizedBox(

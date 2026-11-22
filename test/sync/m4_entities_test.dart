@@ -470,6 +470,41 @@ void main() {
     await expectStableAndSame();
   });
 
+  test('имена удалённой метки в снимках различаются только «ё» и «е», задачи '
+      'вернули на двух устройствах офлайн — одна метка, как на одном '
+      'устройстве (решение 1Б plans/m6)', () async {
+    final label = await onPc.labels.add(name: 'ёлка');
+    final a = await onPc.tasks.add(content: 'a', labelIds: {label});
+    final b = await onPc.tasks.add(content: 'b', labelIds: {label});
+    await onPc.tasks.complete(a);
+    await onPc.labels.rename(label, 'елка');
+    await onPc.tasks.complete(b);
+    await onPc.labels.delete(label);
+    await syncBoth();
+
+    await onPc.tasks.uncomplete(a);
+    await onPhone.tasks.uncomplete(b);
+    await syncBoth();
+
+    final (onA, onB) = (await onPc.read(), await onPhone.read());
+    expect(
+      [for (final l in onB.labels) (l.id, l.name)],
+      [for (final l in onA.labels) (l.id, l.name)],
+    );
+    final revived = onA.labels.single;
+    expect(revived.name.replaceAll('ё', 'е'), 'елка');
+    expect(onA.task(a)!.labelIds, [revived.id]);
+    expect(onA.task(b)!.labelIds, [revived.id]);
+    final conflict = (await pc.conflicts()).single;
+    expect(
+      conflict.field,
+      LabelFields.name,
+      reason: 'написание «ёлка» / «елка» — спор об имени, как у регистра',
+    );
+    expect((await phone.conflicts()).single.id, conflict.id);
+    await expectStableAndSame();
+  });
+
   test('ПК вернул задачу в работу и переименовал метку, телефон офлайн вернул '
       'и снова завершил — в карточке «выполнена» каждая сторона пишет свой '
       'снимок', () async {

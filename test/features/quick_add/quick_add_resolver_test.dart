@@ -50,6 +50,18 @@ void main() {
     expect(r.unresolved, isEmpty);
   });
 
+  test('`%елка` и `@ЕЛКА` берут существующую «Ёлку» — «ё» = «е», как в '
+      'уникальности имени (О-103)', () async {
+    final tree = await app.labels.add(name: 'Ёлка');
+    ws = await app.read();
+    for (final text in ['Buy %елка', 'Buy @ЕЛКА']) {
+      final r = resolver().resolve(text, ctx);
+      expect(r.draft.labelIds, {tree}, reason: text);
+      expect(r.draft.newLabels, isEmpty, reason: text);
+      expect(r.unresolved, isEmpty, reason: text);
+    }
+  });
+
   test('проект в кавычках и «Входящие» на языке интерфейса', () {
     expect(
       resolver().resolve('Plan #"Home Office"', ctx).draft.projectId,
@@ -193,6 +205,18 @@ void main() {
       expect(suggest('Call /c', project: work).map((s) => s.name), ['Calls']);
       expect(suggest('Call /zzz', project: work), isEmpty);
     });
+
+    test(
+      '`%ел` — «Ёлка» в подсказках, `%елка` — без «Создать» (О-103)',
+      () async {
+        await app.labels.add(name: 'Ёлка');
+        ws = await app.read();
+        expect(suggest('Call %ел').where((s) => !s.create).map((s) => s.name), [
+          'Ёлка',
+        ]);
+        expect(suggest('Call %елка').where((s) => s.create), isEmpty);
+      },
+    );
 
     test('`@` — метки, вставка тем же знаком', () {
       final items = suggest('Call @ur');

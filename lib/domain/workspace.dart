@@ -303,8 +303,8 @@ final class Workspace {
     Grouping grouping, {
     required TaskOrder order,
     required String today,
+    required String Function(String utc) localDay,
     TaskOrder? overdueOrder,
-    String Function(String utc)? localDay,
   }) => groupTasks(
     tasks,
     grouping,

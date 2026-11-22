@@ -4,6 +4,7 @@ import '../../../data/projection/entity_fields.dart';
 import '../../../domain/models.dart';
 import '../../../domain/recurrence.dart';
 import '../../../domain/rules.dart';
+import '../../../domain/text_fold.dart';
 import '../../../domain/view_options.dart';
 import '../../../domain/view_order.dart';
 import '../../../domain/workspace.dart';

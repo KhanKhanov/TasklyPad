@@ -282,6 +282,40 @@ void main() {
       );
     });
 
+    test('«ё» = «е»: «Елка» рядом с «Ёлкой» — отказ без записи, '
+        'переименование в «ЕЛКА» тоже (О-103, решение 9А)', () async {
+      await app.labels.add(name: 'Ёлка');
+      final work = await app.labels.add(name: 'работа');
+      final before = (await device.ownOps()).length;
+      await expectLater(
+        app.labels.add(name: 'Елка'),
+        _rejected(RejectReason.duplicateName),
+      );
+      await expectLater(
+        app.labels.rename(work, 'ЕЛКА'),
+        _rejected(RejectReason.duplicateName),
+      );
+      expect((await device.ownOps()).length, before);
+      expect(
+        [for (final l in (await app.read()).labels) l.name],
+        ['Ёлка', 'работа'],
+      );
+    });
+
+    test('возврат в работу — живая «Ёлка», в снимке «елка»: задача получает '
+        '«Ёлку», новой нет (О-103)', () async {
+      final label = await app.labels.add(name: 'елка');
+      final done = await app.tasks.add(content: 'done', labelIds: {label});
+      await app.tasks.complete(done);
+      await app.labels.delete(label);
+      final same = await app.labels.add(name: 'Ёлка');
+
+      await app.tasks.uncomplete(done);
+      final ws = await app.read();
+      expect([for (final l in ws.labels) l.id], [same]);
+      expect(ws.task(done)!.labelIds, [same]);
+    });
+
     test('удаление — метка пропадает со списка и активных задач, на '
         'выполненных остаётся; одна op', () async {
       final label = await app.labels.add(name: 'дом');

@@ -55,12 +55,7 @@ void main() {
         expect([for (final p in query.parts) p.text], titles);
       }
       if (expected['tasks'] case final List<Object?> tasks) {
-        final lists = evaluateFilter(
-          ws,
-          query,
-          now: now,
-          wallOf: DateTime.tryParse,
-        );
+        final lists = evaluateFilter(ws, query, now: now, wallOf: (utc) => utc);
         expect([
           for (final list in lists)
             [for (final t in list.tasks) plainText(t.content)],

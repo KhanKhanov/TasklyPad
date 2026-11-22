@@ -55,6 +55,30 @@ final class LocalMetaDao {
   Future<void> remove(String key) =>
       (_db.delete(_db.localMeta)..where((t) => t.key.equals(key))).go();
 
+  /// Значение ключа [key] — JSON, разобранный [decode]; ключа нет — [empty].
+  /// Битое значение или другая версия — [empty] и предупреждение [failure]:
+  /// из-за памяти устройства не должен падать запуск, а следующая запись
+  /// ([writeJson]) перезапишет ключ.
+  Future<T> readJson<T>(
+    String key, {
+    required T Function(Object? json) decode,
+    required T empty,
+    required String failure,
+  }) async {
+    final json = await read(key);
+    if (json == null) return empty;
+    try {
+      return decode(jsonDecode(json));
+    } on Object catch (error) {
+      _log.w(failure, error: error);
+      return empty;
+    }
+  }
+
+  /// Записать [json] (значение `toJson`) под ключом [key].
+  Future<void> writeJson(String key, Object? json) =>
+      write(key, jsonEncode(json));
+
   /// Id этого устройства в журнале (заполняется при первом запуске).
   Future<String?> nodeId() => read(nodeIdKey);
 

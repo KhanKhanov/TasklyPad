@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/clock.dart';
 import '../../../domain/models.dart';
+import '../../../domain/text_fold.dart';
 import '../../../domain/workspace.dart';
 import '../../../nlp/parse_context.dart';
 import '../../../nlp/quick_add.dart';
@@ -102,13 +103,16 @@ class QuickAddController extends TextEditingController {
   /// Имя из «Создать», токена которого в тексте больше нет, забывается:
   /// набранное заново без «Создать» снова только текст (решение 1А).
   void _forgetPending(String text) {
-    final names = {
+    final projects = {
       for (final h in highlights)
-        if (h.kind == HighlightKind.project || h.kind == HighlightKind.label)
-          tokenName(text, h).toLowerCase(),
+        if (h.kind == HighlightKind.project) tokenName(text, h).toLowerCase(),
     };
-    _pendingProjects.removeWhere((n) => !names.contains(n.toLowerCase()));
-    _pendingLabels.removeWhere((n) => !names.contains(n.toLowerCase()));
+    final labels = {
+      for (final h in highlights)
+        if (h.kind == HighlightKind.label) labelNameKey(tokenName(text, h)),
+    };
+    _pendingProjects.removeWhere((n) => !projects.contains(n.toLowerCase()));
+    _pendingLabels.removeWhere((n) => !labels.contains(labelNameKey(n)));
   }
 
   /// Разобрать текст заново — перед записью: «завтра», набранное до
@@ -180,7 +184,7 @@ class QuickAddController extends TextEditingController {
     _chips.copyWith(labelIds: labelIds),
     {HighlightKind.label},
     keep: (h) => _pendingLabels.any(
-      (n) => n.toLowerCase() == tokenName(text, h).toLowerCase(),
+      (n) => labelNameKey(n) == labelNameKey(tokenName(text, h)),
     ),
   );
 

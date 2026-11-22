@@ -1,4 +1,5 @@
 import '../../../domain/models.dart';
+import '../../../domain/text_fold.dart';
 import '../../../domain/workspace.dart';
 import '../../../nlp/parse_context.dart';
 import '../../../nlp/quick_add.dart';
@@ -150,7 +151,7 @@ final class QuickAddResolver {
   }) {
     final unresolved = <Span>[];
     final newProjects = _lowerSet(pendingProjects);
-    final newLabels = _lowerSet(pendingLabels);
+    final newLabels = {for (final n in pendingLabels) labelNameKey(n)};
     // Каждый проход отменяет хотя бы один участок, поэтому их не больше,
     // чем токенов в строке.
     for (;;) {
@@ -196,7 +197,7 @@ final class QuickAddResolver {
           if (findSection(ws, place, name) == null) return h.span;
         case HighlightKind.label:
           if (findLabel(ws, name) == null &&
-              !newLabels.contains(_lower(name))) {
+              !newLabels.contains(labelNameKey(name))) {
             return h.span;
           }
         default:
@@ -234,7 +235,7 @@ final class QuickAddResolver {
       final label = findLabel(ws, name);
       if (label != null) {
         labelIds.add(label.id);
-      } else if (!newLabels.any((n) => _lower(n) == _lower(name))) {
+      } else if (!newLabels.any((n) => labelNameKey(n) == labelNameKey(name))) {
         newLabels.add(name);
       }
     }
@@ -314,11 +315,12 @@ Section? findSection(Workspace ws, String projectId, String name) {
   return null;
 }
 
-/// Живая метка с именем [name].
+/// Живая метка с именем [name] — без учёта регистра и с «ё» = «е»
+/// ([labelNameKey]): `@елка` берёт существующую «Ёлку».
 Label? findLabel(Workspace ws, String name) {
-  final lower = _lower(name);
+  final key = labelNameKey(name);
   for (final l in ws.labels) {
-    if (_lower(l.name) == lower) return l;
+    if (labelNameKey(l.name) == key) return l;
   }
   return null;
 }

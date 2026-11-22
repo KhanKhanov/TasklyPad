@@ -275,11 +275,13 @@ class _SearchWindowState extends ConsumerState<SearchWindow> {
   /// поиска — только задачи, допущение О-69).
   List<SearchHit> _filterHits(Workspace ws, FilterQuery query) {
     final seen = <String>{};
+    final clock = ref.read(clockProvider);
     return [
       for (final list in evaluateFilter(
         ws,
         query,
-        now: ref.read(clockProvider).nowWall(),
+        now: clock.nowWall(),
+        wallOf: clock.wallOf,
       ))
         for (final task in list.tasks)
           if (seen.add(task.id)) TaskHit(task),

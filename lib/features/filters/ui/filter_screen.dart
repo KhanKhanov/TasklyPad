@@ -162,19 +162,21 @@ class _FilterScreenState extends ConsumerState<FilterScreen> {
     Workspace ws,
     ViewOptions options,
   ) {
-    final now = ref.read(clockProvider).nowWall();
+    final clock = ref.read(clockProvider);
+    final now = clock.nowWall();
     try {
       final query = parseFilterQuery(filter.query, now: now);
       final lists = evaluateFilter(
         ws,
         query,
         now: now,
+        wallOf: clock.wallOf,
         sorting: options.sorting,
         sortOrder: options.sortOrder,
       );
       final values = [for (final p in query.parts) filterAddValues(ws, p.node)];
       // Фильтр «Отображения» поверх запроса (решение 3А plans/m5).
-      final test = viewFilterTest(ws, options, now: now);
+      final test = viewFilterTest(ws, options, now: now, wallOf: clock.wallOf);
       final shown = test == null
           ? lists
           : [

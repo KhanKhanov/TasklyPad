@@ -689,6 +689,7 @@ void main() {
       Grouping.priority,
       order: order,
       today: '2026-11-03',
+      localDay: (utc) => utc.substring(0, 10),
     );
     // «Вручную» в группе — тоже по дереву, как порядок по умолчанию.
     final manual = ws.groupsOf(
@@ -696,6 +697,7 @@ void main() {
       Grouping.priority,
       order: ws.taskOrder(DefaultOrder.manual, sorting: Sorting.manual),
       today: '2026-11-03',
+      localDay: (utc) => utc.substring(0, 10),
     );
     expect(_plain(manual.first.tasks), ['a2', 'b']);
     expect(

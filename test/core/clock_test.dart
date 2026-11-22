@@ -22,4 +22,27 @@ void main() {
     final local = DateTime(2026, 1, 15, 12);
     expect(FixedClock(local).nowUtc(), local.toUtc());
   });
+
+  test('FixedClock.wallOf — момент UTC со сдвигом wallOffset, как nowWall', () {
+    final c = FixedClock(
+      DateTime.utc(2026, 11, 13, 12),
+      wallOffset: const Duration(hours: -11),
+    );
+    expect(
+      c.wallOf(DateTime.utc(2026, 11, 13, 10, 30)),
+      DateTime.utc(2026, 11, 12, 23, 30),
+    );
+    expect(c.wallOf(c.nowUtc()), c.nowWall());
+  });
+
+  test('SystemClock.wallOf — цифры местного времени момента в UTC-обёртке', () {
+    final at = DateTime.utc(2026, 7, 1, 21, 15);
+    final local = at.toLocal();
+    final wall = const SystemClock().wallOf(at);
+    expect(wall.isUtc, isTrue);
+    expect(
+      (wall.year, wall.month, wall.day, wall.hour, wall.minute),
+      (local.year, local.month, local.day, local.hour, local.minute),
+    );
+  });
 }

@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/toast_lamp.dart';
+import '../state/toast_lamp.dart';
 
 /// Отмечает [child] как «лампу» нижних уведомлений ([ToastLamp]): точка
 /// [anchor] в нём — горлышко, [mouth] — его ширина. Регистрируется после

@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- База не попадает ни в облачную копию, ни в перенос на новый телефон (О-12): копия базы на другом
+         устройстве — второй узел с тем же node_id. Данные новый телефон получает из папки синхронизации.
+         allowBackup — Android 10–11, dataExtractionRules — Android 12+. -->
     <application
-        android:label="planner"
+        android:label="TasklyPad"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

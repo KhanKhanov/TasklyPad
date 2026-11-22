@@ -1,3 +1,4 @@
+import '../../../core/serial_queue.dart';
 import '../../../data/projection/entity_fields.dart';
 import '../../../domain/recent_searches.dart';
 import '../../../sync/mutator.dart';
@@ -11,7 +12,7 @@ final class RecentSearchCommands {
 
   final Mutator _mutator;
   final Future<List<String>> Function() _read;
-  Future<void> _tail = Future.value();
+  final SerialQueue _queue = SerialQueue();
 
   /// [text] — наверх списка (повтор переносится, пустой не пишется).
   Future<void> add(String text) =>
@@ -25,19 +26,16 @@ final class RecentSearchCommands {
   /// список.
   Future<void> clear() => _change((_) => const []);
 
-  Future<void> _change(List<String> Function(List<String>) edit) {
-    final step = _tail.then((_) async {
-      final list = await _read();
-      final next = edit(list);
-      // `Mutator` и сам не пишет одинаковое значение; без перемен не
-      // начинаем и транзакцию.
-      if (sameRecentSearches(list, next)) return;
-      await _mutator.update(EntityTypes.settings, settingsEntityId, {
-        SettingsFields.recentSearches: next,
+  /// Ошибка шага достаётся вызывающему, очередь идёт дальше ([SerialQueue]).
+  Future<void> _change(List<String> Function(List<String>) edit) =>
+      _queue.run(() async {
+        final list = await _read();
+        final next = edit(list);
+        // `Mutator` и сам не пишет одинаковое значение; без перемен не
+        // начинаем и транзакцию.
+        if (sameRecentSearches(list, next)) return;
+        await _mutator.update(EntityTypes.settings, settingsEntityId, {
+          SettingsFields.recentSearches: next,
+        });
       });
-    });
-    // Ошибка шага достаётся вызывающему, очередь идёт дальше.
-    _tail = step.then<void>((_) {}, onError: (Object _) {});
-    return step;
-  }
 }

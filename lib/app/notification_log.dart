@@ -1,6 +1,7 @@
 import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../core/serial_queue.dart';
 import '../domain/notification_log.dart';
 import 'data_providers.dart';
 
@@ -17,7 +18,7 @@ part 'notification_log.g.dart';
 class NotificationLogController extends _$NotificationLogController {
   static final Logger _log = Logger();
 
-  Future<void> _tail = Future.value();
+  final SerialQueue _queue = SerialQueue();
 
   @override
   Future<NotificationLog> build() =>
@@ -38,13 +39,13 @@ class NotificationLogController extends _$NotificationLogController {
   /// Журнал открыли — счётчик непрочитанных обнуляется.
   Future<void> markRead() => _change((log) => log.markRead());
 
-  /// Ошибка внутри шага не доходит до очереди: иначе упавший [_tail] не дал
-  /// бы выполниться ни одной следующей записи до перезапуска. Без перемен
+  /// Ошибка шага — в лог внутри шага (вызывающие не ждут записи журнала),
+  /// очередь ([SerialQueue]) идёт дальше. Без перемен
   /// (прочитано уже всё, журнал уже пуст) — ничего не пишется: каждая запись
   /// в `local_meta` будит подписки темы и конфликтов.
   Future<void> _change(NotificationLog Function(NotificationLog) f) {
     final repo = ref.read(notificationLogRepositoryProvider);
-    return _tail = _tail.then((_) async {
+    return _queue.run(() async {
       try {
         if (!ref.mounted) return;
         final current = await future;

@@ -334,7 +334,8 @@ mixin _Completion on _TaskCore {
   /// Удалённые метки задач [ids], которые возвращаются в работу, — как в
   /// Todoist (help «Introduction to labels»): задача получает живую метку с
   /// именем на момент завершения (снимок [Task.completedLabelNames]; нет
-  /// снимка — последнее имя удалённой метки), без учёта регистра, а если её
+  /// снимка — последнее имя удалённой метки), без учёта регистра и с «ё» =
+  /// «е» ([labelNameKey], как уникальность имени метки), а если её
   /// нет — метку, созданную заново с этим именем, цветом и избранным по
   /// умолчанию, в конце списка.
   /// Связь с удалённой меткой снимается: если ту восстановят (выбор на экране
@@ -348,7 +349,7 @@ mixin _Completion on _TaskCore {
   static _Revival _labelRevival(Workspace ws, List<String> ids) {
     final byName = <String, String>{};
     for (final l in ws.labels) {
-      byName.putIfAbsent(l.name.toLowerCase(), () => l.id);
+      byName.putIfAbsent(labelNameKey(l.name), () => l.id);
     }
     final keys = [for (final l in ws.labels) l.orderKey];
     final labels = <String, ({String name, String orderKey})>{};
@@ -361,7 +362,7 @@ mixin _Completion on _TaskCore {
         // создателя ещё не пришли): создавать нечего.
         final name = ws.taskLabel(task, old)!.name;
         if (name.trim().isEmpty) continue;
-        final target = byName[name.toLowerCase()] ??= () {
+        final target = byName[labelNameKey(name)] ??= () {
           var id = old;
           do {
             id = revivedLabelId(id, name);

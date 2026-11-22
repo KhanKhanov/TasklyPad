@@ -124,6 +124,7 @@ void main() {
         ws,
         parseFilterQuery(filter.query!, now: now),
         now: now,
+        wallOf: (utc) => utc,
       );
       return [
         for (final t in ws.activeTasks)

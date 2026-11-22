@@ -187,3 +187,41 @@ String? _validKey(String key) => key.isEmpty || key.endsWith('0') ? null : key;
 
 /// Ключ для добавления в конец списка [keys].
 String keyAtEnd(List<String> keys) => keyForInsert(keys, keys.length);
+
+/// Перенос строки [id] плоского списка сразу после [afterId] (`null` —
+/// первой; [afterId] нет в списке — в конец): какие ключи записать. [ids] и
+/// [keys] — id и ключи всех строк по порядку экрана, поровну. Ответ — пары
+/// «id — новый ключ» в порядке записи: сначала соседи, которым нужен новый
+/// ключ ([insertionKeys]), затем [id]. Пусто — порядок не меняется: после
+/// самой себя или на своё же место.
+List<(String id, String key)> moveAfterKeys(
+  List<String> ids,
+  List<String> keys,
+  String id, {
+  String? afterId,
+}) {
+  if (ids.length != keys.length) {
+    throw ArgumentError(
+      'ids и keys разной длины: ${ids.length} и '
+      '${keys.length}',
+    );
+  }
+  if (afterId == id) return const [];
+  final others = [
+    for (final (i, other) in ids.indexed)
+      if (other != id) i,
+  ];
+  final after = others.indexWhere((i) => ids[i] == afterId);
+  final index = afterId == null
+      ? 0
+      : after < 0
+      ? others.length
+      : after + 1;
+  if (ids.indexOf(id) == index) return const [];
+  final placed = insertionKeys([for (final i in others) keys[i]], index, 1);
+  return [
+    for (final (n, key) in placed.rekeyed.indexed)
+      if (key != null) (ids[others[n]], key),
+    (id, placed.inserted.single),
+  ];
+}
