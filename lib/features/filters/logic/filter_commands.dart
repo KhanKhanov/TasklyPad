@@ -87,33 +87,17 @@ final class FilterCommands {
       _mutator.batch(() async {
         final ws = await _read();
         _alive(ws, id);
-        if (afterId == id) return;
         final all = ws.filters;
-        final others = [
-          for (final f in all)
-            if (f.id != id) f,
-        ];
-        final after = others.indexWhere((f) => f.id == afterId);
-        final index = afterId == null
-            ? 0
-            : after < 0
-            ? others.length
-            : after + 1;
-        if (all.indexWhere((f) => f.id == id) == index) return;
-        final keys = insertionKeys(
-          [for (final f in others) f.orderKey],
-          index,
-          1,
-        );
-        for (final (i, key) in keys.rekeyed.indexed) {
-          if (key == null) continue;
-          await _mutator.update(EntityTypes.filter, others[i].id, {
+        for (final (filterId, key) in moveAfterKeys(
+          [for (final f in all) f.id],
+          [for (final f in all) f.orderKey],
+          id,
+          afterId: afterId,
+        )) {
+          await _mutator.update(EntityTypes.filter, filterId, {
             FilterFields.orderKey: key,
           });
         }
-        await _mutator.update(EntityTypes.filter, id, {
-          FilterFields.orderKey: keys.inserted.single,
-        });
       });
 
   /// Дубликат сразу после фильтра: запрос, описание, цвет и «Отображение»;

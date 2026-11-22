@@ -217,4 +217,62 @@ void main() {
       expectIncreasing(place.inserted);
     });
   });
+
+  group('moveAfterKeys', () {
+    const ids = ['a', 'b', 'c'];
+    const keys = ['F', 'M', 'T'];
+
+    /// Порядок id после записи [writes] поверх [keys].
+    List<String> applied(List<(String, String)> writes) {
+      final next = {for (final (i, id) in ids.indexed) id: keys[i]};
+      for (final (id, key) in writes) {
+        next[id] = key;
+      }
+      return ids.toList()..sort((x, y) => next[x]!.compareTo(next[y]!));
+    }
+
+    test('первой, после соседа, после неизвестной — в конец; пишется только '
+        'перенесённая', () {
+      final first = moveAfterKeys(ids, keys, 'c');
+      expect(applied(first), ['c', 'a', 'b']);
+      expect([for (final (id, _) in first) id], ['c']);
+      expect(applied(moveAfterKeys(ids, keys, 'a', afterId: 'b')), [
+        'b',
+        'a',
+        'c',
+      ]);
+      expect(applied(moveAfterKeys(ids, keys, 'a', afterId: 'нет')), [
+        'b',
+        'c',
+        'a',
+      ]);
+    });
+
+    test('после самой себя и на своё место — пусто', () {
+      expect(moveAfterKeys(ids, keys, 'b', afterId: 'b'), isEmpty);
+      expect(moveAfterKeys(ids, keys, 'b', afterId: 'a'), isEmpty);
+      expect(moveAfterKeys(ids, keys, 'a'), isEmpty);
+    });
+
+    test('равные ключи соседей — соседи получают новые ключи, затем '
+        'перенесённая', () {
+      final writes = moveAfterKeys(
+        ['a', 'b', 'c'],
+        ['M', 'M', 'T'],
+        'c',
+        afterId: 'a',
+      );
+      expect(writes.last.$1, 'c');
+      final next = {'a': 'M', 'b': 'M', 'c': 'T'};
+      for (final (id, key) in writes) {
+        next[id] = key;
+      }
+      expect(next['a']!.compareTo(next['c']!), lessThan(0));
+      expect(next['c']!.compareTo(next['b']!), lessThan(0));
+    });
+
+    test('ids и keys разной длины — ошибка', () {
+      expect(() => moveAfterKeys(['a'], const [], 'a'), throwsArgumentError);
+    });
+  });
 }

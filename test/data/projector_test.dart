@@ -544,13 +544,18 @@ void main() {
     expect(viewOptionsId('project', 'p1'), isNot(viewOptionsId('label', 'p1')));
   });
 
-  test('revivedLabelId — формат закреплён; имя без учёта регистра, разные '
-      'имена одной метки — разные id', () {
+  test('revivedLabelId — формат закреплён; имя без учёта регистра и с «ё» = '
+      '«е», разные имена одной метки — разные id', () {
     expect(
       revivedLabelId('l1', 'Дом'),
       uuidV8([EntityTypes.label, 'revived', 'l1', 'дом']),
     );
     expect(revivedLabelId('l1', 'Дом'), revivedLabelId('l1', 'дом'));
+    expect(
+      revivedLabelId('l1', 'Ёлка'),
+      uuidV8([EntityTypes.label, 'revived', 'l1', 'елка']),
+    );
+    expect(revivedLabelId('l1', 'Ёлка'), revivedLabelId('l1', 'елка'));
     expect(revivedLabelId('l1', 'дом'), isNot(revivedLabelId('l1', 'дача')));
     expect(revivedLabelId('l1', 'дом'), isNot(revivedLabelId('l2', 'дом')));
   });

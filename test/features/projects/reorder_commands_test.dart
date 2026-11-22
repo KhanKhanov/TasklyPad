@@ -189,5 +189,15 @@ void main() {
       await app.labels.reorder(ids[1], afterId: ids[2]);
       expect((await app.read()).label(ids[1])!.orderKey, key);
     });
+
+    test('после самой себя — ни одной op, порядок прежний (О-100)', () async {
+      final ids = [
+        for (final name in ['а', 'б']) await app.labels.add(name: name),
+      ];
+      final before = (await device.ownOps()).length;
+      await app.labels.reorder(ids[0], afterId: ids[0]);
+      expect((await device.ownOps()).length, before);
+      expect([for (final l in (await app.read()).labels) l.name], ['а', 'б']);
+    });
   });
 }

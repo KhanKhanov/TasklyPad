@@ -65,6 +65,17 @@ void main() {
     expect(task.priority, 2);
   });
 
+  test('новая метка «Елка», когда есть «Ёлка», — задача получает «Ёлку», '
+      'второй метки нет (О-103)', () async {
+    final tree = await app.labels.add(name: 'Ёлка');
+    final ids = await app.quickAdd.add([
+      draft('Buy', newLabels: ['Елка']),
+    ]);
+    final ws = await app.read();
+    expect(ws.task(ids.single)!.labelIds, [tree]);
+    expect([for (final l in ws.labels) l.name], ['Ёлка']);
+  });
+
   test('отказ на второй задаче — ни проекта, ни метки, ни первой задачи '
       '(одна транзакция)', () async {
     await expectLater(

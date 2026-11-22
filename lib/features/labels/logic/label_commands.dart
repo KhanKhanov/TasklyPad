@@ -1,12 +1,14 @@
 import '../../../core/fractional_index.dart';
 import '../../../data/projection/entity_fields.dart';
 import '../../../domain/rules.dart';
+import '../../../domain/text_fold.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 
 /// Действия пользователя над метками — всё через [Mutator].
 ///
-/// Имя метки уникально без учёта регистра ([RejectReason.duplicateName]).
+/// Имя метки уникально без учёта регистра и с «ё» = «е» ([labelNameKey],
+/// [RejectReason.duplicateName]).
 /// Два устройства всё же могут создать одноимённые метки офлайн — тогда обе
 /// живут, пока пользователь не удалит лишнюю.
 final class LabelCommands {
@@ -63,38 +65,24 @@ final class LabelCommands {
       _update(id, {LabelFields.isFavorite: favorite});
 
   /// Перетаскивание метки на странице «Фильтры и метки»: сразу после [afterId]
-  /// (`null` — первой). Порядок меток перетаскиванием в help не описан
-  /// (допущение, О-69).
+  /// (`null` — первой; метки [afterId] нет — в конец, [moveAfterKeys]). После
+  /// самой себя — ничего не меняется. Порядок меток перетаскиванием в help не
+  /// описан (допущение, О-69).
   Future<void> reorder(String id, {String? afterId}) =>
       _mutator.batch(() async {
         final ws = await _read();
         _alive(ws, id);
         final all = ws.labels;
-        final others = [
-          for (final l in all)
-            if (l.id != id) l,
-        ];
-        final after = others.indexWhere((l) => l.id == afterId);
-        final index = afterId == null
-            ? 0
-            : after < 0
-            ? others.length
-            : after + 1;
-        if (all.indexWhere((l) => l.id == id) == index) return;
-        final keys = insertionKeys(
-          [for (final l in others) l.orderKey],
-          index,
-          1,
-        );
-        for (final (i, key) in keys.rekeyed.indexed) {
-          if (key == null) continue;
-          await _mutator.update(EntityTypes.label, others[i].id, {
+        for (final (labelId, key) in moveAfterKeys(
+          [for (final l in all) l.id],
+          [for (final l in all) l.orderKey],
+          id,
+          afterId: afterId,
+        )) {
+          await _mutator.update(EntityTypes.label, labelId, {
             LabelFields.orderKey: key,
           });
         }
-        await _mutator.update(EntityTypes.label, id, {
-          LabelFields.orderKey: keys.inserted.single,
-        });
       });
 
   /// Удалить (tombstone) одной op; связи не трогаются. Что видно на задачах
@@ -118,8 +106,8 @@ final class LabelCommands {
   static String _name(Workspace ws, String name, {String? except}) {
     final text = name.trim();
     if (text.isEmpty) throw const CommandRejected(RejectReason.emptyName);
-    final lower = text.toLowerCase();
-    if (ws.labels.any((l) => l.id != except && l.name.toLowerCase() == lower)) {
+    final key = labelNameKey(text);
+    if (ws.labels.any((l) => l.id != except && labelNameKey(l.name) == key)) {
       throw const CommandRejected(RejectReason.duplicateName);
     }
     return Limits.checkLength(text, Limits.labelName);

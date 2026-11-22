@@ -1,3 +1,4 @@
+import '../../../domain/text_fold.dart';
 import 'quick_add_draft.dart';
 
 /// Что набирается токеном под курсором.
@@ -69,8 +70,8 @@ final class Suggestion {
   final bool create;
 }
 
-/// Подсказки для [q]: имена, в которых есть набранное (без учёта регистра),
-/// по порядку сайдбара; в конце — «Создать», если такого имени нет (для
+/// Подсказки для [q]: имена, в которых есть набранное (без учёта регистра; у
+/// меток ещё и «ё» = «е», как у [findLabel]), по порядку сайдбара; в конце — «Создать», если такого имени нет (для
 /// проекта и метки; раздел help создавать не предлагает). [inboxTitle] —
 /// «Входящие» на языке интерфейса. Имя, которое токеном не записать
 /// (раздел и метка с пробелом), не предлагается.
@@ -121,8 +122,9 @@ List<Suggestion> suggestionsFor(
         out.add(Suggestion(name: s.name, insert: '/${s.name}', id: s.id));
       }
     case TokenKind.label:
+      final folded = foldText(q.query);
       for (final l in ws.labels) {
-        if (!matches(l.name) || _hasSpace(l.name)) continue;
+        if (!foldText(l.name).contains(folded) || _hasSpace(l.name)) continue;
         out.add(
           Suggestion(
             name: l.name,

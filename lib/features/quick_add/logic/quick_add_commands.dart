@@ -1,3 +1,4 @@
+import '../../../domain/text_fold.dart';
 import '../../../domain/workspace.dart';
 import '../../../sync/mutator.dart';
 import '../../labels/logic/label_commands.dart';
@@ -80,7 +81,7 @@ final class QuickAddCommands {
     String name,
     Map<String, String> created,
   ) async {
-    final key = name.trim().toLowerCase();
+    final key = labelNameKey(name);
     final existing = findLabel(ws, name);
     if (existing != null) return existing.id;
     return created[key] ??= await _labels.add(name: name);

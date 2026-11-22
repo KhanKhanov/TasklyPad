@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
+import '../../../domain/text_fold.dart';
 import '../../../domain/workspace.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/ui_kit.dart';
@@ -114,12 +115,14 @@ class _LabelPickerState extends ConsumerState<_LabelPicker> {
     final l10n = AppLocalizations.of(context);
     final labels =
         ref.watch(workspaceProvider).value?.labels ?? widget.ws.labels;
-    final q = _query.text.trim().toLowerCase();
+    // Без учёта регистра и с «ё» = «е», как уникальность имени метки
+    // ([labelNameKey]): «Создать» не предлагается, если такая метка есть.
+    final q = labelNameKey(_query.text);
     final shown = [
       for (final l in labels)
-        if (q.isEmpty || l.name.toLowerCase().contains(q)) l,
+        if (q.isEmpty || labelNameKey(l.name).contains(q)) l,
     ];
-    final exact = labels.any((l) => l.name.toLowerCase() == q);
+    final exact = labels.any((l) => labelNameKey(l.name) == q);
     return AlertDialog(
       title: Text(l10n.fieldLabels),
       content: SizedBox(
