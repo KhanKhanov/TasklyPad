@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/data_providers.dart';
+import '../../../core/serial_queue.dart';
 import '../../../domain/conflicts.dart';
 import '../../settings/state/sync_controller.dart';
 
@@ -29,7 +30,7 @@ final class ConflictNotice {
 class ConflictNotices extends _$ConflictNotices {
   static final Logger _log = Logger();
 
-  Future<void> _queue = Future.value();
+  final SerialQueue _queue = SerialQueue();
 
   @override
   ConflictNotice? build() {
@@ -54,8 +55,8 @@ class ConflictNotices extends _$ConflictNotices {
   }
 
   /// Проверить сейчас. Проверки идут по очереди, чтобы одна карточка не
-  /// дала двух уведомлений.
-  Future<void> check() => _queue = _queue.then((_) => _check());
+  /// дала двух уведомлений; ошибка чтения — в лог внутри шага.
+  Future<void> check() => _queue.run(_check);
 
   Future<void> _check() async {
     if (!ref.mounted) return;

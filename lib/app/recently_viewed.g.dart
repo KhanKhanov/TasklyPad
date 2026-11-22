@@ -49,7 +49,7 @@ final class RecentlyViewedControllerProvider
 }
 
 String _$recentlyViewedControllerHash() =>
-    r'b1a181e5889d2d76a8b8aa19b933a6658d5064ba';
+    r'1dff35344727739eb715f1a488e9f489a9e1fcc3';
 
 /// «Недавно просмотренное» окна поиска (решение 1А plans/m5 «Решения M5.4»):
 /// экраны — по адресу роутера (один источник для сайдбара, клавиш, поиска и

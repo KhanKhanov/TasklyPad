@@ -1,6 +1,7 @@
 import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../core/serial_queue.dart';
 import '../domain/recently_viewed.dart';
 import 'data_providers.dart';
 import 'router.dart';
@@ -29,7 +30,7 @@ ViewedItem? viewedItemOf(Uri location) => switch (location.pathSegments) {
 class RecentlyViewedController extends _$RecentlyViewedController {
   static final Logger _log = Logger();
 
-  Future<void> _tail = Future.value();
+  final SerialQueue _queue = SerialQueue();
 
   @override
   Future<RecentlyViewed> build() {
@@ -53,7 +54,7 @@ class RecentlyViewedController extends _$RecentlyViewedController {
 
   Future<void> _visit(ViewedItem item) {
     final repo = ref.read(recentlyViewedRepositoryProvider);
-    return _tail = _tail.then((_) async {
+    return _queue.run(() async {
       try {
         if (!ref.mounted) return;
         final current = await future;

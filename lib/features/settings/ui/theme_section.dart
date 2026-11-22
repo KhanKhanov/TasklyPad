@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
@@ -5,6 +7,7 @@ import 'package:logger/logger.dart';
 import '../../../app/data_providers.dart';
 import '../../../app/theme/app_palette.dart';
 import '../../../app/theme/app_themes.dart';
+import '../../../core/serial_queue.dart';
 import '../../../domain/theme_settings.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../common/ui/app_switch.dart';
@@ -34,7 +37,7 @@ class _ThemeSectionState extends ConsumerState<ThemeSection> {
 
   /// Сохранения по одному, в порядке выбора: иначе второе нажатие на
   /// Android прочитало бы состояние до первого и отменило бы его.
-  Future<void> _queue = Future<void>.value();
+  final SerialQueue _queue = SerialQueue();
   int _saving = 0;
 
   @override
@@ -146,23 +149,26 @@ class _ThemeSectionState extends ConsumerState<ThemeSection> {
     final commands = ref.read(themeCommandsProvider);
     final instant = Theme.of(context).platform == TargetPlatform.android;
     setState(() => _saving++);
-    _queue = _queue.then((_) async {
-      try {
-        await commands.save(choice, syncTheme: sync, from: from);
-      } on Object catch (error, stackTrace) {
-        _log.e('Тема не сохранена', error: error, stackTrace: stackTrace);
-        // На компьютере выбор остаётся — «Обновить» можно нажать снова; на
-        // Android кнопки нет, и раздел возвращается к сохранённому.
-        if (instant && mounted) {
-          setState(() {
-            _choice = null;
-            _sync = null;
-          });
+    // Ошибка шага — в лог внутри шага, очередь идёт дальше.
+    unawaited(
+      _queue.run(() async {
+        try {
+          await commands.save(choice, syncTheme: sync, from: from);
+        } on Object catch (error, stackTrace) {
+          _log.e('Тема не сохранена', error: error, stackTrace: stackTrace);
+          // На компьютере выбор остаётся — «Обновить» можно нажать снова; на
+          // Android кнопки нет, и раздел возвращается к сохранённому.
+          if (instant && mounted) {
+            setState(() {
+              _choice = null;
+              _sync = null;
+            });
+          }
+        } finally {
+          if (mounted) setState(() => _saving--);
         }
-      } finally {
-        if (mounted) setState(() => _saving--);
-      }
-    });
+      }),
+    );
   }
 }
 

@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:logger/logger.dart';
-
 import '../../domain/notification_log.dart';
 import '../app_database.dart';
 import '../local_meta_dao.dart';
@@ -14,22 +10,16 @@ base class NotificationLogRepository {
 
   final LocalMetaDao _meta;
 
-  static final Logger _log = Logger();
-
   /// Журнал; ключа нет — пустой. Битое значение или другая версия — пустой
-  /// журнал и предупреждение: из-за журнала не должен падать запуск, а
-  /// следующая запись перезапишет ключ.
-  Future<NotificationLog> load() async {
-    final json = await _meta.read(LocalMetaDao.notificationLogKey);
-    if (json == null) return const NotificationLog();
-    try {
-      return NotificationLog.fromJson(jsonDecode(json) as Map<String, Object?>);
-    } on Object catch (error) {
-      _log.w('Журнал уведомлений не разобран', error: error);
-      return const NotificationLog();
-    }
-  }
+  /// журнал и предупреждение ([LocalMetaDao.readJson]): из-за журнала не
+  /// должен падать запуск, а следующая запись перезапишет ключ.
+  Future<NotificationLog> load() => _meta.readJson(
+    LocalMetaDao.notificationLogKey,
+    decode: (json) => NotificationLog.fromJson(json as Map<String, Object?>),
+    empty: const NotificationLog(),
+    failure: 'Журнал уведомлений не разобран',
+  );
 
   Future<void> save(NotificationLog log) =>
-      _meta.write(LocalMetaDao.notificationLogKey, jsonEncode(log.toJson()));
+      _meta.writeJson(LocalMetaDao.notificationLogKey, log.toJson());
 }
