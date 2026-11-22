@@ -27,19 +27,19 @@ final class FilterList {
 
 /// Задачи снимка [ws] по запросу [query]: по списку на каждую часть через
 /// `,`. [now] — стенное время устройства в UTC-обёртке (`AppClock.nowWall`),
-/// [wallOf] — стенное время для момента UTC ISO-8601 (дата создания; по
-/// умолчанию — по поясу устройства). Порядок — [sorting] «Отображения», при
+/// [wallOf] — стенное время того же устройства для момента UTC
+/// (`AppClock.wallOf`; дата создания в `created:`). Порядок — [sorting] «Отображения», при
 /// равенстве — порядок фильтра по умолчанию (help «Default sorting order»,
 /// О-85).
 List<FilterList> evaluateFilter(
   Workspace ws,
   FilterQuery query, {
   required DateTime now,
-  DateTime? Function(String utc)? wallOf,
+  required DateTime Function(DateTime utc) wallOf,
   Sorting sorting = Sorting.byDefault,
   SortOrder sortOrder = SortOrder.asc,
 }) {
-  final matcher = _Matcher(ws, now, wallOf ?? _deviceWall);
+  final matcher = _Matcher(ws, now, wallOf);
   final tasks = ws.activeTasks;
   return [
     for (final part in query.parts)
@@ -69,9 +69,9 @@ bool Function(Task) filterTest(
   Workspace ws,
   FilterQuery query, {
   required DateTime now,
-  DateTime? Function(String utc)? wallOf,
+  required DateTime Function(DateTime utc) wallOf,
 }) {
-  final matcher = _Matcher(ws, now, wallOf ?? _deviceWall);
+  final matcher = _Matcher(ws, now, wallOf);
   return (t) => query.parts.any((p) => matcher.matches(p.node, t));
 }
 
@@ -86,12 +86,6 @@ bool _hasDates(FilterNode node) => switch (node) {
   OverdueNode() || NextDaysNode() => true,
   _ => false,
 };
-
-DateTime? _deviceWall(String utc) {
-  final at = DateTime.tryParse(utc)?.toLocal();
-  if (at == null) return null;
-  return DateTime.utc(at.year, at.month, at.day, at.hour, at.minute);
-}
 
 String _iso(DateTime day) =>
     '${day.year.toString().padLeft(4, '0')}-'
@@ -108,7 +102,7 @@ final class _Matcher {
       _todayDay = DateTime.utc(now.year, now.month, now.day);
 
   final Workspace ws;
-  final DateTime? Function(String utc) wallOf;
+  final DateTime Function(DateTime utc) wallOf;
   final String today;
   final DateTime _todayDay;
 
@@ -194,13 +188,18 @@ final class _Matcher {
       DateField.deadline => deadline(),
       DateField.created => switch (t.addedAt) {
         null => false,
-        final added => switch (wallOf(added)) {
+        final added => switch (DateTime.tryParse(added)) {
           null => false,
-          final at => _compare(node, _iso(at), at.hour * 60 + at.minute),
+          final utc => _compareWall(node, wallOf(utc)),
         },
       },
     };
   }
+
+  /// Стенное время [at] (дата создания) против значения условия — день и
+  /// время до минут.
+  static bool _compareWall(DateNode node, DateTime at) =>
+      _compare(node, _iso(at), at.hour * 60 + at.minute);
 
   /// Дата задачи [date] (и время [minutes], если есть) против значения
   /// условия. Значение без времени — сравнение по дням. Со временем — в его

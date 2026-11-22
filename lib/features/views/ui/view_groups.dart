@@ -30,14 +30,7 @@ List<TaskGroup> groupsFor(
 String Function(String utc) localDayBy(AppClock clock) => (utc) {
   final at = DateTime.tryParse(utc);
   if (at == null) return utc.length >= 10 ? utc.substring(0, 10) : utc;
-  // Пояс устройства сейчас; у дат по другую сторону перехода на летнее
-  // время день может сдвинуться у задач, добавленных около полуночи.
-  // Округление до минут: два вызова часов расходятся на доли миллисекунды.
-  final offset = Duration(
-    minutes: (clock.nowWall().difference(clock.nowUtc()).inSeconds / 60)
-        .round(),
-  );
-  return isoDate(at.toUtc().add(offset));
+  return isoDate(clock.wallOf(at));
 };
 
 /// Id задач групп по порядку, без повторов (задача с двумя метками — в

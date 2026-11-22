@@ -78,8 +78,15 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
   );
 
   /// Фильтр «Отображения» (решение 3А plans/m5).
-  bool Function(Task)? _filter(Workspace ws, ViewOptions options) =>
-      viewFilterTest(ws, options, now: ref.read(clockProvider).nowWall());
+  bool Function(Task)? _filter(Workspace ws, ViewOptions options) {
+    final clock = ref.read(clockProvider);
+    return viewFilterTest(
+      ws,
+      options,
+      now: clock.nowWall(),
+      wallOf: clock.wallOf,
+    );
+  }
 
   /// Группы проекта: подзадача — в группе своих значений.
   List<TaskGroup> _groups(Workspace ws, ViewOptions options) => groupsFor(

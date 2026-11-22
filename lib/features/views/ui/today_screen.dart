@@ -56,7 +56,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     TaskOrder order(DefaultOrder fallback) => _taskOrder(ws, options, fallback);
     // Фильтр «Отображения» (решение 3А plans/m5).
     final test =
-        viewFilterTest(ws, options, now: clock.nowWall()) ?? (_) => true;
+        viewFilterTest(
+          ws,
+          options,
+          now: clock.nowWall(),
+          wallOf: clock.wallOf,
+        ) ??
+        (_) => true;
     final overdue = ws
         .overdueTasks(iso, order: order(DefaultOrder.overdue))
         .where(test)

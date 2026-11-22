@@ -54,10 +54,12 @@ class _LabelScreenState extends ConsumerState<LabelScreen> {
       order: _taskOrder(ws, options),
     );
     // Фильтр «Отображения» (решение 3А plans/m5).
+    final clock = ref.read(clockProvider);
     final test = viewFilterTest(
       ws,
       options,
-      now: ref.read(clockProvider).nowWall(),
+      now: clock.nowWall(),
+      wallOf: clock.wallOf,
     );
     return test == null ? tasks : tasks.where(test).toList();
   }

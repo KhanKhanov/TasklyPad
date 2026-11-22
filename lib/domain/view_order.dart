@@ -218,8 +218,8 @@ typedef TaskGroup = ({TaskGroupKey key, List<Task> tasks});
 /// проекту — порядок проектов [projectOrder]; выполненные — после активных.
 /// «Просрочено» — порядок [overdueOrder], если задан: просроченные вручную
 /// не сортируются (help «Default sorting order»). [today] — `YYYY-MM-DD`,
-/// [localDay] — день по времени UTC ISO-8601 (дата добавления; по умолчанию
-/// — день по часовому поясу устройства),
+/// [localDay] — день `YYYY-MM-DD` устройства по времени UTC ISO-8601 (дата
+/// добавления; вызывающий считает его по часам приложения),
 /// [projectOf] — проект задачи по дереву. Пустые группы не выводятся;
 /// [Grouping.none] — одна группа [EmptyGroup].
 List<TaskGroup> groupTasks(
@@ -227,11 +227,11 @@ List<TaskGroup> groupTasks(
   Grouping grouping, {
   required TaskOrder order,
   required String today,
+  required String Function(String utc) localDay,
   TaskOrder? overdueOrder,
   List<String> labelOrder = const [],
   List<String> projectOrder = const [],
   String Function(Task)? projectOf,
-  String Function(String utc)? localDay,
 }) {
   TaskGroupKey byDay(String? date) => switch (date) {
     null => const TaskGroupKey.empty(),
@@ -245,7 +245,7 @@ List<TaskGroup> groupTasks(
     Grouping.addedDate => [
       switch (t.addedAt) {
         null => const TaskGroupKey.empty(),
-        final at => TaskGroupKey.day((localDay ?? _localDay)(at)),
+        final at => TaskGroupKey.day(localDay(at)),
       },
     ],
     Grouping.priority => [TaskGroupKey.priority(t.priority)],
@@ -310,13 +310,4 @@ List<TaskGroup> groupTasks(
       ])
         (key: key, tasks: groups[key]!..sort((a, b) => byState(a, b, within))),
   ];
-}
-
-/// День `YYYY-MM-DD` по часовому поясу устройства для времени UTC
-/// ISO-8601; неразборчивое время — его первые 10 символов.
-String _localDay(String utc) {
-  final at = DateTime.tryParse(utc)?.toLocal();
-  if (at == null) return utc.length >= 10 ? utc.substring(0, 10) : utc;
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${at.year.toString().padLeft(4, '0')}-${two(at.month)}-${two(at.day)}';
 }

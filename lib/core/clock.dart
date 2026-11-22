@@ -15,6 +15,13 @@ abstract interface class AppClock {
   /// местного времени, `isUtc`. Для расчёта повторений
   /// (lib/domain/recurrence.dart): срок задачи — стенное время.
   DateTime nowWall();
+
+  /// Стенное время устройства для момента [utc] — в том же виде, что
+  /// [nowWall]: цифры местного времени в UTC-обёртке, до миллисекунд. Для
+  /// времени, записанного в UTC (дата создания и выполнения задачи), в
+  /// фильтре `created:` и группах «по дате добавления» — так «сегодня» и день
+  /// задачи считаются в одном поясе.
+  DateTime wallOf(DateTime utc);
 }
 
 /// Реальные часы. Внутри — `package:clock`, поэтому в тестах их тоже можно
@@ -29,8 +36,13 @@ final class SystemClock implements AppClock {
   int nowMs() => nowUtc().millisecondsSinceEpoch;
 
   @override
-  DateTime nowWall() {
-    final l = pkg.clock.now().toLocal();
+  DateTime nowWall() => wallOf(pkg.clock.now());
+
+  /// По поясу устройства на момент [utc]: на другой стороне перехода на
+  /// летнее время сдвиг свой, как у часов в тот момент.
+  @override
+  DateTime wallOf(DateTime utc) {
+    final l = utc.toLocal();
     return DateTime.utc(
       l.year,
       l.month,
@@ -45,7 +57,7 @@ final class SystemClock implements AppClock {
 
 /// Управляемые часы для тестов: стоят, пока не сдвинуть [advance].
 ///
-/// [wallOffset] — пояс «устройства» для [nowWall]: явно, чтобы тесты не
+/// [wallOffset] — пояс «устройства» для [nowWall] и [wallOf]: явно, чтобы тесты не
 /// зависели от пояса машины, на которой их запускают.
 final class FixedClock implements AppClock {
   FixedClock(DateTime start, {this.wallOffset = Duration.zero})
@@ -66,5 +78,8 @@ final class FixedClock implements AppClock {
   int nowMs() => _now.millisecondsSinceEpoch;
 
   @override
-  DateTime nowWall() => _now.add(wallOffset);
+  DateTime nowWall() => wallOf(_now);
+
+  @override
+  DateTime wallOf(DateTime utc) => utc.toUtc().add(wallOffset);
 }
